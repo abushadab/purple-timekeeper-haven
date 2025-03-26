@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,6 +45,23 @@ export function TaskDialog({
     }
   );
 
+  // Reset form data when task changes
+  useEffect(() => {
+    if (task) {
+      setFormData(task);
+    } else if (!open) {
+      // Reset form when dialog closes and there's no task (for new task creation)
+      setFormData({
+        title: "",
+        description: "",
+        status: "not_started",
+        priority: "medium",
+        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        estimatedHours: 0,
+      });
+    }
+  }, [task, open]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     const newValue = name === "estimatedHours" ? parseFloat(value) : value;
@@ -76,8 +93,12 @@ export function TaskDialog({
     });
   };
 
+  const handleDialogClose = () => {
+    onOpenChange(false);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleDialogClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>{isEditing ? "Edit Task" : "Add New Task"}</DialogTitle>
@@ -169,7 +190,7 @@ export function TaskDialog({
             </div>
           </div>
           <DialogFooter className="pt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={handleDialogClose}>
               Cancel
             </Button>
             <Button type="submit" className="purple-gradient text-white border-none">
