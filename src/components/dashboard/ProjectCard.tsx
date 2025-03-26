@@ -1,9 +1,14 @@
 
 import React from "react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
-import { DropdownActions } from "@/components/ui/dropdown-actions";
-import { Edit, Trash2, ExternalLink } from "lucide-react";
+
+interface TeamMember {
+  name: string;
+  avatar?: string;
+  initials: string;
+}
 
 interface ProjectCardProps {
   title: string;
@@ -11,7 +16,7 @@ interface ProjectCardProps {
   progress: number;
   hoursLogged: number;
   dueDate: string;
-  team?: any[]; // Keep for backwards compatibility but not used anymore
+  team: TeamMember[];
 }
 
 const ProjectCard = ({
@@ -20,27 +25,8 @@ const ProjectCard = ({
   progress,
   hoursLogged,
   dueDate,
+  team,
 }: ProjectCardProps) => {
-  // Properly type the actions to match the Action interface
-  const actions = [
-    {
-      label: "View Details",
-      onClick: () => console.log("View details"),
-      icon: <ExternalLink size={16} />
-    },
-    {
-      label: "Edit",
-      onClick: () => console.log("Edit project"),
-      icon: <Edit size={16} />
-    },
-    {
-      label: "Delete",
-      onClick: () => console.log("Delete project"),
-      variant: "destructive" as const, // Use const assertion to make this a literal type
-      icon: <Trash2 size={16} />
-    }
-  ];
-
   return (
     <Card className="overflow-hidden card-glass hover-scale">
       <CardContent className="p-6">
@@ -48,21 +34,37 @@ const ProjectCard = ({
           <div className="space-y-2">
             <div className="flex items-start justify-between">
               <h3 className="font-semibold text-lg">{title}</h3>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-medium px-2 py-1 rounded-full bg-purple-100 text-purple-700">
-                  {progress}%
-                </span>
-                <DropdownActions actions={actions} />
-              </div>
+              <span className="text-xs font-medium px-2 py-1 rounded-full bg-purple-100 text-purple-700">
+                {progress}%
+              </span>
             </div>
             <p className="text-sm text-muted-foreground line-clamp-2">{description}</p>
           </div>
           
           <Progress value={progress} className="h-1.5" />
+          
+          <div className="flex items-center justify-between pt-2">
+            <div className="flex -space-x-2">
+              {team.slice(0, 3).map((member, i) => (
+                <Avatar key={i} className="border-2 border-background h-8 w-8">
+                  <AvatarImage src={member.avatar} alt={member.name} />
+                  <AvatarFallback className="text-xs bg-purple-100 text-purple-700">
+                    {member.initials}
+                  </AvatarFallback>
+                </Avatar>
+              ))}
+              
+              {team.length > 3 && (
+                <div className="flex items-center justify-center h-8 w-8 rounded-full border-2 border-background bg-muted text-xs font-medium">
+                  +{team.length - 3}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </CardContent>
       
-      <CardFooter className="p-6 pt-6 flex justify-between border-t border-border/50 text-sm text-muted-foreground">
+      <CardFooter className="p-6 pt-0 flex justify-between border-t border-border/50 text-sm text-muted-foreground">
         <div className="flex items-center gap-1">
           <svg
             xmlns="http://www.w3.org/2000/svg"
