@@ -26,7 +26,6 @@ import { DropdownActions } from "@/components/ui/dropdown-actions";
 import { ProjectDialog } from "@/components/projects/project-dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
-// Sample project data (would be fetched from an API in a real app)
 const projectsData = [
   {
     id: 1,
@@ -112,7 +111,6 @@ const projectsData = [
   },
 ];
 
-// Sample portfolios data for the project dialog
 const portfoliosData = [
   { id: 1, name: "Client Work" },
   { id: 2, name: "Personal Projects" },
@@ -215,21 +213,17 @@ const Projects = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("all");
   
-  // State for dialogs
   const [addProjectOpen, setAddProjectOpen] = useState(false);
   const [editProjectOpen, setEditProjectOpen] = useState(false);
   const [deleteProjectOpen, setDeleteProjectOpen] = useState(false);
   const [currentProject, setCurrentProject] = useState(null);
   
-  // State for sorting and filtering
   const [sortOption, setSortOption] = useState("name");
   const [filterOptions, setFilterOptions] = useState({
     portfolio: "all",
   });
   
-  // Handlers for project actions
   const handleAddProject = (projectData) => {
-    // In a real app, this would save to API/database
     toast({
       title: "Project created",
       description: `"${projectData.name}" has been added to your projects.`,
@@ -237,7 +231,6 @@ const Projects = () => {
   };
   
   const handleEditProject = (projectData) => {
-    // In a real app, this would update in API/database
     toast({
       title: "Project updated",
       description: `"${projectData.name}" has been updated.`,
@@ -245,7 +238,6 @@ const Projects = () => {
   };
   
   const handleDeleteProject = () => {
-    // In a real app, this would delete from API/database
     toast({
       title: "Project deleted",
       description: `"${currentProject?.name}" has been deleted.`,
@@ -268,12 +260,10 @@ const Projects = () => {
   };
   
   const filteredProjects = projectsData.filter(project => {
-    // Filter by search term
     if (searchTerm && !project.name.toLowerCase().includes(searchTerm.toLowerCase())) {
       return false;
     }
     
-    // Filter by status tab
     if (activeTab === "active" && project.status !== "active") {
       return false;
     }
@@ -281,7 +271,6 @@ const Projects = () => {
       return false;
     }
     
-    // Filter by portfolio
     if (filterOptions.portfolio !== "all" && project.portfolioId !== parseInt(filterOptions.portfolio)) {
       return false;
     }
@@ -289,13 +278,12 @@ const Projects = () => {
     return true;
   });
   
-  // Sort projects
   const sortedProjects = [...filteredProjects].sort((a, b) => {
     switch (sortOption) {
       case "name":
         return a.name.localeCompare(b.name);
       case "dueDate":
-        return new Date(a.dueDate) - new Date(b.dueDate);
+        return String(a.dueDate).localeCompare(String(b.dueDate));
       case "progress":
         return b.progress - a.progress;
       default:
@@ -454,7 +442,6 @@ const Projects = () => {
         </div>
       </main>
       
-      {/* Project Dialogs */}
       <ProjectDialog
         open={addProjectOpen}
         onOpenChange={setAddProjectOpen}

@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import Header from "@/components/layout/Header";
@@ -286,11 +285,11 @@ const Tasks = () => {
     return true;
   });
   
-  // Sort tasks
+  // Fix the sorting function for tasks
   const sortedTasks = [...filteredTasks].sort((a, b) => {
     switch (sortOption) {
       case "dueDate":
-        return new Date(a.dueDate) - new Date(b.dueDate);
+        return String(a.dueDate).localeCompare(String(b.dueDate));
       case "priority":
         const priorityOrder = { high: 0, medium: 1, low: 2 };
         return priorityOrder[a.priority] - priorityOrder[b.priority];

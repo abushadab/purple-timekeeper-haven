@@ -1,4 +1,5 @@
 
+import React from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,6 +17,7 @@ interface ConfirmDialogProps {
   title: string;
   description: string;
   onConfirm: () => void;
+  confirmText?: string;
 }
 
 export function ConfirmDialog({
@@ -24,6 +26,7 @@ export function ConfirmDialog({
   title,
   description,
   onConfirm,
+  confirmText = "Delete"
 }: ConfirmDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -38,7 +41,7 @@ export function ConfirmDialog({
             onClick={onConfirm}
             className="bg-red-500 hover:bg-red-600"
           >
-            Delete
+            {confirmText}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
