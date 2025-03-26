@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import StatCard from "@/components/dashboard/StatCard";
@@ -21,9 +21,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [user] = useState({ firstName: 'User' });
+  const [user, setUser] = useState(null);
 
-  // Recent projects data - removed team array since it's no longer needed
+  useEffect(() => {
+    // Check if user is logged in
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    } else {
+      navigate('/login');
+    }
+  }, [navigate]);
+
+  // Recent projects data
   const recentProjects = [
     {
       id: 1,
@@ -32,6 +42,12 @@ const Dashboard = () => {
       progress: 75,
       hoursLogged: 42.5,
       dueDate: "Oct 15",
+      team: [
+        { name: "Alex Johnson", initials: "AJ" },
+        { name: "Maria Garcia", initials: "MG" },
+        { name: "David Kim", initials: "DK" },
+        { name: "Sara Wilson", initials: "SW" },
+      ]
     },
     {
       id: 2,
@@ -40,6 +56,11 @@ const Dashboard = () => {
       progress: 45,
       hoursLogged: 68,
       dueDate: "Nov 30",
+      team: [
+        { name: "James Smith", initials: "JS" },
+        { name: "Emily Brown", initials: "EB" },
+        { name: "Robert Davis", initials: "RD" },
+      ]
     },
     {
       id: 3,
@@ -48,8 +69,17 @@ const Dashboard = () => {
       progress: 30,
       hoursLogged: 24,
       dueDate: "Dec 01",
+      team: [
+        { name: "Jennifer Lee", initials: "JL" },
+        { name: "Michael Chen", initials: "MC" },
+        { name: "Sarah Johnson", initials: "SJ" },
+      ]
     }
   ];
+
+  if (!user) {
+    return null; // Don't render until we check auth status
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -120,6 +150,7 @@ const Dashboard = () => {
                       progress={project.progress}
                       hoursLogged={project.hoursLogged}
                       dueDate={project.dueDate}
+                      team={project.team}
                     />
                   ))}
                 </CardContent>
