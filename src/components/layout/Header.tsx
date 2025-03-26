@@ -63,28 +63,26 @@ const Header = () => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
-    } else if (path !== '/login') {
-      navigate('/login');
+    } else {
+      // For demonstration purposes, set a demo user (will be replaced by WordPress API integration)
+      setUser({
+        firstName: 'Demo',
+        lastName: 'User',
+        email: 'demo@example.com',
+        avatar: null
+      });
     }
-  }, [path, navigate]);
+  }, []);
 
+  // Placeholder logout function - will be replaced with WordPress API logout
   const handleLogout = () => {
-    // Clear user data from localStorage
-    localStorage.removeItem('user');
-    
     toast({
-      title: "Logged out",
-      description: "You have been successfully logged out.",
+      title: "Logout",
+      description: "This is a placeholder. Actual logout will be handled by WordPress integration.",
     });
     
     setLogoutDialogOpen(false);
-    navigate('/login');
   };
-
-  // If we're on the login page, don't show the header
-  if (path === '/login') {
-    return null;
-  }
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -165,7 +163,7 @@ const Header = () => {
           <DialogHeader>
             <DialogTitle>Confirm Logout</DialogTitle>
           </DialogHeader>
-          <p className="py-4">Are you sure you want to log out of your account?</p>
+          <p className="py-4">This is a placeholder for WordPress integration. In the actual implementation, this would log you out of your WordPress account.</p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setLogoutDialogOpen(false)}>
               Cancel

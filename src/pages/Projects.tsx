@@ -151,7 +151,7 @@ const ProjectCard = ({ project, onViewTasks, onEdit, onDelete }) => {
         </div>
       </CardContent>
       
-      <CardFooter className="p-6 pt-0 border-t border-border/50 flex justify-between text-sm text-muted-foreground">
+      <CardFooter className="p-6 pt-4 border-t border-border/50 flex justify-between text-sm text-muted-foreground">
         <div className="flex items-center gap-1">
           <Clock className="w-4 h-4 text-purple-500" />
           <span>{project.totalHours} hours</span>
