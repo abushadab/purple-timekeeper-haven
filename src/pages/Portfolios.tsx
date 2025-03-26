@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import Header from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -9,6 +10,7 @@ import {
   Edit,
   Trash,
   SlidersHorizontal,
+  Loader2
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -17,64 +19,8 @@ import { toast } from "@/hooks/use-toast";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { PortfolioDialog } from "@/components/portfolios/portfolio-dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-
-const portfoliosData = [
-  {
-    id: 1,
-    name: "Client Work",
-    description: "Projects for external clients",
-    projectCount: 8,
-    totalHours: 156.5,
-    lastUpdated: "2 days ago",
-    color: "#9b87f5",
-  },
-  {
-    id: 2,
-    name: "Personal Projects",
-    description: "Side projects and experiments",
-    projectCount: 5,
-    totalHours: 42.5,
-    lastUpdated: "1 week ago",
-    color: "#f97316",
-  },
-  {
-    id: 3,
-    name: "Learning & Development",
-    description: "Courses and skill-building activities",
-    projectCount: 3,
-    totalHours: 28.0,
-    lastUpdated: "3 days ago",
-    color: "#4ade80",
-  },
-  {
-    id: 4,
-    name: "Administrative",
-    description: "Internal processes and organization",
-    projectCount: 2,
-    totalHours: 12.5,
-    lastUpdated: "Yesterday",
-    color: "#0ea5e9",
-  },
-  {
-    id: 5,
-    name: "Content Creation",
-    description: "Blog posts, videos, and social media",
-    projectCount: 4,
-    totalHours: 36.0,
-    lastUpdated: "5 days ago",
-    color: "#d946ef",
-  },
-  {
-    id: 6,
-    name: "Archived",
-    description: "Completed and inactive work",
-    projectCount: 10,
-    totalHours: 246.0,
-    lastUpdated: "1 month ago",
-    color: "#94a3b8",
-    archived: true,
-  },
-];
+import { Portfolio } from "@/types/portfolio";
+import { getPortfolios, createPortfolio, updatePortfolio, deletePortfolio } from "@/services/portfolioService";
 
 const PortfolioCard = ({ portfolio, onEdit, onDelete }) => {
   return (
@@ -152,27 +98,86 @@ const Portfolios = () => {
   const [currentPortfolio, setCurrentPortfolio] = useState(null);
   
   const [sortOption, setSortOption] = useState("name");
+  const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
-  const handleAddPortfolio = (portfolioData) => {
-    toast({
-      title: "Portfolio created",
-      description: `"${portfolioData.name}" has been added to your portfolios.`,
-    });
+  useEffect(() => {
+    fetchPortfolios();
+  }, []);
+  
+  const fetchPortfolios = async () => {
+    setIsLoading(true);
+    try {
+      const data = await getPortfolios();
+      setPortfolios(data);
+    } catch (error) {
+      console.error("Failed to fetch portfolios:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load portfolios. Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
   
-  const handleEditPortfolio = (portfolioData) => {
-    toast({
-      title: "Portfolio updated",
-      description: `"${portfolioData.name}" has been updated.`,
-    });
+  const handleAddPortfolio = async (portfolioData) => {
+    try {
+      const newPortfolio = await createPortfolio(portfolioData);
+      setPortfolios([...portfolios, newPortfolio]);
+      toast({
+        title: "Portfolio created",
+        description: `"${portfolioData.name}" has been added to your portfolios.`,
+      });
+    } catch (error) {
+      console.error("Failed to create portfolio:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create portfolio. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
   
-  const handleDeletePortfolio = () => {
-    toast({
-      title: "Portfolio deleted",
-      description: `"${currentPortfolio?.name}" has been deleted.`,
-    });
-    setDeletePortfolioOpen(false);
+  const handleEditPortfolio = async (portfolioData) => {
+    try {
+      const updatedPortfolio = await updatePortfolio(portfolioData);
+      setPortfolios(portfolios.map(p => p.id === updatedPortfolio.id ? updatedPortfolio : p));
+      toast({
+        title: "Portfolio updated",
+        description: `"${portfolioData.name}" has been updated.`,
+      });
+    } catch (error) {
+      console.error("Failed to update portfolio:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update portfolio. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  const handleDeletePortfolio = async () => {
+    if (!currentPortfolio) return;
+    
+    try {
+      await deletePortfolio(currentPortfolio.id);
+      setPortfolios(portfolios.filter(p => p.id !== currentPortfolio.id));
+      toast({
+        title: "Portfolio deleted",
+        description: `"${currentPortfolio.name}" has been deleted.`,
+      });
+    } catch (error) {
+      console.error("Failed to delete portfolio:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete portfolio. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletePortfolioOpen(false);
+    }
   };
   
   const openEditPortfolioDialog = (portfolio) => {
@@ -185,7 +190,7 @@ const Portfolios = () => {
     setDeletePortfolioOpen(true);
   };
   
-  const filteredPortfolios = portfoliosData.filter(portfolio => {
+  const filteredPortfolios = portfolios.filter(portfolio => {
     if (searchTerm && !portfolio.name.toLowerCase().includes(searchTerm.toLowerCase())) {
       return false;
     }
@@ -303,7 +308,12 @@ const Portfolios = () => {
             </TabsList>
           </Tabs>
           
-          {sortedPortfolios.length > 0 ? (
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center h-[40vh]">
+              <Loader2 className="h-8 w-8 text-purple-600 animate-spin mb-4" />
+              <p className="text-muted-foreground">Loading portfolios...</p>
+            </div>
+          ) : sortedPortfolios.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {sortedPortfolios.map((portfolio) => (
                 <PortfolioCard 

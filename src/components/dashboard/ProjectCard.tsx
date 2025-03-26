@@ -15,16 +15,16 @@ interface ProjectCardProps {
   progress: number;
   hoursLogged: number;
   dueDate: string;
-  id?: number; // Add id to navigate to the specific project tasks
+  id?: string; // Changed from number to string for UUID compatibility
   team?: any[]; // Keep for backwards compatibility but not used anymore
 }
 
 // Sample portfolio data for the dropdown
 const portfoliosData = [
-  { id: 1, name: "Client Work" },
-  { id: 2, name: "Personal Projects" },
-  { id: 3, name: "Learning & Development" },
-  { id: 4, name: "Administrative" },
+  { id: "1", name: "Client Work" }, // Changed from number to string for UUID compatibility
+  { id: "2", name: "Personal Projects" },
+  { id: "3", name: "Learning & Development" },
+  { id: "4", name: "Administrative" },
 ];
 
 const ProjectCard = ({
@@ -33,7 +33,7 @@ const ProjectCard = ({
   progress,
   hoursLogged,
   dueDate,
-  id = 1, // Default to 1 if not provided
+  id = "1", // Default to "1" if not provided
 }: ProjectCardProps) => {
   const navigate = useNavigate();
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -44,7 +44,7 @@ const ProjectCard = ({
     id,
     name: title,
     description,
-    portfolioId: 1, // Default portfolio
+    portfolioId: "1", // Default portfolio
     dueDate,
   };
 
