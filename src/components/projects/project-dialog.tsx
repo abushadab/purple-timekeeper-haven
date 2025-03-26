@@ -8,12 +8,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-// Project dialog form type
+// Project dialog form type - Updated to use string IDs
 interface ProjectFormData {
-  id?: number;
+  id?: string; // Changed from number to string
   name: string;
   description: string;
-  portfolioId: number;
+  portfolioId: string; // Changed from number to string
   dueDate: string;
 }
 
@@ -21,7 +21,7 @@ interface ProjectDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   project?: ProjectFormData;
-  portfolios: { id: number; name: string }[];
+  portfolios: { id: string; name: string }[]; // Changed from number to string
   onSave: (project: ProjectFormData) => void;
 }
 
@@ -38,7 +38,7 @@ export function ProjectDialog({
     project || {
       name: "",
       description: "",
-      portfolioId: portfolios[0]?.id || 0,
+      portfolioId: portfolios[0]?.id || "", // Changed default value to empty string
       dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 2 weeks from now
     }
   );
@@ -49,7 +49,7 @@ export function ProjectDialog({
   };
 
   const handlePortfolioChange = (value: string) => {
-    setFormData((prev) => ({ ...prev, portfolioId: parseInt(value) }));
+    setFormData((prev) => ({ ...prev, portfolioId: value }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -110,7 +110,7 @@ export function ProjectDialog({
           <div className="space-y-2">
             <Label htmlFor="portfolio">Portfolio</Label>
             <Select
-              value={formData.portfolioId.toString()}
+              value={formData.portfolioId}
               onValueChange={handlePortfolioChange}
             >
               <SelectTrigger>
@@ -118,7 +118,7 @@ export function ProjectDialog({
               </SelectTrigger>
               <SelectContent>
                 {portfolios.map((portfolio) => (
-                  <SelectItem key={portfolio.id} value={portfolio.id.toString()}>
+                  <SelectItem key={portfolio.id} value={portfolio.id}>
                     {portfolio.name}
                   </SelectItem>
                 ))}

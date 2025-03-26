@@ -15,13 +15,13 @@ interface ProjectCardProps {
   progress: number;
   hoursLogged: number;
   dueDate: string;
-  id?: string; // Changed from number to string for UUID compatibility
+  id?: string;
   team?: any[]; // Keep for backwards compatibility but not used anymore
 }
 
-// Sample portfolio data for the dropdown
+// Sample portfolio data for the dropdown - using string IDs
 const portfoliosData = [
-  { id: "1", name: "Client Work" }, // Changed from number to string for UUID compatibility
+  { id: "1", name: "Client Work" },
   { id: "2", name: "Personal Projects" },
   { id: "3", name: "Learning & Development" },
   { id: "4", name: "Administrative" },

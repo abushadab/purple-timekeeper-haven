@@ -22,10 +22,10 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [user] = useState({ firstName: 'User' });
 
-  // Recent projects data - now including project IDs
+  // Recent projects data - updated to use string IDs
   const recentProjects = [
     {
-      id: 1,
+      id: "1",
       title: "Website Redesign",
       description: "Complete overhaul of company website with new UI/UX design system",
       progress: 75,
@@ -33,7 +33,7 @@ const Dashboard = () => {
       dueDate: "Oct 15",
     },
     {
-      id: 2,
+      id: "2",
       title: "Mobile App Development",
       description: "Building a native app for iOS and Android platforms",
       progress: 45,
@@ -41,7 +41,7 @@ const Dashboard = () => {
       dueDate: "Nov 30",
     },
     {
-      id: 3,
+      id: "3",
       title: "Marketing Campaign",
       description: "Q4 digital marketing campaign for new product launch",
       progress: 30,
