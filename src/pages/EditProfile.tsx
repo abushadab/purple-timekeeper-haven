@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, X, Upload, Trash } from "lucide-react";
+import { User, Upload, Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/layout/Header";
 import { 
@@ -31,14 +30,21 @@ const EditProfile = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Get user data from localStorage
+    // Get user data from localStorage or set default
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     } else {
-      navigate('/login');
+      // Set demo user instead of redirecting to login
+      setUser({
+        firstName: 'Demo',
+        lastName: 'User',
+        email: 'demo@example.com',
+        phone: '',
+        avatar: null
+      });
     }
-  }, [navigate]);
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

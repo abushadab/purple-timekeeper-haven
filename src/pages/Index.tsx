@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/layout/Header";
@@ -23,7 +22,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [user] = useState({ firstName: 'User' });
 
-  // Recent projects data - removed team array since it's no longer needed
+  // Recent projects data - now including project IDs
   const recentProjects = [
     {
       id: 1,
@@ -115,6 +114,7 @@ const Dashboard = () => {
                   {recentProjects.map((project) => (
                     <ProjectCard
                       key={project.id}
+                      id={project.id}
                       title={project.title}
                       description={project.description}
                       progress={project.progress}

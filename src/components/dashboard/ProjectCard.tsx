@@ -4,6 +4,7 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { DropdownActions } from "@/components/ui/dropdown-actions";
 import { Edit, Trash2, ExternalLink } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface ProjectCardProps {
   title: string;
@@ -11,6 +12,7 @@ interface ProjectCardProps {
   progress: number;
   hoursLogged: number;
   dueDate: string;
+  id?: number; // Add id to navigate to the specific project tasks
   team?: any[]; // Keep for backwards compatibility but not used anymore
 }
 
@@ -20,29 +22,38 @@ const ProjectCard = ({
   progress,
   hoursLogged,
   dueDate,
+  id = 1, // Default to 1 if not provided
 }: ProjectCardProps) => {
+  const navigate = useNavigate();
+
   // Properly type the actions to match the Action interface
   const actions = [
     {
-      label: "View Details",
-      onClick: () => console.log("View details"),
+      label: "View Tasks",
+      onClick: () => navigate(`/projects/${id}/tasks`),
       icon: <ExternalLink size={16} />
     },
     {
       label: "Edit",
-      onClick: () => console.log("Edit project"),
+      onClick: () => {
+        console.log("Edit project", id);
+        // This will be implemented with the WordPress API integration
+      },
       icon: <Edit size={16} />
     },
     {
       label: "Delete",
-      onClick: () => console.log("Delete project"),
+      onClick: () => {
+        console.log("Delete project", id);
+        // This will be implemented with the WordPress API integration
+      },
       variant: "destructive" as const, // Use const assertion to make this a literal type
       icon: <Trash2 size={16} />
     }
   ];
 
   return (
-    <Card className="overflow-hidden card-glass hover-scale">
+    <Card className="overflow-hidden card-glass hover-scale shadow-md hover:shadow-lg transition-shadow">
       <CardContent className="p-6">
         <div className="space-y-4">
           <div className="space-y-2">
