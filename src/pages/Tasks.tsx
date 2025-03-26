@@ -28,7 +28,6 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DropdownActions } from "@/components/ui/dropdown-actions";
 import ScreenshotsDialog from "@/components/tasks/screenshots-dialog";
 
-// Sample task data for a specific project
 const tasksData = [
   {
     id: 1,
@@ -82,7 +81,6 @@ const tasksData = [
   },
 ];
 
-// Sample screenshots data
 const screenshotsData = {
   1: [
     { id: "1", url: "https://picsum.photos/id/1/800/600", thumbnailUrl: "https://picsum.photos/id/1/200/150", timestamp: "Oct 10, 2023, 14:30" },
@@ -100,7 +98,6 @@ const screenshotsData = {
   5: [],
 };
 
-// Format date for display (convert from YYYY-MM-DD to more readable format)
 const formatDateForDisplay = (dateString: string): string => {
   try {
     const date = new Date(dateString);
@@ -113,7 +110,6 @@ const formatDateForDisplay = (dateString: string): string => {
   }
 };
 
-// Sample project data
 const project = {
   id: 1,
   name: "Website Redesign",
@@ -233,24 +229,21 @@ const Tasks = () => {
   const [activeTab, setActiveTab] = useState("all");
   const { projectId } = useParams();
   
-  // State for dialogs
   const [addTaskOpen, setAddTaskOpen] = useState(false);
   const [editTaskOpen, setEditTaskOpen] = useState(false);
   const [deleteTaskOpen, setDeleteTaskOpen] = useState(false);
   const [screenshotsOpen, setScreenshotsOpen] = useState(false);
   const [currentTask, setCurrentTask] = useState(null);
   
-  // State for sorting and filtering
   const [sortOption, setSortOption] = useState("dueDate");
   const [filterOptions, setFilterOptions] = useState({
     priority: "all",
   });
   
-  // Handlers for task actions
   const handleAddTask = (taskData) => {
     toast({
       title: "Task created",
-      description: `"${taskData.title}" has been added to your tasks.",
+      description: `"${taskData.title}" has been added to your tasks.`,
     });
   };
   
