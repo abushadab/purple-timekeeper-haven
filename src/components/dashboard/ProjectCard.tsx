@@ -62,7 +62,7 @@ const ProjectCard = ({
         </div>
       </CardContent>
       
-      <CardFooter className="p-6 pt-6 flex justify-between border-t border-border/50 text-sm text-muted-foreground">
+      <CardFooter className="p-6 pt-4 flex justify-between border-t border-border/50 text-sm text-muted-foreground">
         <div className="flex items-center gap-1">
           <svg
             xmlns="http://www.w3.org/2000/svg"
