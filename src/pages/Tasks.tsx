@@ -147,7 +147,7 @@ const TaskCard = ({ task, onEdit, onDelete, onView }) => {
     { 
       label: "Delete", 
       onClick: () => onDelete(task),
-      variant: "destructive",
+      variant: "destructive" as const,
       icon: <Trash size={16} />
     },
   ];

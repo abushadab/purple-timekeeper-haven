@@ -134,7 +134,7 @@ const ProjectCard = ({ project, onViewTasks, onEdit, onDelete }) => {
     { 
       label: "Delete", 
       onClick: () => onDelete(project),
-      variant: "destructive",
+      variant: "destructive" as const,
       icon: <Trash size={16} />
     },
   ];
