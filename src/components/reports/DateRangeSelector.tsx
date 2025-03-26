@@ -1,11 +1,11 @@
 
 import * as React from "react";
 import { format } from "date-fns";
-import { Calendar, CalendarIcon } from "lucide-react";
+import { Calendar as CalendarIcon } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
   PopoverContent,
@@ -18,6 +18,13 @@ interface DateRangeSelectorProps {
 }
 
 const DateRangeSelector = ({ dateRange, setDateRange }: DateRangeSelectorProps) => {
+  const [tempRange, setTempRange] = React.useState<DateRange | undefined>(dateRange);
+
+  // Apply the selected date range
+  const applyDateRange = () => {
+    setDateRange(tempRange);
+  };
+
   return (
     <div className="grid gap-2">
       <Popover>
@@ -45,15 +52,34 @@ const DateRangeSelector = ({ dateRange, setDateRange }: DateRangeSelectorProps) 
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
-          <CalendarComponent
-            initialFocus
-            mode="range"
-            defaultMonth={dateRange?.from}
-            selected={dateRange}
-            onSelect={setDateRange}
-            numberOfMonths={2}
-            className="pointer-events-auto"
-          />
+          <div className="p-3">
+            <Calendar
+              initialFocus
+              mode="range"
+              defaultMonth={dateRange?.from}
+              selected={tempRange}
+              onSelect={setTempRange}
+              numberOfMonths={2}
+              className="pointer-events-auto"
+            />
+            <div className="flex items-center justify-end gap-2 pt-4 border-t mt-4">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setTempRange(dateRange)}
+              >
+                Cancel
+              </Button>
+              <Button 
+                variant="default" 
+                size="sm"
+                className="bg-purple-600 hover:bg-purple-700 text-white"
+                onClick={applyDateRange}
+              >
+                Apply Range
+              </Button>
+            </div>
+          </div>
         </PopoverContent>
       </Popover>
     </div>

@@ -11,7 +11,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import DateRangeSelector from "@/components/reports/DateRangeSelector";
 import FilterSelector, { FilterOption } from "@/components/reports/FilterSelector";
 import ExportOptions from "@/components/reports/ExportOptions";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 
 // Sample data for charts
 const timeData = [
@@ -143,9 +143,38 @@ const Reports = () => {
     }
   };
   
+  const handleResetFilters = () => {
+    setProjectFilters(projectFilters.map(filter => ({ ...filter, checked: false })));
+    setStatusFilters(statusFilters.map(filter => ({ ...filter, checked: false })));
+    setTypeFilters(typeFilters.map(filter => ({ ...filter, checked: false })));
+    
+    toast({
+      title: "Filters reset",
+      description: "All filters have been cleared."
+    });
+  };
+  
+  const handleApplyFilters = () => {
+    // In a real application, this would filter the data shown in charts
+    console.log("Applied filters:", {
+      projects: projectFilters.filter(f => f.checked).map(f => f.id),
+      status: statusFilters.filter(f => f.checked).map(f => f.id),
+      type: typeFilters.filter(f => f.checked).map(f => f.id)
+    });
+    
+    toast({
+      title: "Filters applied",
+      description: "Report data has been filtered based on your selection."
+    });
+  };
+  
   const handleExport = (format: string) => {
     console.log(`Exporting report as ${format}`);
     // In a real application, this would trigger the export functionality
+    toast({
+      title: `Report exported as ${format.toUpperCase()}`,
+      description: "Your report has been exported successfully."
+    });
   };
   
   return (
@@ -167,6 +196,8 @@ const Reports = () => {
                 statusFilters={statusFilters}
                 typeFilters={typeFilters}
                 onFilterChange={handleFilterChange}
+                onResetFilters={handleResetFilters}
+                onApplyFilters={handleApplyFilters}
               />
               <ExportOptions onExport={handleExport} />
             </div>

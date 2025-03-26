@@ -61,11 +61,6 @@ const Dashboard = () => {
               <div className="text-sm text-muted-foreground mb-1">Welcome back,</div>
               <h1 className="text-3xl font-bold tracking-tight">{user?.firstName || 'User'}</h1>
             </div>
-            
-            <div className="flex space-x-2">
-              <Button variant="outline">Export</Button>
-              <Button className="purple-gradient text-white border-none">Start Timer</Button>
-            </div>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

@@ -10,6 +10,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { toast } from "@/hooks/use-toast";
 
 export interface FilterOption {
   id: string;
@@ -54,6 +55,8 @@ interface FilterSelectorProps {
   statusFilters: FilterOption[];
   typeFilters: FilterOption[];
   onFilterChange: (category: string, id: string, checked: boolean) => void;
+  onResetFilters: () => void;
+  onApplyFilters: () => void;
 }
 
 const FilterSelector: React.FC<FilterSelectorProps> = ({
@@ -61,9 +64,81 @@ const FilterSelector: React.FC<FilterSelectorProps> = ({
   statusFilters,
   typeFilters,
   onFilterChange,
+  onResetFilters,
+  onApplyFilters,
 }) => {
+  // Create temporary state for filters
+  const [tempProjectFilters, setTempProjectFilters] = React.useState<FilterOption[]>(projectFilters);
+  const [tempStatusFilters, setTempStatusFilters] = React.useState<FilterOption[]>(statusFilters);
+  const [tempTypeFilters, setTempTypeFilters] = React.useState<FilterOption[]>(typeFilters);
+  const [open, setOpen] = React.useState(false);
+
+  // Reset filters when the popover opens to match current filter state
+  React.useEffect(() => {
+    if (open) {
+      setTempProjectFilters([...projectFilters]);
+      setTempStatusFilters([...statusFilters]);
+      setTempTypeFilters([...typeFilters]);
+    }
+  }, [open, projectFilters, statusFilters, typeFilters]);
+
+  const handleTempFilterChange = (category: string, id: string, checked: boolean) => {
+    if (category === "projects") {
+      setTempProjectFilters(
+        tempProjectFilters.map((filter) =>
+          filter.id === id ? { ...filter, checked } : filter
+        )
+      );
+    } else if (category === "status") {
+      setTempStatusFilters(
+        tempStatusFilters.map((filter) =>
+          filter.id === id ? { ...filter, checked } : filter
+        )
+      );
+    } else if (category === "type") {
+      setTempTypeFilters(
+        tempTypeFilters.map((filter) =>
+          filter.id === id ? { ...filter, checked } : filter
+        )
+      );
+    }
+  };
+
+  const handleResetFilters = () => {
+    setTempProjectFilters(tempProjectFilters.map(filter => ({ ...filter, checked: false })));
+    setTempStatusFilters(tempStatusFilters.map(filter => ({ ...filter, checked: false })));
+    setTempTypeFilters(tempTypeFilters.map(filter => ({ ...filter, checked: false })));
+  };
+
+  const handleApplyFilters = () => {
+    // Apply all temporary filters to the actual filters
+    tempProjectFilters.forEach(filter => {
+      onFilterChange("projects", filter.id, filter.checked);
+    });
+    
+    tempStatusFilters.forEach(filter => {
+      onFilterChange("status", filter.id, filter.checked);
+    });
+    
+    tempTypeFilters.forEach(filter => {
+      onFilterChange("type", filter.id, filter.checked);
+    });
+    
+    // Call the parent's apply filters method
+    onApplyFilters();
+    
+    // Close the popover
+    setOpen(false);
+    
+    // Show a toast notification
+    toast({
+      title: "Filters applied",
+      description: "Your report view has been updated with the selected filters."
+    });
+  };
+
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="outline" className="gap-1">
           <Filter size={16} />
@@ -80,26 +155,34 @@ const FilterSelector: React.FC<FilterSelectorProps> = ({
           </div>
           <FilterCategory
             title="Projects"
-            options={projectFilters}
-            onChange={(id, checked) => onFilterChange("projects", id, checked)}
+            options={tempProjectFilters}
+            onChange={(id, checked) => handleTempFilterChange("projects", id, checked)}
           />
           <Separator />
           <FilterCategory
             title="Status"
-            options={statusFilters}
-            onChange={(id, checked) => onFilterChange("status", id, checked)}
+            options={tempStatusFilters}
+            onChange={(id, checked) => handleTempFilterChange("status", id, checked)}
           />
           <Separator />
           <FilterCategory
             title="Task Type"
-            options={typeFilters}
-            onChange={(id, checked) => onFilterChange("type", id, checked)}
+            options={tempTypeFilters}
+            onChange={(id, checked) => handleTempFilterChange("type", id, checked)}
           />
           <div className="flex justify-between">
-            <Button variant="outline" size="sm">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={handleResetFilters}
+            >
               Reset Filters
             </Button>
-            <Button size="sm" className="purple-gradient text-white border-none">
+            <Button 
+              size="sm" 
+              className="purple-gradient text-white border-none"
+              onClick={handleApplyFilters}
+            >
               Apply Filters
             </Button>
           </div>
