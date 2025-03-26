@@ -22,7 +22,6 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { BreadcrumbNavigation } from "@/components/ui/breadcrumb-navigation";
 import { TaskDialog } from "@/components/tasks/task-dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DropdownActions } from "@/components/ui/dropdown-actions";
@@ -300,22 +299,12 @@ const Tasks = () => {
     }
   });
 
-  // Breadcrumb items
-  const breadcrumbItems = [
-    { label: "Dashboard", href: "/" },
-    { label: "Projects", href: "/projects" },
-    { label: project.name, href: `/projects/${project.id}` },
-    { label: "Tasks" }
-  ];
-
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
       
       <main className="flex-1">
         <div className="container px-4 sm:px-6 py-6 sm:py-8">
-          <BreadcrumbNavigation items={breadcrumbItems} />
-          
           <div className="flex items-center gap-2 mb-6">
             <Link to="/projects">
               <Button variant="ghost" size="icon" className="rounded-full h-8 w-8">
@@ -323,7 +312,6 @@ const Tasks = () => {
               </Button>
             </Link>
             <div>
-              <p className="text-sm text-muted-foreground">Portfolio: {project.portfolio}</p>
               <h1 className="text-2xl font-bold tracking-tight">Project: {project.name}</h1>
             </div>
           </div>
@@ -336,10 +324,6 @@ const Tasks = () => {
                   <p className="text-muted-foreground text-sm">{project.description}</p>
                   
                   <div className="mt-4 flex flex-wrap gap-4">
-                    <div>
-                      <p className="text-xs text-muted-foreground">Portfolio</p>
-                      <p className="font-medium">{project.portfolio}</p>
-                    </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Due Date</p>
                       <p className="font-medium">{project.dueDate}</p>

@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { 
   FolderKanban, 
@@ -37,11 +36,6 @@ const projectsData = [
     tasksCompleted: 9,
     dueDate: "Oct 15",
     status: "active",
-    team: [
-      { name: "Alex Johnson", initials: "AJ" },
-      { name: "Maria Garcia", initials: "MG" },
-      { name: "David Kim", initials: "DK" },
-    ],
     portfolioId: 1
   },
   {
@@ -54,10 +48,6 @@ const projectsData = [
     tasksCompleted: 10,
     dueDate: "Nov 30",
     status: "active",
-    team: [
-      { name: "James Smith", initials: "JS" },
-      { name: "Emily Brown", initials: "EB" },
-    ],
     portfolioId: 2
   },
   {
@@ -70,11 +60,6 @@ const projectsData = [
     tasksCompleted: 5,
     dueDate: "Dec 10",
     status: "active",
-    team: [
-      { name: "Sara Wilson", initials: "SW" },
-      { name: "Robert Davis", initials: "RD" },
-      { name: "Lisa Chen", initials: "LC" },
-    ],
     portfolioId: 3
   },
   {
@@ -87,10 +72,6 @@ const projectsData = [
     tasksCompleted: 15,
     dueDate: "Sep 30",
     status: "completed",
-    team: [
-      { name: "Michael Johnson", initials: "MJ" },
-      { name: "Jennifer Lopez", initials: "JL" },
-    ],
     portfolioId: 1
   },
   {
@@ -103,10 +84,6 @@ const projectsData = [
     tasksCompleted: 6,
     dueDate: "Oct 25",
     status: "active",
-    team: [
-      { name: "Andrew Wilson", initials: "AW" },
-      { name: "Sophia Rodriguez", initials: "SR" },
-    ],
     portfolioId: 2
   },
 ];
@@ -171,24 +148,6 @@ const ProjectCard = ({ project, onViewTasks, onEdit, onDelete }) => {
           </div>
           
           <Progress value={project.progress} className="h-1.5" />
-          
-          <div className="flex items-center justify-between pt-2">
-            <div className="flex -space-x-2">
-              {project.team.slice(0, 3).map((member, i) => (
-                <Avatar key={i} className="border-2 border-background h-8 w-8">
-                  <AvatarFallback className="text-xs bg-purple-100 text-purple-700">
-                    {member.initials}
-                  </AvatarFallback>
-                </Avatar>
-              ))}
-              
-              {project.team.length > 3 && (
-                <div className="flex items-center justify-center h-8 w-8 rounded-full border-2 border-background bg-muted text-xs font-medium">
-                  +{project.team.length - 3}
-                </div>
-              )}
-            </div>
-          </div>
         </div>
       </CardContent>
       

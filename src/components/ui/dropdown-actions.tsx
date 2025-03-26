@@ -31,7 +31,10 @@ export function DropdownActions({ actions }: DropdownActionsProps) {
         {actions.map((action, index) => (
           <DropdownMenuItem
             key={index}
-            onClick={action.onClick}
+            onClick={(e) => {
+              e.stopPropagation();
+              action.onClick();
+            }}
             className={action.variant === "destructive" ? "text-red-500" : ""}
           >
             {action.icon && <span className="mr-2">{action.icon}</span>}
