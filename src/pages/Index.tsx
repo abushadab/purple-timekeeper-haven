@@ -1,27 +1,86 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import StatCard from "@/components/dashboard/StatCard";
 import TimelineItem from "@/components/dashboard/TimelineItem";
 import ProjectCard from "@/components/dashboard/ProjectCard";
-import TeamMember from "@/components/dashboard/TeamMember";
 import { 
-  BarChart3, 
   Clock, 
   Folder,
   FolderKanban,
-  CheckSquare,
   Calendar,
   Play,
   Pause,
   CheckCircle,
-  FileEdit
+  FileEdit,
+  ChevronRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    // Check if user is logged in
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    } else {
+      navigate('/login');
+    }
+  }, [navigate]);
+
+  // Recent projects data
+  const recentProjects = [
+    {
+      id: 1,
+      title: "Website Redesign",
+      description: "Complete overhaul of company website with new UI/UX design system",
+      progress: 75,
+      hoursLogged: 42.5,
+      dueDate: "Oct 15",
+      team: [
+        { name: "Alex Johnson", initials: "AJ" },
+        { name: "Maria Garcia", initials: "MG" },
+        { name: "David Kim", initials: "DK" },
+        { name: "Sara Wilson", initials: "SW" },
+      ]
+    },
+    {
+      id: 2,
+      title: "Mobile App Development",
+      description: "Building a native app for iOS and Android platforms",
+      progress: 45,
+      hoursLogged: 68,
+      dueDate: "Nov 30",
+      team: [
+        { name: "James Smith", initials: "JS" },
+        { name: "Emily Brown", initials: "EB" },
+        { name: "Robert Davis", initials: "RD" },
+      ]
+    },
+    {
+      id: 3,
+      title: "Marketing Campaign",
+      description: "Q4 digital marketing campaign for new product launch",
+      progress: 30,
+      hoursLogged: 24,
+      dueDate: "Dec 01",
+      team: [
+        { name: "Jennifer Lee", initials: "JL" },
+        { name: "Michael Chen", initials: "MC" },
+        { name: "Sarah Johnson", initials: "SJ" },
+      ]
+    }
+  ];
+
+  if (!user) {
+    return null; // Don't render until we check auth status
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
@@ -31,7 +90,7 @@ const Dashboard = () => {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 space-y-4 sm:space-y-0">
             <div>
               <div className="text-sm text-muted-foreground mb-1">Welcome back,</div>
-              <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+              <h1 className="text-3xl font-bold tracking-tight">{user?.firstName || 'User'}</h1>
             </div>
             
             <div className="flex space-x-2">
@@ -70,60 +129,30 @@ const Dashboard = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
             <div className="lg:col-span-2 space-y-6">
               <Card className="overflow-hidden card-glass">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg font-semibold">Active Projects</CardTitle>
+                <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                  <CardTitle className="text-lg font-semibold">Recent Projects</CardTitle>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-sm text-purple-600 hover:text-purple-700"
+                    onClick={() => navigate('/projects')}
+                  >
+                    View all
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
                 </CardHeader>
-                <CardContent className="p-0">
-                  <Tabs defaultValue="ongoing" className="w-full">
-                    <div className="px-6">
-                      <TabsList className="grid w-full grid-cols-3">
-                        <TabsTrigger value="ongoing">Ongoing</TabsTrigger>
-                        <TabsTrigger value="completed">Completed</TabsTrigger>
-                        <TabsTrigger value="all">All</TabsTrigger>
-                      </TabsList>
-                    </div>
-                    
-                    <TabsContent value="ongoing" className="mt-0 p-6 space-y-6">
-                      <ProjectCard
-                        title="Website Redesign"
-                        description="Complete overhaul of company website with new UI/UX design system"
-                        progress={75}
-                        hoursLogged={42.5}
-                        dueDate="Oct 15"
-                        team={[
-                          { name: "Alex Johnson", initials: "AJ" },
-                          { name: "Maria Garcia", initials: "MG" },
-                          { name: "David Kim", initials: "DK" },
-                          { name: "Sara Wilson", initials: "SW" },
-                        ]}
-                      />
-                      
-                      <ProjectCard
-                        title="Mobile App Development"
-                        description="Building a native app for iOS and Android platforms"
-                        progress={45}
-                        hoursLogged={68}
-                        dueDate="Nov 30"
-                        team={[
-                          { name: "James Smith", initials: "JS" },
-                          { name: "Emily Brown", initials: "EB" },
-                          { name: "Robert Davis", initials: "RD" },
-                        ]}
-                      />
-                    </TabsContent>
-                    
-                    <TabsContent value="completed" className="mt-0 p-6">
-                      <div className="flex items-center justify-center h-40 text-muted-foreground">
-                        No completed projects to display
-                      </div>
-                    </TabsContent>
-                    
-                    <TabsContent value="all" className="mt-0 p-6">
-                      <div className="flex items-center justify-center h-40 text-muted-foreground">
-                        Loading all projects...
-                      </div>
-                    </TabsContent>
-                  </Tabs>
+                <CardContent className="p-6 space-y-6">
+                  {recentProjects.map((project) => (
+                    <ProjectCard
+                      key={project.id}
+                      title={project.title}
+                      description={project.description}
+                      progress={project.progress}
+                      hoursLogged={project.hoursLogged}
+                      dueDate={project.dueDate}
+                      team={project.team}
+                    />
+                  ))}
                 </CardContent>
               </Card>
               
