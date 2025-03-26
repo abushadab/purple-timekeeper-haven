@@ -15,7 +15,8 @@ import {
   Filter,
   Eye,
   Edit,
-  Trash
+  Trash,
+  Images
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +26,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { TaskDialog } from "@/components/tasks/task-dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DropdownActions } from "@/components/ui/dropdown-actions";
+import ScreenshotsDialog from "@/components/tasks/screenshots-dialog";
 
 // Sample task data for a specific project
 const tasksData = [
@@ -34,7 +36,7 @@ const tasksData = [
     description: "Create low-fidelity wireframes for the new homepage design",
     status: "completed",
     priority: "high",
-    dueDate: "2023-10-10", // YYYY-MM-DD format
+    dueDate: "2023-10-10",
     hoursLogged: 4.5,
     estimatedHours: 4,
   },
@@ -44,7 +46,7 @@ const tasksData = [
     description: "Build the responsive navigation bar according to design specs",
     status: "in_progress",
     priority: "high",
-    dueDate: "2023-10-12", // YYYY-MM-DD format
+    dueDate: "2023-10-12",
     hoursLogged: 3.2,
     estimatedHours: 6,
   },
@@ -54,7 +56,7 @@ const tasksData = [
     description: "Implement the hero section with animations",
     status: "not_started",
     priority: "medium",
-    dueDate: "2023-10-14", // YYYY-MM-DD format
+    dueDate: "2023-10-14",
     hoursLogged: 0,
     estimatedHours: 5,
   },
@@ -64,7 +66,7 @@ const tasksData = [
     description: "Configure image processing and optimization for better performance",
     status: "not_started",
     priority: "low",
-    dueDate: "2023-10-16", // YYYY-MM-DD format
+    dueDate: "2023-10-16",
     hoursLogged: 0,
     estimatedHours: 3,
   },
@@ -74,11 +76,29 @@ const tasksData = [
     description: "Build the responsive footer with all required sections",
     status: "not_started",
     priority: "medium",
-    dueDate: "2023-10-18", // YYYY-MM-DD format
+    dueDate: "2023-10-18",
     hoursLogged: 0,
     estimatedHours: 4,
   },
 ];
+
+// Sample screenshots data
+const screenshotsData = {
+  1: [
+    { id: "1", url: "https://picsum.photos/id/1/800/600", thumbnailUrl: "https://picsum.photos/id/1/200/150", timestamp: "Oct 10, 2023, 14:30" },
+    { id: "2", url: "https://picsum.photos/id/2/800/600", thumbnailUrl: "https://picsum.photos/id/2/200/150", timestamp: "Oct 10, 2023, 15:45" },
+  ],
+  2: [
+    { id: "3", url: "https://picsum.photos/id/3/800/600", thumbnailUrl: "https://picsum.photos/id/3/200/150", timestamp: "Oct 11, 2023, 09:15" },
+    { id: "4", url: "https://picsum.photos/id/4/800/600", thumbnailUrl: "https://picsum.photos/id/4/200/150", timestamp: "Oct 11, 2023, 10:30" },
+    { id: "5", url: "https://picsum.photos/id/5/800/600", thumbnailUrl: "https://picsum.photos/id/5/200/150", timestamp: "Oct 11, 2023, 11:45" },
+  ],
+  3: [
+    { id: "6", url: "https://picsum.photos/id/6/800/600", thumbnailUrl: "https://picsum.photos/id/6/200/150", timestamp: "Oct 12, 2023, 13:15" },
+  ],
+  4: [],
+  5: [],
+};
 
 // Format date for display (convert from YYYY-MM-DD to more readable format)
 const formatDateForDisplay = (dateString: string): string => {
@@ -147,9 +167,9 @@ const TaskCard = ({ task, onEdit, onDelete, onView }) => {
 
   const actions = [
     { 
-      label: "View Details", 
+      label: "View Screenshots", 
       onClick: () => onView(task),
-      icon: <Eye size={16} />
+      icon: <Images size={16} />
     },
     { 
       label: "Edit", 
@@ -217,7 +237,7 @@ const Tasks = () => {
   const [addTaskOpen, setAddTaskOpen] = useState(false);
   const [editTaskOpen, setEditTaskOpen] = useState(false);
   const [deleteTaskOpen, setDeleteTaskOpen] = useState(false);
-  const [viewTaskOpen, setViewTaskOpen] = useState(false);
+  const [screenshotsOpen, setScreenshotsOpen] = useState(false);
   const [currentTask, setCurrentTask] = useState(null);
   
   // State for sorting and filtering
@@ -228,15 +248,13 @@ const Tasks = () => {
   
   // Handlers for task actions
   const handleAddTask = (taskData) => {
-    // In a real app, this would save to API/database
     toast({
       title: "Task created",
-      description: `"${taskData.title}" has been added to your tasks.`,
+      description: `"${taskData.title}" has been added to your tasks.",
     });
   };
   
   const handleEditTask = (taskData) => {
-    // In a real app, this would update in API/database
     toast({
       title: "Task updated",
       description: `"${taskData.title}" has been updated.`,
@@ -244,7 +262,6 @@ const Tasks = () => {
   };
   
   const handleDeleteTask = () => {
-    // In a real app, this would delete from API/database
     toast({
       title: "Task deleted",
       description: `"${currentTask?.title}" has been deleted.`,
@@ -262,23 +279,16 @@ const Tasks = () => {
     setDeleteTaskOpen(true);
   };
   
-  const openViewTaskDialog = (task) => {
+  const openScreenshotsDialog = (task) => {
     setCurrentTask(task);
-    setViewTaskOpen(true);
-    // In a real app, this would navigate to a task details page
-    toast({
-      title: "View Task Details",
-      description: `Viewing details for "${task.title}".`,
-    });
+    setScreenshotsOpen(true);
   };
   
   const filteredTasks = tasksData.filter(task => {
-    // Filter by search term
     if (searchTerm && !task.title.toLowerCase().includes(searchTerm.toLowerCase())) {
       return false;
     }
     
-    // Filter by status tab
     if (activeTab === "completed" && task.status !== "completed") {
       return false;
     }
@@ -289,7 +299,6 @@ const Tasks = () => {
       return false;
     }
     
-    // Filter by priority
     if (filterOptions.priority !== "all" && task.priority !== filterOptions.priority) {
       return false;
     }
@@ -297,7 +306,6 @@ const Tasks = () => {
     return true;
   });
   
-  // Fix the sorting function for tasks
   const sortedTasks = [...filteredTasks].sort((a, b) => {
     switch (sortOption) {
       case "dueDate":
@@ -517,7 +525,7 @@ const Tasks = () => {
                   task={task} 
                   onEdit={openEditTaskDialog}
                   onDelete={openDeleteTaskDialog}
-                  onView={openViewTaskDialog}
+                  onView={openScreenshotsDialog}
                 />
               ))}
             </div>
@@ -531,7 +539,6 @@ const Tasks = () => {
         </div>
       </main>
       
-      {/* Task Dialogs */}
       <TaskDialog
         open={addTaskOpen}
         onOpenChange={setAddTaskOpen}
@@ -552,6 +559,15 @@ const Tasks = () => {
         description={`Are you sure you want to delete "${currentTask?.title}"? This action cannot be undone.`}
         onConfirm={handleDeleteTask}
       />
+
+      {currentTask && (
+        <ScreenshotsDialog
+          open={screenshotsOpen}
+          onOpenChange={setScreenshotsOpen}
+          taskName={currentTask.title}
+          screenshots={screenshotsData[currentTask.id] || []}
+        />
+      )}
     </div>
   );
 };

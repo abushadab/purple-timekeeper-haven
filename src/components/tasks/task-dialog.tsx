@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ interface TaskFormData {
   priority: "low" | "medium" | "high";
   dueDate: string;
   estimatedHours: number;
+  urlMapping?: string; // New field for URL mapping
 }
 
 interface TaskDialogProps {
@@ -55,6 +57,7 @@ export function TaskDialog({
     priority: "medium" as const,
     dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     estimatedHours: 0,
+    urlMapping: "", // Default empty URL mapping
   };
   
   const [formData, setFormData] = useState<TaskFormData>(task || defaultTask);
@@ -63,7 +66,8 @@ export function TaskDialog({
     if (task) {
       setFormData({
         ...task,
-        dueDate: formatDateForInput(task.dueDate)
+        dueDate: formatDateForInput(task.dueDate),
+        urlMapping: task.urlMapping || "" // Ensure urlMapping is included with default value if missing
       });
     } else if (!open) {
       setFormData(defaultTask);
@@ -196,6 +200,16 @@ export function TaskDialog({
                 onChange={handleChange}
               />
             </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="urlMapping">URL Mapping</Label>
+            <Input
+              id="urlMapping"
+              name="urlMapping"
+              value={formData.urlMapping}
+              onChange={handleChange}
+              placeholder="Enter URL path mapping (e.g., /dashboard/users)"
+            />
           </div>
           <DialogFooter className="pt-4">
             <Button type="button" variant="outline" onClick={handleDialogClose}>
