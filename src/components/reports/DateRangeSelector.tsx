@@ -18,16 +18,31 @@ interface DateRangeSelectorProps {
 }
 
 const DateRangeSelector = ({ dateRange, setDateRange }: DateRangeSelectorProps) => {
+  const [open, setOpen] = React.useState(false);
   const [tempRange, setTempRange] = React.useState<DateRange | undefined>(dateRange);
 
-  // Apply the selected date range
+  // Reset tempRange when the popover opens
+  React.useEffect(() => {
+    if (open) {
+      setTempRange(dateRange);
+    }
+  }, [open, dateRange]);
+
+  // Apply the selected date range and close popover
   const applyDateRange = () => {
     setDateRange(tempRange);
+    setOpen(false);
+  };
+
+  // Cancel and restore the original date range
+  const cancelSelection = () => {
+    setTempRange(dateRange);
+    setOpen(false);
   };
 
   return (
     <div className="grid gap-2">
-      <Popover>
+      <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
             id="date"
@@ -66,7 +81,7 @@ const DateRangeSelector = ({ dateRange, setDateRange }: DateRangeSelectorProps) 
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => setTempRange(dateRange)}
+                onClick={cancelSelection}
               >
                 Cancel
               </Button>
