@@ -32,8 +32,13 @@ export function DropdownActions({ actions }: DropdownActionsProps) {
           <DropdownMenuItem
             key={index}
             onClick={(e) => {
+              e.preventDefault();
               e.stopPropagation();
-              action.onClick();
+              
+              // Close the dropdown menu before executing the action
+              setTimeout(() => {
+                action.onClick();
+              }, 0);
             }}
             className={action.variant === "destructive" ? "text-red-500" : ""}
           >

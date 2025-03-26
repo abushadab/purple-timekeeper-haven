@@ -28,6 +28,23 @@ export function ConfirmDialog({
   onConfirm,
   confirmText = "Delete"
 }: ConfirmDialogProps) {
+  const handleConfirm = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Close the dialog first, then run the confirm action
+    onOpenChange(false);
+    setTimeout(() => {
+      onConfirm();
+    }, 100);
+  };
+  
+  const handleCancel = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onOpenChange(false);
+  };
+
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
@@ -36,9 +53,9 @@ export function ConfirmDialog({
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel onClick={handleCancel}>Cancel</AlertDialogCancel>
           <AlertDialogAction
-            onClick={onConfirm}
+            onClick={handleConfirm}
             className="bg-red-500 hover:bg-red-600"
           >
             {confirmText}
