@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
+import { useState } from "react";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,22 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 
-const formatDateForInput = (dateString: string): string => {
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-    return dateString;
-  }
-  
-  try {
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) {
-      return new Date().toISOString().split('T')[0];
-    }
-    return date.toISOString().split('T')[0];
-  } catch (e) {
-    return new Date().toISOString().split('T')[0];
-  }
-};
-
+// Task dialog form type
 interface TaskFormData {
   id?: number;
   title: string;
@@ -48,27 +34,16 @@ export function TaskDialog({
 }: TaskDialogProps) {
   const isEditing = !!task?.id;
   
-  const defaultTask = {
-    title: "",
-    description: "",
-    status: "not_started" as const,
-    priority: "medium" as const,
-    dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    estimatedHours: 0,
-  };
-  
-  const [formData, setFormData] = useState<TaskFormData>(task || defaultTask);
-
-  useEffect(() => {
-    if (task) {
-      setFormData({
-        ...task,
-        dueDate: formatDateForInput(task.dueDate)
-      });
-    } else if (!open) {
-      setFormData(defaultTask);
+  const [formData, setFormData] = useState<TaskFormData>(
+    task || {
+      title: "",
+      description: "",
+      status: "not_started",
+      priority: "medium",
+      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 1 week from now
+      estimatedHours: 0,
     }
-  }, [task, open]);
+  );
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -101,21 +76,11 @@ export function TaskDialog({
     });
   };
 
-  const handleDialogClose = () => {
-    onOpenChange(false);
-  };
-
   return (
-    <Dialog open={open} onOpenChange={handleDialogClose}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>{isEditing ? "Edit Task" : "Add New Task"}</DialogTitle>
-          <DialogDescription>
-            {isEditing 
-              ? "Make changes to your task here. Click save when you're done."
-              : "Fill in the details for your new task. Click create when you're done."
-            }
-          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="space-y-2">
@@ -198,7 +163,7 @@ export function TaskDialog({
             </div>
           </div>
           <DialogFooter className="pt-4">
-            <Button type="button" variant="outline" onClick={handleDialogClose}>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
             <Button type="submit" className="purple-gradient text-white border-none">

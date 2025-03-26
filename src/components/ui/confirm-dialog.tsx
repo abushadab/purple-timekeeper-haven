@@ -28,7 +28,10 @@ export function ConfirmDialog({
   onConfirm,
   confirmText = "Delete"
 }: ConfirmDialogProps) {
-  const handleConfirm = () => {
+  const handleConfirm = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     // Close the dialog first, then run the confirm action
     onOpenChange(false);
     setTimeout(() => {
@@ -36,7 +39,9 @@ export function ConfirmDialog({
     }, 100);
   };
   
-  const handleCancel = () => {
+  const handleCancel = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     onOpenChange(false);
   };
 

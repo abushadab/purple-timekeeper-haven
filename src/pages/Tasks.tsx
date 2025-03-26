@@ -34,7 +34,7 @@ const tasksData = [
     description: "Create low-fidelity wireframes for the new homepage design",
     status: "completed",
     priority: "high",
-    dueDate: "2023-10-10", // YYYY-MM-DD format
+    dueDate: "Oct 10, 2023",
     hoursLogged: 4.5,
     estimatedHours: 4,
   },
@@ -44,7 +44,7 @@ const tasksData = [
     description: "Build the responsive navigation bar according to design specs",
     status: "in_progress",
     priority: "high",
-    dueDate: "2023-10-12", // YYYY-MM-DD format
+    dueDate: "Oct 12, 2023",
     hoursLogged: 3.2,
     estimatedHours: 6,
   },
@@ -54,7 +54,7 @@ const tasksData = [
     description: "Implement the hero section with animations",
     status: "not_started",
     priority: "medium",
-    dueDate: "2023-10-14", // YYYY-MM-DD format
+    dueDate: "Oct 14, 2023",
     hoursLogged: 0,
     estimatedHours: 5,
   },
@@ -64,7 +64,7 @@ const tasksData = [
     description: "Configure image processing and optimization for better performance",
     status: "not_started",
     priority: "low",
-    dueDate: "2023-10-16", // YYYY-MM-DD format
+    dueDate: "Oct 16, 2023",
     hoursLogged: 0,
     estimatedHours: 3,
   },
@@ -74,24 +74,11 @@ const tasksData = [
     description: "Build the responsive footer with all required sections",
     status: "not_started",
     priority: "medium",
-    dueDate: "2023-10-18", // YYYY-MM-DD format
+    dueDate: "Oct 18, 2023",
     hoursLogged: 0,
     estimatedHours: 4,
   },
 ];
-
-// Format date for display (convert from YYYY-MM-DD to more readable format)
-const formatDateForDisplay = (dateString: string): string => {
-  try {
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return dateString;
-    
-    const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
-    return date.toLocaleDateString('en-US', options);
-  } catch (e) {
-    return dateString;
-  }
-};
 
 // Sample project data
 const project = {
@@ -186,7 +173,7 @@ const TaskCard = ({ task, onEdit, onDelete, onView }) => {
         <div className="mt-4 grid grid-cols-2 gap-y-3">
           <div className="flex items-center gap-1 text-sm text-muted-foreground">
             <Calendar className="w-4 h-4 text-purple-500" />
-            <span>Due: {formatDateForDisplay(task.dueDate)}</span>
+            <span>Due: {task.dueDate}</span>
           </div>
           <div className="flex items-center gap-1 text-sm text-muted-foreground">
             <Clock className="w-4 h-4 text-purple-500" />
