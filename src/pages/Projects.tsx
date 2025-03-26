@@ -1,9 +1,9 @@
+
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { 
   FolderKanban, 
@@ -11,21 +11,15 @@ import {
   Search, 
   Clock, 
   CheckSquare, 
+  MoreVertical,
   SlidersHorizontal,
-  Filter,
-  Eye,
-  Edit,
-  Trash
+  Filter
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { toast } from "@/hooks/use-toast";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { DropdownActions } from "@/components/ui/dropdown-actions";
-import { ProjectDialog } from "@/components/projects/project-dialog";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
+// Sample project data (would be fetched from an API in a real app)
 const projectsData = [
   {
     id: 1,
@@ -42,7 +36,6 @@ const projectsData = [
       { name: "Maria Garcia", initials: "MG" },
       { name: "David Kim", initials: "DK" },
     ],
-    portfolioId: 1
   },
   {
     id: 2,
@@ -58,7 +51,6 @@ const projectsData = [
       { name: "James Smith", initials: "JS" },
       { name: "Emily Brown", initials: "EB" },
     ],
-    portfolioId: 2
   },
   {
     id: 3,
@@ -75,7 +67,6 @@ const projectsData = [
       { name: "Robert Davis", initials: "RD" },
       { name: "Lisa Chen", initials: "LC" },
     ],
-    portfolioId: 3
   },
   {
     id: 4,
@@ -91,7 +82,6 @@ const projectsData = [
       { name: "Michael Johnson", initials: "MJ" },
       { name: "Jennifer Lopez", initials: "JL" },
     ],
-    portfolioId: 1
   },
   {
     id: 5,
@@ -107,38 +97,10 @@ const projectsData = [
       { name: "Andrew Wilson", initials: "AW" },
       { name: "Sophia Rodriguez", initials: "SR" },
     ],
-    portfolioId: 2
   },
 ];
 
-const portfoliosData = [
-  { id: 1, name: "Client Work" },
-  { id: 2, name: "Personal Projects" },
-  { id: 3, name: "Learning & Development" },
-  { id: 4, name: "Administrative" },
-  { id: 5, name: "Content Creation" },
-];
-
-const ProjectCard = ({ project, onViewTasks, onEdit, onDelete }) => {
-  const actions = [
-    { 
-      label: "View Tasks", 
-      onClick: () => onViewTasks(project),
-      icon: <Eye size={16} />
-    },
-    { 
-      label: "Edit", 
-      onClick: () => onEdit(project),
-      icon: <Edit size={16} />
-    },
-    { 
-      label: "Delete", 
-      onClick: () => onDelete(project),
-      variant: "destructive" as const,
-      icon: <Trash size={16} />
-    },
-  ];
-
+const ProjectCard = ({ project }) => {
   return (
     <Card className="overflow-hidden card-glass hover-scale">
       <CardContent className="p-6">
@@ -158,7 +120,9 @@ const ProjectCard = ({ project, onViewTasks, onEdit, onDelete }) => {
               </div>
               <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{project.description}</p>
             </div>
-            <DropdownActions actions={actions} />
+            <Button variant="ghost" size="icon" className="text-muted-foreground">
+              <MoreVertical size={18} />
+            </Button>
           </div>
 
           <div className="flex justify-between items-center">
@@ -176,6 +140,7 @@ const ProjectCard = ({ project, onViewTasks, onEdit, onDelete }) => {
             <div className="flex -space-x-2">
               {project.team.slice(0, 3).map((member, i) => (
                 <Avatar key={i} className="border-2 border-background h-8 w-8">
+                  <AvatarImage src={member.avatar} alt={member.name} />
                   <AvatarFallback className="text-xs bg-purple-100 text-purple-700">
                     {member.initials}
                   </AvatarFallback>
@@ -208,62 +173,16 @@ const ProjectCard = ({ project, onViewTasks, onEdit, onDelete }) => {
 };
 
 const Projects = () => {
-  const navigate = useNavigate();
-  
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("all");
   
-  const [addProjectOpen, setAddProjectOpen] = useState(false);
-  const [editProjectOpen, setEditProjectOpen] = useState(false);
-  const [deleteProjectOpen, setDeleteProjectOpen] = useState(false);
-  const [currentProject, setCurrentProject] = useState(null);
-  
-  const [sortOption, setSortOption] = useState("name");
-  const [filterOptions, setFilterOptions] = useState({
-    portfolio: "all",
-  });
-  
-  const handleAddProject = (projectData) => {
-    toast({
-      title: "Project created",
-      description: `"${projectData.name}" has been added to your projects.`,
-    });
-  };
-  
-  const handleEditProject = (projectData) => {
-    toast({
-      title: "Project updated",
-      description: `"${projectData.name}" has been updated.`,
-    });
-  };
-  
-  const handleDeleteProject = () => {
-    toast({
-      title: "Project deleted",
-      description: `"${currentProject?.name}" has been deleted.`,
-    });
-    setDeleteProjectOpen(false);
-  };
-  
-  const handleViewTasks = (project) => {
-    navigate(`/projects/${project.id}/tasks`);
-  };
-  
-  const openEditProjectDialog = (project) => {
-    setCurrentProject(project);
-    setEditProjectOpen(true);
-  };
-  
-  const openDeleteProjectDialog = (project) => {
-    setCurrentProject(project);
-    setDeleteProjectOpen(true);
-  };
-  
   const filteredProjects = projectsData.filter(project => {
+    // Filter by search term
     if (searchTerm && !project.name.toLowerCase().includes(searchTerm.toLowerCase())) {
       return false;
     }
     
+    // Filter by status tab
     if (activeTab === "active" && project.status !== "active") {
       return false;
     }
@@ -271,24 +190,7 @@ const Projects = () => {
       return false;
     }
     
-    if (filterOptions.portfolio !== "all" && project.portfolioId !== parseInt(filterOptions.portfolio)) {
-      return false;
-    }
-    
     return true;
-  });
-  
-  const sortedProjects = [...filteredProjects].sort((a, b) => {
-    switch (sortOption) {
-      case "name":
-        return a.name.localeCompare(b.name);
-      case "dueDate":
-        return String(a.dueDate).localeCompare(String(b.dueDate));
-      case "progress":
-        return b.progress - a.progress;
-      default:
-        return 0;
-    }
   });
 
   return (
@@ -304,95 +206,15 @@ const Projects = () => {
             </div>
             
             <div className="flex gap-2">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="gap-1">
-                    <Filter size={16} />
-                    <span className="hidden sm:inline">Filters</span>
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-56 p-4">
-                  <div className="space-y-2">
-                    <h4 className="font-medium">Filter Projects</h4>
-                    <div className="pt-2">
-                      <h5 className="text-sm font-medium mb-1.5">Portfolio</h5>
-                      <div className="flex flex-col gap-2">
-                        <label className="flex items-center gap-2 text-sm">
-                          <input
-                            type="radio"
-                            name="portfolio"
-                            checked={filterOptions.portfolio === "all"}
-                            onChange={() => setFilterOptions(prev => ({ ...prev, portfolio: "all" }))}
-                          />
-                          All Portfolios
-                        </label>
-                        {portfoliosData.map(portfolio => (
-                          <label key={portfolio.id} className="flex items-center gap-2 text-sm">
-                            <input
-                              type="radio"
-                              name="portfolio"
-                              checked={filterOptions.portfolio === portfolio.id.toString()}
-                              onChange={() => setFilterOptions(prev => ({ ...prev, portfolio: portfolio.id.toString() }))}
-                            />
-                            {portfolio.name}
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
-              
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="gap-1">
-                    <SlidersHorizontal size={16} />
-                    <span className="hidden sm:inline">Sort</span>
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-56 p-4">
-                  <div className="space-y-2">
-                    <h4 className="font-medium">Sort Projects</h4>
-                    <div className="pt-2">
-                      <h5 className="text-sm font-medium mb-1.5">Sort by</h5>
-                      <div className="flex flex-col gap-2">
-                        <label className="flex items-center gap-2 text-sm">
-                          <input
-                            type="radio"
-                            name="sort"
-                            checked={sortOption === "name"}
-                            onChange={() => setSortOption("name")}
-                          />
-                          Name
-                        </label>
-                        <label className="flex items-center gap-2 text-sm">
-                          <input
-                            type="radio"
-                            name="sort"
-                            checked={sortOption === "dueDate"}
-                            onChange={() => setSortOption("dueDate")}
-                          />
-                          Due Date
-                        </label>
-                        <label className="flex items-center gap-2 text-sm">
-                          <input
-                            type="radio"
-                            name="sort"
-                            checked={sortOption === "progress"}
-                            onChange={() => setSortOption("progress")}
-                          />
-                          Progress
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
-              
-              <Button 
-                className="purple-gradient text-white border-none gap-1"
-                onClick={() => setAddProjectOpen(true)}
-              >
+              <Button variant="outline" className="gap-1">
+                <Filter size={16} />
+                <span className="hidden sm:inline">Filters</span>
+              </Button>
+              <Button variant="outline" className="gap-1">
+                <SlidersHorizontal size={16} />
+                <span className="hidden sm:inline">Sort</span>
+              </Button>
+              <Button className="purple-gradient text-white border-none gap-1">
                 <Plus size={16} />
                 <span>New Project</span>
               </Button>
@@ -420,16 +242,10 @@ const Projects = () => {
             </TabsList>
           </Tabs>
           
-          {sortedProjects.length > 0 ? (
+          {filteredProjects.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {sortedProjects.map((project) => (
-                <ProjectCard 
-                  key={project.id} 
-                  project={project} 
-                  onViewTasks={() => handleViewTasks(project)}
-                  onEdit={() => openEditProjectDialog(project)}
-                  onDelete={() => openDeleteProjectDialog(project)}
-                />
+              {filteredProjects.map((project) => (
+                <ProjectCard key={project.id} project={project} />
               ))}
             </div>
           ) : (
@@ -441,29 +257,6 @@ const Projects = () => {
           )}
         </div>
       </main>
-      
-      <ProjectDialog
-        open={addProjectOpen}
-        onOpenChange={setAddProjectOpen}
-        portfolios={portfoliosData}
-        onSave={handleAddProject}
-      />
-      
-      <ProjectDialog
-        open={editProjectOpen}
-        onOpenChange={setEditProjectOpen}
-        project={currentProject}
-        portfolios={portfoliosData}
-        onSave={handleEditProject}
-      />
-      
-      <ConfirmDialog
-        open={deleteProjectOpen}
-        onOpenChange={setDeleteProjectOpen}
-        title="Delete Project"
-        description={`Are you sure you want to delete "${currentProject?.name}"? This action cannot be undone and will delete all tasks associated with this project.`}
-        onConfirm={handleDeleteProject}
-      />
     </div>
   );
 };

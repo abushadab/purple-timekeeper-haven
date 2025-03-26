@@ -9,16 +9,16 @@ import {
   Search, 
   Edit,
   Trash,
+  Calendar,
+  Clock,
   SlidersHorizontal,
   Filter,
+  MoreVertical
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { toast } from "@/hooks/use-toast";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { PortfolioDialog } from "@/components/portfolios/portfolio-dialog";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Link } from "react-router-dom";
 
 // Sample portfolio data
 const portfoliosData = [
@@ -79,7 +79,7 @@ const portfoliosData = [
   },
 ];
 
-const PortfolioCard = ({ portfolio, onEdit, onDelete }) => {
+const PortfolioCard = ({ portfolio }) => {
   return (
     <Card className="overflow-hidden card-glass hover-scale">
       <CardContent className="p-6">
@@ -103,6 +103,9 @@ const PortfolioCard = ({ portfolio, onEdit, onDelete }) => {
                 Archived
               </Badge>
             )}
+            <Button variant="ghost" size="icon" className="text-muted-foreground">
+              <MoreVertical size={18} />
+            </Button>
           </div>
         </div>
         
@@ -123,20 +126,10 @@ const PortfolioCard = ({ portfolio, onEdit, onDelete }) => {
           Updated {portfolio.lastUpdated}
         </div>
         <div className="flex gap-1">
-          <Button 
-            size="sm" 
-            variant="ghost" 
-            className="h-8 w-8 p-0"
-            onClick={() => onEdit(portfolio)}
-          >
+          <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
             <Edit className="h-4 w-4" />
           </Button>
-          <Button 
-            size="sm" 
-            variant="ghost" 
-            className="h-8 w-8 p-0 text-red-500"
-            onClick={() => onDelete(portfolio)}
-          >
+          <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-red-500">
             <Trash className="h-4 w-4" />
           </Button>
         </div>
@@ -148,51 +141,6 @@ const PortfolioCard = ({ portfolio, onEdit, onDelete }) => {
 const Portfolios = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("all");
-  
-  // State for dialogs
-  const [addPortfolioOpen, setAddPortfolioOpen] = useState(false);
-  const [editPortfolioOpen, setEditPortfolioOpen] = useState(false);
-  const [deletePortfolioOpen, setDeletePortfolioOpen] = useState(false);
-  const [currentPortfolio, setCurrentPortfolio] = useState(null);
-  
-  // State for sorting
-  const [sortOption, setSortOption] = useState("name");
-  
-  // Handlers for portfolio actions
-  const handleAddPortfolio = (portfolioData) => {
-    // In a real app, this would save to API/database
-    toast({
-      title: "Portfolio created",
-      description: `"${portfolioData.name}" has been added to your portfolios.`,
-    });
-  };
-  
-  const handleEditPortfolio = (portfolioData) => {
-    // In a real app, this would update in API/database
-    toast({
-      title: "Portfolio updated",
-      description: `"${portfolioData.name}" has been updated.`,
-    });
-  };
-  
-  const handleDeletePortfolio = () => {
-    // In a real app, this would delete from API/database
-    toast({
-      title: "Portfolio deleted",
-      description: `"${currentPortfolio?.name}" has been deleted.`,
-    });
-    setDeletePortfolioOpen(false);
-  };
-  
-  const openEditPortfolioDialog = (portfolio) => {
-    setCurrentPortfolio(portfolio);
-    setEditPortfolioOpen(true);
-  };
-  
-  const openDeletePortfolioDialog = (portfolio) => {
-    setCurrentPortfolio(portfolio);
-    setDeletePortfolioOpen(true);
-  };
   
   const filteredPortfolios = portfoliosData.filter(portfolio => {
     // Filter by search term
@@ -210,20 +158,6 @@ const Portfolios = () => {
     
     return true;
   });
-  
-  // Sort portfolios
-  const sortedPortfolios = [...filteredPortfolios].sort((a, b) => {
-    switch (sortOption) {
-      case "name":
-        return a.name.localeCompare(b.name);
-      case "projectCount":
-        return b.projectCount - a.projectCount;
-      case "totalHours":
-        return b.totalHours - a.totalHours;
-      default:
-        return 0;
-    }
-  });
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -238,90 +172,15 @@ const Portfolios = () => {
             </div>
             
             <div className="flex gap-2">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="gap-1">
-                    <Filter size={16} />
-                    <span className="hidden sm:inline">Filters</span>
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-56 p-4">
-                  <div className="space-y-2">
-                    <h4 className="font-medium">Filter Portfolios</h4>
-                    <div className="pt-2">
-                      <h5 className="text-sm font-medium mb-1.5">Project Count</h5>
-                      <div className="flex flex-col gap-2">
-                        <label className="flex items-center gap-2 text-sm">
-                          <input
-                            type="checkbox"
-                            checked={true}
-                            readOnly
-                          />
-                          All
-                        </label>
-                        <label className="flex items-center gap-2 text-sm">
-                          <input
-                            type="checkbox"
-                            disabled
-                          />
-                          No Projects
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
-              
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="gap-1">
-                    <SlidersHorizontal size={16} />
-                    <span className="hidden sm:inline">Sort</span>
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-56 p-4">
-                  <div className="space-y-2">
-                    <h4 className="font-medium">Sort Portfolios</h4>
-                    <div className="pt-2">
-                      <h5 className="text-sm font-medium mb-1.5">Sort by</h5>
-                      <div className="flex flex-col gap-2">
-                        <label className="flex items-center gap-2 text-sm">
-                          <input
-                            type="radio"
-                            name="sort"
-                            checked={sortOption === "name"}
-                            onChange={() => setSortOption("name")}
-                          />
-                          Name
-                        </label>
-                        <label className="flex items-center gap-2 text-sm">
-                          <input
-                            type="radio"
-                            name="sort"
-                            checked={sortOption === "projectCount"}
-                            onChange={() => setSortOption("projectCount")}
-                          />
-                          Project Count
-                        </label>
-                        <label className="flex items-center gap-2 text-sm">
-                          <input
-                            type="radio"
-                            name="sort"
-                            checked={sortOption === "totalHours"}
-                            onChange={() => setSortOption("totalHours")}
-                          />
-                          Total Hours
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
-              
-              <Button 
-                className="purple-gradient text-white border-none gap-1"
-                onClick={() => setAddPortfolioOpen(true)}
-              >
+              <Button variant="outline" className="gap-1">
+                <Filter size={16} />
+                <span className="hidden sm:inline">Filters</span>
+              </Button>
+              <Button variant="outline" className="gap-1">
+                <SlidersHorizontal size={16} />
+                <span className="hidden sm:inline">Sort</span>
+              </Button>
+              <Button className="purple-gradient text-white border-none gap-1">
                 <Plus size={16} />
                 <span>New Portfolio</span>
               </Button>
@@ -349,15 +208,10 @@ const Portfolios = () => {
             </TabsList>
           </Tabs>
           
-          {sortedPortfolios.length > 0 ? (
+          {filteredPortfolios.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {sortedPortfolios.map((portfolio) => (
-                <PortfolioCard 
-                  key={portfolio.id} 
-                  portfolio={portfolio} 
-                  onEdit={openEditPortfolioDialog}
-                  onDelete={openDeletePortfolioDialog}
-                />
+              {filteredPortfolios.map((portfolio) => (
+                <PortfolioCard key={portfolio.id} portfolio={portfolio} />
               ))}
             </div>
           ) : (
@@ -369,28 +223,6 @@ const Portfolios = () => {
           )}
         </div>
       </main>
-      
-      {/* Portfolio Dialogs */}
-      <PortfolioDialog
-        open={addPortfolioOpen}
-        onOpenChange={setAddPortfolioOpen}
-        onSave={handleAddPortfolio}
-      />
-      
-      <PortfolioDialog
-        open={editPortfolioOpen}
-        onOpenChange={setEditPortfolioOpen}
-        portfolio={currentPortfolio}
-        onSave={handleEditPortfolio}
-      />
-      
-      <ConfirmDialog
-        open={deletePortfolioOpen}
-        onOpenChange={setDeletePortfolioOpen}
-        title="Delete Portfolio"
-        description={`Are you sure you want to delete "${currentPortfolio?.name}"? This action cannot be undone and will delete all projects associated with this portfolio.`}
-        onConfirm={handleDeletePortfolio}
-      />
     </div>
   );
 };
