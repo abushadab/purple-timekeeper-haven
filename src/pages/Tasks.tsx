@@ -1,27 +1,30 @@
-
 import React, { useState } from "react";
-import { useParams, useLocation } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { 
   CheckSquare, 
   Plus, 
   Search, 
-  MoreVertical,
   Calendar,
   Clock,
   ArrowLeft,
   SlidersHorizontal,
   Filter,
-  AlertCircle
+  Eye,
+  Edit,
+  Trash
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Link } from "react-router-dom";
+import { toast } from "@/hooks/use-toast";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { TaskDialog } from "@/components/tasks/task-dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { DropdownActions } from "@/components/ui/dropdown-actions";
 
 // Sample task data for a specific project
 const tasksData = [
@@ -31,7 +34,7 @@ const tasksData = [
     description: "Create low-fidelity wireframes for the new homepage design",
     status: "completed",
     priority: "high",
-    dueDate: "Oct 10, 2023",
+    dueDate: "2023-10-10", // YYYY-MM-DD format
     hoursLogged: 4.5,
     estimatedHours: 4,
   },
@@ -41,7 +44,7 @@ const tasksData = [
     description: "Build the responsive navigation bar according to design specs",
     status: "in_progress",
     priority: "high",
-    dueDate: "Oct 12, 2023",
+    dueDate: "2023-10-12", // YYYY-MM-DD format
     hoursLogged: 3.2,
     estimatedHours: 6,
   },
@@ -51,7 +54,7 @@ const tasksData = [
     description: "Implement the hero section with animations",
     status: "not_started",
     priority: "medium",
-    dueDate: "Oct 14, 2023",
+    dueDate: "2023-10-14", // YYYY-MM-DD format
     hoursLogged: 0,
     estimatedHours: 5,
   },
@@ -61,7 +64,7 @@ const tasksData = [
     description: "Configure image processing and optimization for better performance",
     status: "not_started",
     priority: "low",
-    dueDate: "Oct 16, 2023",
+    dueDate: "2023-10-16", // YYYY-MM-DD format
     hoursLogged: 0,
     estimatedHours: 3,
   },
@@ -71,11 +74,24 @@ const tasksData = [
     description: "Build the responsive footer with all required sections",
     status: "not_started",
     priority: "medium",
-    dueDate: "Oct 18, 2023",
+    dueDate: "2023-10-18", // YYYY-MM-DD format
     hoursLogged: 0,
     estimatedHours: 4,
   },
 ];
+
+// Format date for display (convert from YYYY-MM-DD to more readable format)
+const formatDateForDisplay = (dateString: string): string => {
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+    
+    const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
+    return date.toLocaleDateString('en-US', options);
+  } catch (e) {
+    return dateString;
+  }
+};
 
 // Sample project data
 const project = {
@@ -88,10 +104,11 @@ const project = {
   tasksCompleted: 1,
   tasksTotal: 5,
   dueDate: "Oct 20, 2023",
-  portfolio: "Client Work"
+  portfolio: "Client Work",
+  portfolioId: 1
 };
 
-const TaskCard = ({ task }) => {
+const TaskCard = ({ task, onEdit, onDelete, onView }) => {
   const getStatusBadgeClasses = (status) => {
     switch (status) {
       case "completed":
@@ -128,6 +145,25 @@ const TaskCard = ({ task }) => {
     }
   };
 
+  const actions = [
+    { 
+      label: "View Details", 
+      onClick: () => onView(task),
+      icon: <Eye size={16} />
+    },
+    { 
+      label: "Edit", 
+      onClick: () => onEdit(task),
+      icon: <Edit size={16} />
+    },
+    { 
+      label: "Delete", 
+      onClick: () => onDelete(task),
+      variant: "destructive" as const,
+      icon: <Trash size={16} />
+    },
+  ];
+
   return (
     <Card className="overflow-hidden card-glass hover-scale">
       <CardContent className="p-6">
@@ -144,15 +180,13 @@ const TaskCard = ({ task }) => {
             </div>
             <p className="text-sm text-muted-foreground mt-1">{task.description}</p>
           </div>
-          <Button variant="ghost" size="icon" className="text-muted-foreground">
-            <MoreVertical size={18} />
-          </Button>
+          <DropdownActions actions={actions} />
         </div>
         
         <div className="mt-4 grid grid-cols-2 gap-y-3">
           <div className="flex items-center gap-1 text-sm text-muted-foreground">
             <Calendar className="w-4 h-4 text-purple-500" />
-            <span>Due: {task.dueDate}</span>
+            <span>Due: {formatDateForDisplay(task.dueDate)}</span>
           </div>
           <div className="flex items-center gap-1 text-sm text-muted-foreground">
             <Clock className="w-4 h-4 text-purple-500" />
@@ -179,6 +213,65 @@ const Tasks = () => {
   const [activeTab, setActiveTab] = useState("all");
   const { projectId } = useParams();
   
+  // State for dialogs
+  const [addTaskOpen, setAddTaskOpen] = useState(false);
+  const [editTaskOpen, setEditTaskOpen] = useState(false);
+  const [deleteTaskOpen, setDeleteTaskOpen] = useState(false);
+  const [viewTaskOpen, setViewTaskOpen] = useState(false);
+  const [currentTask, setCurrentTask] = useState(null);
+  
+  // State for sorting and filtering
+  const [sortOption, setSortOption] = useState("dueDate");
+  const [filterOptions, setFilterOptions] = useState({
+    priority: "all",
+  });
+  
+  // Handlers for task actions
+  const handleAddTask = (taskData) => {
+    // In a real app, this would save to API/database
+    toast({
+      title: "Task created",
+      description: `"${taskData.title}" has been added to your tasks.`,
+    });
+  };
+  
+  const handleEditTask = (taskData) => {
+    // In a real app, this would update in API/database
+    toast({
+      title: "Task updated",
+      description: `"${taskData.title}" has been updated.`,
+    });
+  };
+  
+  const handleDeleteTask = () => {
+    // In a real app, this would delete from API/database
+    toast({
+      title: "Task deleted",
+      description: `"${currentTask?.title}" has been deleted.`,
+    });
+    setDeleteTaskOpen(false);
+  };
+  
+  const openEditTaskDialog = (task) => {
+    setCurrentTask(task);
+    setEditTaskOpen(true);
+  };
+  
+  const openDeleteTaskDialog = (task) => {
+    setCurrentTask(task);
+    setDeleteTaskOpen(true);
+  };
+  
+  const openViewTaskDialog = (task) => {
+    setCurrentTask(task);
+    setViewTaskOpen(true);
+    // In a real app, this would navigate to a task details page
+    toast({
+      title: "View Task Details",
+      description: `Viewing details for "${task.title}".`,
+    });
+  };
+  
   const filteredTasks = tasksData.filter(task => {
     // Filter by search term
     if (searchTerm && !task.title.toLowerCase().includes(searchTerm.toLowerCase())) {
@@ -196,7 +289,27 @@ const Tasks = () => {
       return false;
     }
     
+    // Filter by priority
+    if (filterOptions.priority !== "all" && task.priority !== filterOptions.priority) {
+      return false;
+    }
+    
     return true;
+  });
+  
+  // Fix the sorting function for tasks
+  const sortedTasks = [...filteredTasks].sort((a, b) => {
+    switch (sortOption) {
+      case "dueDate":
+        return String(a.dueDate).localeCompare(String(b.dueDate));
+      case "priority":
+        const priorityOrder = { high: 0, medium: 1, low: 2 };
+        return priorityOrder[a.priority] - priorityOrder[b.priority];
+      case "title":
+        return a.title.localeCompare(b.title);
+      default:
+        return 0;
+    }
   });
 
   return (
@@ -212,8 +325,7 @@ const Tasks = () => {
               </Button>
             </Link>
             <div>
-              <p className="text-sm text-muted-foreground">Project</p>
-              <h1 className="text-2xl font-bold tracking-tight">{project.name}</h1>
+              <h1 className="text-2xl font-bold tracking-tight">Project: {project.name}</h1>
             </div>
           </div>
           
@@ -225,10 +337,6 @@ const Tasks = () => {
                   <p className="text-muted-foreground text-sm">{project.description}</p>
                   
                   <div className="mt-4 flex flex-wrap gap-4">
-                    <div>
-                      <p className="text-xs text-muted-foreground">Portfolio</p>
-                      <p className="font-medium">{project.portfolio}</p>
-                    </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Due Date</p>
                       <p className="font-medium">{project.dueDate}</p>
@@ -268,15 +376,111 @@ const Tasks = () => {
             </div>
             
             <div className="flex gap-2">
-              <Button variant="outline" className="gap-1">
-                <Filter size={16} />
-                <span className="hidden sm:inline">Filters</span>
-              </Button>
-              <Button variant="outline" className="gap-1">
-                <SlidersHorizontal size={16} />
-                <span className="hidden sm:inline">Sort</span>
-              </Button>
-              <Button className="purple-gradient text-white border-none gap-1">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="gap-1">
+                    <Filter size={16} />
+                    <span className="hidden sm:inline">Filters</span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-56 p-4">
+                  <div className="space-y-2">
+                    <h4 className="font-medium">Filter Tasks</h4>
+                    <div className="pt-2">
+                      <h5 className="text-sm font-medium mb-1.5">Priority</h5>
+                      <div className="flex flex-col gap-2">
+                        <label className="flex items-center gap-2 text-sm">
+                          <input
+                            type="radio"
+                            name="priority"
+                            checked={filterOptions.priority === "all"}
+                            onChange={() => setFilterOptions(prev => ({ ...prev, priority: "all" }))}
+                          />
+                          All
+                        </label>
+                        <label className="flex items-center gap-2 text-sm">
+                          <input
+                            type="radio"
+                            name="priority"
+                            checked={filterOptions.priority === "high"}
+                            onChange={() => setFilterOptions(prev => ({ ...prev, priority: "high" }))}
+                          />
+                          High
+                        </label>
+                        <label className="flex items-center gap-2 text-sm">
+                          <input
+                            type="radio"
+                            name="priority"
+                            checked={filterOptions.priority === "medium"}
+                            onChange={() => setFilterOptions(prev => ({ ...prev, priority: "medium" }))}
+                          />
+                          Medium
+                        </label>
+                        <label className="flex items-center gap-2 text-sm">
+                          <input
+                            type="radio"
+                            name="priority"
+                            checked={filterOptions.priority === "low"}
+                            onChange={() => setFilterOptions(prev => ({ ...prev, priority: "low" }))}
+                          />
+                          Low
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+              
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="gap-1">
+                    <SlidersHorizontal size={16} />
+                    <span className="hidden sm:inline">Sort</span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-56 p-4">
+                  <div className="space-y-2">
+                    <h4 className="font-medium">Sort Tasks</h4>
+                    <div className="pt-2">
+                      <h5 className="text-sm font-medium mb-1.5">Sort by</h5>
+                      <div className="flex flex-col gap-2">
+                        <label className="flex items-center gap-2 text-sm">
+                          <input
+                            type="radio"
+                            name="sort"
+                            checked={sortOption === "dueDate"}
+                            onChange={() => setSortOption("dueDate")}
+                          />
+                          Due Date
+                        </label>
+                        <label className="flex items-center gap-2 text-sm">
+                          <input
+                            type="radio"
+                            name="sort"
+                            checked={sortOption === "priority"}
+                            onChange={() => setSortOption("priority")}
+                          />
+                          Priority
+                        </label>
+                        <label className="flex items-center gap-2 text-sm">
+                          <input
+                            type="radio"
+                            name="sort"
+                            checked={sortOption === "title"}
+                            onChange={() => setSortOption("title")}
+                          />
+                          Title
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+              
+              <Button 
+                className="purple-gradient text-white border-none gap-1"
+                onClick={() => setAddTaskOpen(true)}
+              >
                 <Plus size={16} />
                 <span>Add Task</span>
               </Button>
@@ -305,10 +509,16 @@ const Tasks = () => {
             </TabsList>
           </Tabs>
           
-          {filteredTasks.length > 0 ? (
+          {sortedTasks.length > 0 ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {filteredTasks.map((task) => (
-                <TaskCard key={task.id} task={task} />
+              {sortedTasks.map((task) => (
+                <TaskCard 
+                  key={task.id} 
+                  task={task} 
+                  onEdit={openEditTaskDialog}
+                  onDelete={openDeleteTaskDialog}
+                  onView={openViewTaskDialog}
+                />
               ))}
             </div>
           ) : (
@@ -320,6 +530,28 @@ const Tasks = () => {
           )}
         </div>
       </main>
+      
+      {/* Task Dialogs */}
+      <TaskDialog
+        open={addTaskOpen}
+        onOpenChange={setAddTaskOpen}
+        onSave={handleAddTask}
+      />
+      
+      <TaskDialog
+        open={editTaskOpen}
+        onOpenChange={setEditTaskOpen}
+        task={currentTask}
+        onSave={handleEditTask}
+      />
+      
+      <ConfirmDialog
+        open={deleteTaskOpen}
+        onOpenChange={setDeleteTaskOpen}
+        title="Delete Task"
+        description={`Are you sure you want to delete "${currentTask?.title}"? This action cannot be undone.`}
+        onConfirm={handleDeleteTask}
+      />
     </div>
   );
 };
