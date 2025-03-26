@@ -8,8 +8,10 @@ import TeamMember from "@/components/dashboard/TeamMember";
 import { 
   BarChart3, 
   Clock, 
-  DollarSign, 
-  Users,
+  Folder,
+  FolderKanban,
+  CheckSquare,
+  Calendar,
   Play,
   Pause,
   CheckCircle,
@@ -40,27 +42,27 @@ const Dashboard = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <StatCard
+              title="Portfolios"
+              value="8"
+              icon={Folder}
+              trend={{ value: 2, isPositive: true }}
+            />
+            <StatCard
+              title="Projects"
+              value="24"
+              icon={FolderKanban}
+              trend={{ value: 5, isPositive: true }}
+            />
+            <StatCard
               title="Total Hours"
               value="187.5"
               icon={Clock}
               trend={{ value: 12, isPositive: true }}
             />
             <StatCard
-              title="Team Members"
-              value="16"
-              icon={Users}
-              trend={{ value: 2, isPositive: true }}
-            />
-            <StatCard
-              title="Projects"
-              value="24"
-              icon={BarChart3}
-              trend={{ value: 5, isPositive: true }}
-            />
-            <StatCard
-              title="Budget Used"
-              value="$8,521"
-              icon={DollarSign}
+              title="Tasks Due This Week"
+              value="12"
+              icon={Calendar}
               trend={{ value: 4, isPositive: false }}
             />
           </div>
@@ -127,45 +129,45 @@ const Dashboard = () => {
               
               <Card className="overflow-hidden card-glass">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-lg font-semibold">Team Overview</CardTitle>
+                  <CardTitle className="text-lg font-semibold">Weekly Summary</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <TeamMember
-                      name="Alex Johnson"
-                      initials="AJ"
-                      role="UI/UX Designer"
-                      hoursThisWeek={32.5}
-                      utilization={85}
-                      project="Website Redesign"
-                    />
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Hours Target</p>
+                        <p className="text-lg font-semibold">40.0 hrs</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Hours Logged</p>
+                        <p className="text-lg font-semibold">32.5 hrs</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Completion</p>
+                        <p className="text-lg font-semibold text-purple-600">81%</p>
+                      </div>
+                    </div>
                     
-                    <TeamMember
-                      name="Maria Garcia"
-                      initials="MG"
-                      role="Frontend Developer"
-                      hoursThisWeek={36}
-                      utilization={92}
-                      project="Website Redesign"
-                    />
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Progress</span>
+                        <span className="font-medium">32.5/40.0 hrs</span>
+                      </div>
+                      <div className="h-2 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-purple-600 rounded-full"
+                          style={{ width: '81%' }}
+                        ></div>
+                      </div>
+                    </div>
                     
-                    <TeamMember
-                      name="David Kim"
-                      initials="DK"
-                      role="Project Manager"
-                      hoursThisWeek={28}
-                      utilization={70}
-                      project="Mobile App Development"
-                    />
-                    
-                    <TeamMember
-                      name="Sara Wilson"
-                      initials="SW"
-                      role="Backend Developer"
-                      hoursThisWeek={34}
-                      utilization={88}
-                      project="Website Redesign"
-                    />
+                    <div className="pt-4">
+                      <p className="font-medium mb-2">Most Active Project</p>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-purple-600"></div>
+                        <p className="text-muted-foreground">Website Redesign (14.5 hrs)</p>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -181,7 +183,7 @@ const Dashboard = () => {
                     <TimelineItem
                       icon={Play}
                       iconClassName="bg-green-100"
-                      title="Maria started tracking"
+                      title="Started tracking"
                       description="Website Redesign - Frontend Development"
                       time="2 mins ago"
                     />
@@ -189,7 +191,7 @@ const Dashboard = () => {
                     <TimelineItem
                       icon={Pause}
                       iconClassName="bg-orange-100"
-                      title="Alex paused tracking"
+                      title="Paused tracking"
                       description="Website Redesign - UI Components"
                       time="15 mins ago"
                     />
@@ -197,7 +199,7 @@ const Dashboard = () => {
                     <TimelineItem
                       icon={CheckCircle}
                       iconClassName="bg-blue-100"
-                      title="David completed task"
+                      title="Completed task"
                       description="Project Planning and Requirements Gathering"
                       time="1 hour ago"
                     />
@@ -205,7 +207,7 @@ const Dashboard = () => {
                     <TimelineItem
                       icon={FileEdit}
                       iconClassName="bg-purple-100"
-                      title="Sara updated time log"
+                      title="Updated time log"
                       description="Added 2h 30m to API Development"
                       time="2 hours ago"
                       isLast={true}
