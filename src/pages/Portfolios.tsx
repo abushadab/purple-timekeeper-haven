@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import Header from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import {
   Edit,
   Trash,
   SlidersHorizontal,
+  Filter,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +20,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { PortfolioDialog } from "@/components/portfolios/portfolio-dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
+// Sample portfolio data
 const portfoliosData = [
   {
     id: 1,
@@ -146,14 +149,18 @@ const Portfolios = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("all");
   
+  // State for dialogs
   const [addPortfolioOpen, setAddPortfolioOpen] = useState(false);
   const [editPortfolioOpen, setEditPortfolioOpen] = useState(false);
   const [deletePortfolioOpen, setDeletePortfolioOpen] = useState(false);
   const [currentPortfolio, setCurrentPortfolio] = useState(null);
   
+  // State for sorting
   const [sortOption, setSortOption] = useState("name");
   
+  // Handlers for portfolio actions
   const handleAddPortfolio = (portfolioData) => {
+    // In a real app, this would save to API/database
     toast({
       title: "Portfolio created",
       description: `"${portfolioData.name}" has been added to your portfolios.`,
@@ -161,6 +168,7 @@ const Portfolios = () => {
   };
   
   const handleEditPortfolio = (portfolioData) => {
+    // In a real app, this would update in API/database
     toast({
       title: "Portfolio updated",
       description: `"${portfolioData.name}" has been updated.`,
@@ -168,6 +176,7 @@ const Portfolios = () => {
   };
   
   const handleDeletePortfolio = () => {
+    // In a real app, this would delete from API/database
     toast({
       title: "Portfolio deleted",
       description: `"${currentPortfolio?.name}" has been deleted.`,
@@ -186,10 +195,12 @@ const Portfolios = () => {
   };
   
   const filteredPortfolios = portfoliosData.filter(portfolio => {
+    // Filter by search term
     if (searchTerm && !portfolio.name.toLowerCase().includes(searchTerm.toLowerCase())) {
       return false;
     }
     
+    // Filter by status tab
     if (activeTab === "active" && portfolio.archived) {
       return false;
     }
@@ -200,6 +211,7 @@ const Portfolios = () => {
     return true;
   });
   
+  // Sort portfolios
   const sortedPortfolios = [...filteredPortfolios].sort((a, b) => {
     switch (sortOption) {
       case "name":
@@ -226,6 +238,40 @@ const Portfolios = () => {
             </div>
             
             <div className="flex gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="gap-1">
+                    <Filter size={16} />
+                    <span className="hidden sm:inline">Filters</span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-56 p-4">
+                  <div className="space-y-2">
+                    <h4 className="font-medium">Filter Portfolios</h4>
+                    <div className="pt-2">
+                      <h5 className="text-sm font-medium mb-1.5">Project Count</h5>
+                      <div className="flex flex-col gap-2">
+                        <label className="flex items-center gap-2 text-sm">
+                          <input
+                            type="checkbox"
+                            checked={true}
+                            readOnly
+                          />
+                          All
+                        </label>
+                        <label className="flex items-center gap-2 text-sm">
+                          <input
+                            type="checkbox"
+                            disabled
+                          />
+                          No Projects
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+              
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="gap-1">
@@ -324,6 +370,7 @@ const Portfolios = () => {
         </div>
       </main>
       
+      {/* Portfolio Dialogs */}
       <PortfolioDialog
         open={addPortfolioOpen}
         onOpenChange={setAddPortfolioOpen}

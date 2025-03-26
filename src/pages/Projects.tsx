@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { 
   FolderKanban, 
@@ -25,6 +26,7 @@ import { DropdownActions } from "@/components/ui/dropdown-actions";
 import { ProjectDialog } from "@/components/projects/project-dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
+// Sample project data (would be fetched from an API in a real app)
 const projectsData = [
   {
     id: 1,
@@ -36,6 +38,11 @@ const projectsData = [
     tasksCompleted: 9,
     dueDate: "Oct 15",
     status: "active",
+    team: [
+      { name: "Alex Johnson", initials: "AJ" },
+      { name: "Maria Garcia", initials: "MG" },
+      { name: "David Kim", initials: "DK" },
+    ],
     portfolioId: 1
   },
   {
@@ -48,6 +55,10 @@ const projectsData = [
     tasksCompleted: 10,
     dueDate: "Nov 30",
     status: "active",
+    team: [
+      { name: "James Smith", initials: "JS" },
+      { name: "Emily Brown", initials: "EB" },
+    ],
     portfolioId: 2
   },
   {
@@ -60,6 +71,11 @@ const projectsData = [
     tasksCompleted: 5,
     dueDate: "Dec 10",
     status: "active",
+    team: [
+      { name: "Sara Wilson", initials: "SW" },
+      { name: "Robert Davis", initials: "RD" },
+      { name: "Lisa Chen", initials: "LC" },
+    ],
     portfolioId: 3
   },
   {
@@ -72,6 +88,10 @@ const projectsData = [
     tasksCompleted: 15,
     dueDate: "Sep 30",
     status: "completed",
+    team: [
+      { name: "Michael Johnson", initials: "MJ" },
+      { name: "Jennifer Lopez", initials: "JL" },
+    ],
     portfolioId: 1
   },
   {
@@ -84,10 +104,15 @@ const projectsData = [
     tasksCompleted: 6,
     dueDate: "Oct 25",
     status: "active",
+    team: [
+      { name: "Andrew Wilson", initials: "AW" },
+      { name: "Sophia Rodriguez", initials: "SR" },
+    ],
     portfolioId: 2
   },
 ];
 
+// Sample portfolios data for the project dialog
 const portfoliosData = [
   { id: 1, name: "Client Work" },
   { id: 2, name: "Personal Projects" },
@@ -111,7 +136,7 @@ const ProjectCard = ({ project, onViewTasks, onEdit, onDelete }) => {
     { 
       label: "Delete", 
       onClick: () => onDelete(project),
-      variant: "destructive" as const,
+      variant: "destructive",
       icon: <Trash size={16} />
     },
   ];
@@ -148,6 +173,24 @@ const ProjectCard = ({ project, onViewTasks, onEdit, onDelete }) => {
           </div>
           
           <Progress value={project.progress} className="h-1.5" />
+          
+          <div className="flex items-center justify-between pt-2">
+            <div className="flex -space-x-2">
+              {project.team.slice(0, 3).map((member, i) => (
+                <Avatar key={i} className="border-2 border-background h-8 w-8">
+                  <AvatarFallback className="text-xs bg-purple-100 text-purple-700">
+                    {member.initials}
+                  </AvatarFallback>
+                </Avatar>
+              ))}
+              
+              {project.team.length > 3 && (
+                <div className="flex items-center justify-center h-8 w-8 rounded-full border-2 border-background bg-muted text-xs font-medium">
+                  +{project.team.length - 3}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </CardContent>
       
@@ -172,17 +215,21 @@ const Projects = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("all");
   
+  // State for dialogs
   const [addProjectOpen, setAddProjectOpen] = useState(false);
   const [editProjectOpen, setEditProjectOpen] = useState(false);
   const [deleteProjectOpen, setDeleteProjectOpen] = useState(false);
   const [currentProject, setCurrentProject] = useState(null);
   
+  // State for sorting and filtering
   const [sortOption, setSortOption] = useState("name");
   const [filterOptions, setFilterOptions] = useState({
     portfolio: "all",
   });
   
+  // Handlers for project actions
   const handleAddProject = (projectData) => {
+    // In a real app, this would save to API/database
     toast({
       title: "Project created",
       description: `"${projectData.name}" has been added to your projects.`,
@@ -190,6 +237,7 @@ const Projects = () => {
   };
   
   const handleEditProject = (projectData) => {
+    // In a real app, this would update in API/database
     toast({
       title: "Project updated",
       description: `"${projectData.name}" has been updated.`,
@@ -197,6 +245,7 @@ const Projects = () => {
   };
   
   const handleDeleteProject = () => {
+    // In a real app, this would delete from API/database
     toast({
       title: "Project deleted",
       description: `"${currentProject?.name}" has been deleted.`,
@@ -219,10 +268,12 @@ const Projects = () => {
   };
   
   const filteredProjects = projectsData.filter(project => {
+    // Filter by search term
     if (searchTerm && !project.name.toLowerCase().includes(searchTerm.toLowerCase())) {
       return false;
     }
     
+    // Filter by status tab
     if (activeTab === "active" && project.status !== "active") {
       return false;
     }
@@ -230,6 +281,7 @@ const Projects = () => {
       return false;
     }
     
+    // Filter by portfolio
     if (filterOptions.portfolio !== "all" && project.portfolioId !== parseInt(filterOptions.portfolio)) {
       return false;
     }
@@ -237,12 +289,13 @@ const Projects = () => {
     return true;
   });
   
+  // Sort projects
   const sortedProjects = [...filteredProjects].sort((a, b) => {
     switch (sortOption) {
       case "name":
         return a.name.localeCompare(b.name);
       case "dueDate":
-        return String(a.dueDate).localeCompare(String(b.dueDate));
+        return new Date(a.dueDate) - new Date(b.dueDate);
       case "progress":
         return b.progress - a.progress;
       default:
@@ -401,6 +454,7 @@ const Projects = () => {
         </div>
       </main>
       
+      {/* Project Dialogs */}
       <ProjectDialog
         open={addProjectOpen}
         onOpenChange={setAddProjectOpen}

@@ -1,5 +1,4 @@
 
-import React from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,7 +16,6 @@ interface ConfirmDialogProps {
   title: string;
   description: string;
   onConfirm: () => void;
-  confirmText?: string;
 }
 
 export function ConfirmDialog({
@@ -26,25 +24,7 @@ export function ConfirmDialog({
   title,
   description,
   onConfirm,
-  confirmText = "Delete"
 }: ConfirmDialogProps) {
-  const handleConfirm = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    // Close the dialog first, then run the confirm action
-    onOpenChange(false);
-    setTimeout(() => {
-      onConfirm();
-    }, 100);
-  };
-  
-  const handleCancel = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onOpenChange(false);
-  };
-
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
@@ -53,12 +33,12 @@ export function ConfirmDialog({
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={handleCancel}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction
-            onClick={handleConfirm}
+            onClick={onConfirm}
             className="bg-red-500 hover:bg-red-600"
           >
-            {confirmText}
+            Delete
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
