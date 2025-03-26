@@ -1,6 +1,6 @@
 
 import * as React from "react";
-import { Download, FileSpreadsheet, FilePdf, FileText } from "lucide-react";
+import { Download, FileSpreadsheet, FileText, FileIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -40,7 +40,7 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({ onExport }) => {
           <span>CSV (.csv)</span>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => handleExport("pdf")} className="cursor-pointer">
-          <FilePdf className="mr-2 h-4 w-4" />
+          <FileIcon className="mr-2 h-4 w-4" />
           <span>PDF (.pdf)</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
