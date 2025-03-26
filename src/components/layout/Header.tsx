@@ -63,10 +63,11 @@ const Header = () => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
+    } else if (path !== '/login') {
+      navigate('/login');
     }
-  }, []);
+  }, [path, navigate]);
 
-  // Modified handleLogout to just close the dialog without redirecting
   const handleLogout = () => {
     // Clear user data from localStorage
     localStorage.removeItem('user');
@@ -77,8 +78,13 @@ const Header = () => {
     });
     
     setLogoutDialogOpen(false);
-    // Removed the navigate('/login') line to prevent redirection
+    navigate('/login');
   };
+
+  // If we're on the login page, don't show the header
+  if (path === '/login') {
+    return null;
+  }
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
