@@ -1,5 +1,6 @@
 
 import React, { useState } from "react";
+import { DateRange } from "react-day-picker";
 import Header from "@/components/layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart3, Calendar, Download, PieChart, Filter } from "lucide-react";
@@ -7,6 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RPieChart, Pie, Cell, Legend, LineChart, Line } from 'recharts';
+import DateRangeSelector from "@/components/reports/DateRangeSelector";
+import FilterSelector, { FilterOption } from "@/components/reports/FilterSelector";
+import ExportOptions from "@/components/reports/ExportOptions";
+import { toast } from "sonner";
 
 // Sample data for charts
 const timeData = [
@@ -85,6 +90,63 @@ const productivityData = [
 const Reports = () => {
   const [period, setPeriod] = useState("week");
   const [reportType, setReportType] = useState("time");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: new Date(new Date().setDate(new Date().getDate() - 7)),
+    to: new Date(),
+  });
+  
+  // Initial filter options
+  const [projectFilters, setProjectFilters] = useState<FilterOption[]>([
+    { id: "website-redesign", label: "Website Redesign", checked: false },
+    { id: "mobile-app", label: "Mobile App Development", checked: false },
+    { id: "ecommerce", label: "E-commerce Integration", checked: false },
+    { id: "marketing", label: "Marketing Campaign", checked: false },
+    { id: "analytics", label: "Data Analytics Dashboard", checked: false },
+  ]);
+  
+  const [statusFilters, setStatusFilters] = useState<FilterOption[]>([
+    { id: "completed", label: "Completed", checked: false },
+    { id: "in-progress", label: "In Progress", checked: false },
+    { id: "not-started", label: "Not Started", checked: false },
+  ]);
+  
+  const [typeFilters, setTypeFilters] = useState<FilterOption[]>([
+    { id: "development", label: "Development", checked: false },
+    { id: "design", label: "Design", checked: false },
+    { id: "content", label: "Content Creation", checked: false },
+    { id: "research", label: "Research", checked: false },
+  ]);
+  
+  const handleFilterChange = (category: string, id: string, checked: boolean) => {
+    switch (category) {
+      case "projects":
+        setProjectFilters(
+          projectFilters.map((filter) =>
+            filter.id === id ? { ...filter, checked } : filter
+          )
+        );
+        break;
+      case "status":
+        setStatusFilters(
+          statusFilters.map((filter) =>
+            filter.id === id ? { ...filter, checked } : filter
+          )
+        );
+        break;
+      case "type":
+        setTypeFilters(
+          typeFilters.map((filter) =>
+            filter.id === id ? { ...filter, checked } : filter
+          )
+        );
+        break;
+    }
+  };
+  
+  const handleExport = (format: string) => {
+    console.log(`Exporting report as ${format}`);
+    // In a real application, this would trigger the export functionality
+  };
   
   return (
     <div className="flex min-h-screen flex-col">
@@ -98,19 +160,15 @@ const Reports = () => {
               <h1 className="text-3xl font-bold tracking-tight">Reports</h1>
             </div>
             
-            <div className="flex gap-2">
-              <Button variant="outline" className="gap-1">
-                <Calendar size={16} />
-                <span>Date Range</span>
-              </Button>
-              <Button variant="outline" className="gap-1">
-                <Filter size={16} />
-                <span>Filters</span>
-              </Button>
-              <Button className="purple-gradient text-white border-none gap-1">
-                <Download size={16} />
-                <span>Export</span>
-              </Button>
+            <div className="flex flex-wrap gap-2">
+              <DateRangeSelector dateRange={dateRange} setDateRange={setDateRange} />
+              <FilterSelector 
+                projectFilters={projectFilters}
+                statusFilters={statusFilters}
+                typeFilters={typeFilters}
+                onFilterChange={handleFilterChange}
+              />
+              <ExportOptions onExport={handleExport} />
             </div>
           </div>
           
