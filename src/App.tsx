@@ -14,24 +14,26 @@ import EditProfile from "./pages/EditProfile";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/portfolios" element={<Portfolios />} />
-          <Route path="/projects" element={<Projects />} />
-          <Route path="/projects/:projectId/tasks" element={<Tasks />} />
-          <Route path="/reports" element={<Reports />} />
-          <Route path="/edit-profile" element={<EditProfile />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider delayDuration={0}>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/portfolios" element={<Portfolios />} />
+            <Route path="/projects" element={<Projects />} />
+            <Route path="/projects/:projectId/tasks" element={<Tasks />} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/edit-profile" element={<EditProfile />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
