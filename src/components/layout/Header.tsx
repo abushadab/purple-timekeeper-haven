@@ -6,12 +6,10 @@ import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard,
   FolderKanban,
-  Users,
   BarChart3,
   Clock,
   Settings,
   Folder,
-  CheckSquare,
   BellRing,
   Moon,
   Sun
@@ -64,12 +62,6 @@ const Header = () => {
             icon={FolderKanban}
             label="Projects"
             active={path === "/projects" || path.includes("/projects/")}
-          />
-          <HeaderLink
-            href="/team"
-            icon={Users}
-            label="Team"
-            active={path === "/team"}
           />
           <HeaderLink
             href="/reports"
