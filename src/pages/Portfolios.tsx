@@ -115,7 +115,7 @@ const PortfolioCard = ({ portfolio, onEdit, onDelete }) => {
         </div>
       </CardContent>
       
-      <CardFooter className="p-6 pt-4 border-t border-border/50 flex justify-between">
+      <CardFooter className="p-6 pt-0 border-t border-border/50 flex justify-between">
         <div className="text-xs text-muted-foreground">
           Updated {portfolio.lastUpdated}
         </div>
