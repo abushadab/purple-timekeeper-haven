@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -8,7 +7,22 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 
-// Task dialog form type
+const formatDateForInput = (dateString: string): string => {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    return dateString;
+  }
+  
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      return new Date().toISOString().split('T')[0];
+    }
+    return date.toISOString().split('T')[0];
+  } catch (e) {
+    return new Date().toISOString().split('T')[0];
+  }
+};
+
 interface TaskFormData {
   id?: number;
   title: string;
@@ -34,31 +48,25 @@ export function TaskDialog({
 }: TaskDialogProps) {
   const isEditing = !!task?.id;
   
-  const [formData, setFormData] = useState<TaskFormData>(
-    task || {
-      title: "",
-      description: "",
-      status: "not_started",
-      priority: "medium",
-      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 1 week from now
-      estimatedHours: 0,
-    }
-  );
+  const defaultTask = {
+    title: "",
+    description: "",
+    status: "not_started" as const,
+    priority: "medium" as const,
+    dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    estimatedHours: 0,
+  };
+  
+  const [formData, setFormData] = useState<TaskFormData>(task || defaultTask);
 
-  // Reset form data when task changes
   useEffect(() => {
     if (task) {
-      setFormData(task);
-    } else if (!open) {
-      // Reset form when dialog closes and there's no task (for new task creation)
       setFormData({
-        title: "",
-        description: "",
-        status: "not_started",
-        priority: "medium",
-        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        estimatedHours: 0,
+        ...task,
+        dueDate: formatDateForInput(task.dueDate)
       });
+    } else if (!open) {
+      setFormData(defaultTask);
     }
   }, [task, open]);
 
