@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -16,6 +15,7 @@ interface ProjectDialogProps {
   project?: ProjectFormData;
   portfolios: Portfolio[];
   onSave: (project: ProjectFormData) => void;
+  defaultPortfolioId?: string;
 }
 
 export function ProjectDialog({
@@ -24,6 +24,7 @@ export function ProjectDialog({
   project,
   portfolios,
   onSave,
+  defaultPortfolioId,
 }: ProjectDialogProps) {
   const isEditing = !!project?.id;
   
@@ -31,25 +32,23 @@ export function ProjectDialog({
     project || {
       name: "",
       description: "",
-      portfolioId: portfolios[0]?.id || "",
+      portfolioId: defaultPortfolioId || portfolios[0]?.id || "",
       dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 2 weeks from now
     }
   );
 
-  // Update form data when project prop changes
   useEffect(() => {
     if (project) {
       setFormData(project);
     } else {
-      // Reset form when adding a new project
       setFormData({
         name: "",
         description: "",
-        portfolioId: portfolios[0]?.id || "",
+        portfolioId: defaultPortfolioId || portfolios[0]?.id || "",
         dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 2 weeks from now
       });
     }
-  }, [project, portfolios, open]);
+  }, [project, portfolios, open, defaultPortfolioId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
