@@ -22,9 +22,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    console.log("AuthProvider initialized");
+    
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
+        console.log("Auth state changed:", event, !!currentSession);
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         
@@ -32,10 +35,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (currentSession?.user) {
           const userData = {
             email: currentSession.user.email,
-            firstName: 'John', // Default value - can be replaced with actual data later
-            lastName: 'Doe',   // Default value - can be replaced with actual data later
-            phone: '+1234567890',
-            avatar: null,
+            firstName: currentSession.user.user_metadata?.first_name || 'John', 
+            lastName: currentSession.user.user_metadata?.last_name || 'Doe',
+            phone: currentSession.user.user_metadata?.phone || '+1234567890',
+            avatar: currentSession.user.user_metadata?.avatar || null,
           };
           localStorage.setItem('user', JSON.stringify(userData));
         }
@@ -44,6 +47,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      console.log("Initial session check:", !!currentSession);
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
       setLoading(false);
@@ -56,15 +60,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signIn = async (email: string, password: string) => {
     try {
+      console.log("Signing in with:", email);
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       return { error };
     } catch (error) {
+      console.error("Sign in error:", error);
       return { error };
     }
   };
 
   const signUp = async (email: string, password: string, userData?: any) => {
     try {
+      console.log("Signing up with:", email);
       const { error } = await supabase.auth.signUp({ 
         email, 
         password,
@@ -77,15 +84,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
       return { error };
     } catch (error) {
+      console.error("Sign up error:", error);
       return { error };
     }
   };
 
   const signOut = async () => {
+    console.log("Signing out");
     await supabase.auth.signOut();
     localStorage.removeItem('user');
     navigate('/login');
   };
+
+  // Added debug output
+  console.log("AuthProvider rendering, user:", !!user, "loading:", loading);
 
   return (
     <AuthContext.Provider value={{ session, user, loading, signIn, signUp, signOut }}>

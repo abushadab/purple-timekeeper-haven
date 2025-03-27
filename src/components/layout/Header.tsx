@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -11,13 +11,15 @@ import {
   Folder,
   User,
   LogOut,
-  Edit
+  Edit,
+  Users
 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter
 } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -47,11 +49,34 @@ const HeaderLink = ({ href, icon: Icon, label, active = false }) => {
 };
 
 const Header = () => {
+  // Add a useState fallback for auth data
+  const [hasMounted, setHasMounted] = useState(false);
+  
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
+  
+  // Don't attempt to use useAuth until component has mounted
+  if (!hasMounted) {
+    return null; // Return null on first render
+  }
+  
   const location = useLocation();
   const navigate = useNavigate();
   const path = location.pathname;
   const { toast } = useToast();
-  const { user, signOut } = useAuth();
+  
+  // Wrap auth usage in try/catch to avoid crashes
+  let authData = { user: null, signOut: async () => {} };
+  try {
+    authData = useAuth();
+  } catch (error) {
+    console.error("Failed to use auth context:", error);
+    // Continue with default values
+  }
+  
+  const { user, signOut } = authData;
+  
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   
   // Get cached user data from localStorage for backward compatibility
@@ -107,6 +132,12 @@ const Header = () => {
             label="Reports"
             active={path === "/reports"}
           />
+          <HeaderLink
+            href="/team"
+            icon={Users}
+            label="Team"
+            active={path === "/team"}
+          />
         </nav>
         
         <div className="ml-auto flex items-center gap-2">
@@ -152,8 +183,10 @@ const Header = () => {
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
             <DialogTitle>Confirm Logout</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to log out?
+            </DialogDescription>
           </DialogHeader>
-          <p className="py-4">Are you sure you want to log out?</p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setLogoutDialogOpen(false)}>
               Cancel
