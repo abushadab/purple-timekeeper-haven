@@ -44,7 +44,7 @@ export const getProjects = async (): Promise<Project[]> => {
     const tasks = item.tasks || [];
     const tasksCount = tasks.length;
     const tasksCompleted = tasks.filter(task => task.status === 'completed').length;
-    const totalHours = tasks.reduce((total, task) => total + (parseFloat(task.hours_logged) || 0), 0);
+    const totalHours = tasks.reduce((total, task) => total + (parseFloat(String(task.hours_logged)) || 0), 0);
     
     // Calculate progress as percentage of completed tasks
     const progress = tasksCount > 0 
@@ -232,7 +232,7 @@ async function updatePortfolioStatistics(portfolioId: string) {
       return;
     }
 
-    const totalHours = hours?.reduce((sum, task) => sum + (parseFloat(task.hours_logged) || 0), 0) || 0;
+    const totalHours = hours?.reduce((sum, task) => sum + (parseFloat(String(task.hours_logged)) || 0), 0) || 0;
 
     // Update the portfolio with the new statistics
     const { error: updateError } = await supabase
