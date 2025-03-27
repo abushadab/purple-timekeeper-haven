@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -6,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ProjectFormData } from "@/services/projectService";
+import { ProjectFormData, getISODateString } from "@/services/projectService";
 import { Portfolio } from "@/types/portfolio";
 
 interface ProjectDialogProps {
@@ -39,7 +40,13 @@ export function ProjectDialog({
 
   useEffect(() => {
     if (project) {
-      setFormData(project);
+      // Convert due date to ISO format for the date input
+      const isoDate = getISODateString(project.dueDate);
+      
+      setFormData({
+        ...project,
+        dueDate: isoDate
+      });
     } else {
       setFormData({
         name: "",

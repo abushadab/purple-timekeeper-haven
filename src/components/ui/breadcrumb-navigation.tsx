@@ -24,22 +24,25 @@ export function BreadcrumbNavigation({ items }: BreadcrumbNavigationProps) {
   return (
     <Breadcrumb className="mb-4">
       <BreadcrumbList>
-        {items.map((item, index) => (
-          <React.Fragment key={index}>
-            {index !== 0 && <BreadcrumbSeparator />}
-            {index === items.length - 1 ? (
-              <BreadcrumbItem>
-                <BreadcrumbPage>{item.label}</BreadcrumbPage>
-              </BreadcrumbItem>
-            ) : (
-              <BreadcrumbItem>
-                <BreadcrumbLink asChild>
-                  <Link to={item.href || "#"}>{item.label}</Link>
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-            )}
-          </React.Fragment>
-        ))}
+        {items.map((item, index) => {
+          // Use a React key for the Fragment instead of data-lov-id
+          return (
+            <React.Fragment key={index}>
+              {index !== 0 && <BreadcrumbSeparator />}
+              {index === items.length - 1 ? (
+                <BreadcrumbItem>
+                  <BreadcrumbPage>{item.label}</BreadcrumbPage>
+                </BreadcrumbItem>
+              ) : (
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link to={item.href || "#"}>{item.label}</Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+              )}
+            </React.Fragment>
+          );
+        })}
       </BreadcrumbList>
     </Breadcrumb>
   );

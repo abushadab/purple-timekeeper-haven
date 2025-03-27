@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface Project {
@@ -267,4 +266,31 @@ const formatDueDate = (date: string | null): string => {
   const day = dueDate.getDate();
   
   return `${month} ${day}`;
+};
+
+// Helper function to get the ISO date string for editing
+export const getISODateString = (date: string | null): string => {
+  if (!date) return "";
+  
+  // If it's already in ISO format (yyyy-MM-dd), return it
+  if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return date;
+  }
+  
+  // If it's in "Month Day" format (e.g., "Mar 15"), convert it to ISO
+  try {
+    const [month, day] = date.split(' ');
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthIndex = monthNames.indexOf(month);
+    
+    if (monthIndex !== -1) {
+      const today = new Date();
+      const dateObj = new Date(today.getFullYear(), monthIndex, parseInt(day));
+      return dateObj.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+    }
+  } catch (e) {
+    console.error("Error parsing date:", e);
+  }
+  
+  return "";
 };
