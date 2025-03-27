@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "@/hooks/use-toast";
 import { ProjectDialog } from "@/components/projects/project-dialog";
+import { Portfolio } from "@/types/portfolio";
 
 interface ProjectCardProps {
   title: string;
@@ -19,12 +20,52 @@ interface ProjectCardProps {
   team?: any[]; // Keep for backwards compatibility but not used anymore
 }
 
-// Sample portfolio data for the dropdown - using string IDs
-const portfoliosData = [
-  { id: "1", name: "Client Work" },
-  { id: "2", name: "Personal Projects" },
-  { id: "3", name: "Learning & Development" },
-  { id: "4", name: "Administrative" },
+// Create sample portfolios matching the Portfolio type
+const portfoliosData: Portfolio[] = [
+  { 
+    id: "1", 
+    name: "Client Work", 
+    description: "Client-related projects",
+    color: "#9b87f5",
+    projectCount: 0,
+    totalHours: 0,
+    lastUpdated: "Today",
+    archived: false,
+    createdAt: new Date().toISOString()
+  },
+  { 
+    id: "2", 
+    name: "Personal Projects", 
+    description: "Personal development projects",
+    color: "#9b87f5",
+    projectCount: 0,
+    totalHours: 0,
+    lastUpdated: "Today",
+    archived: false,
+    createdAt: new Date().toISOString()
+  },
+  { 
+    id: "3", 
+    name: "Learning & Development", 
+    description: "Learning new skills",
+    color: "#9b87f5",
+    projectCount: 0,
+    totalHours: 0,
+    lastUpdated: "Today",
+    archived: false,
+    createdAt: new Date().toISOString()
+  },
+  { 
+    id: "4", 
+    name: "Administrative", 
+    description: "Administrative tasks",
+    color: "#9b87f5",
+    projectCount: 0,
+    totalHours: 0,
+    lastUpdated: "Today",
+    archived: false,
+    createdAt: new Date().toISOString()
+  },
 ];
 
 const ProjectCard = ({
