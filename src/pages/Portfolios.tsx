@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -22,9 +23,19 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Portfolio } from "@/types/portfolio";
 import { getPortfolios, createPortfolio, updatePortfolio, deletePortfolio } from "@/services/portfolioService";
 
-const PortfolioCard = ({ portfolio, onEdit, onDelete }) => {
+const PortfolioCard = ({ portfolio, onEdit, onDelete, onClick }) => {
+  const handleCardClick = (e) => {
+    // Prevent clicking if it was on the action buttons
+    if (!e.target.closest('button')) {
+      onClick(portfolio);
+    }
+  };
+
   return (
-    <Card className="overflow-hidden card-glass hover-scale">
+    <Card 
+      className="overflow-hidden card-glass hover-scale cursor-pointer"
+      onClick={handleCardClick}
+    >
       <CardContent className="p-6">
         <div className="flex justify-between">
           <div className="flex items-center gap-3">
@@ -70,7 +81,10 @@ const PortfolioCard = ({ portfolio, onEdit, onDelete }) => {
             size="sm" 
             variant="ghost" 
             className="h-8 w-8 p-0"
-            onClick={() => onEdit(portfolio)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(portfolio);
+            }}
           >
             <Edit className="h-4 w-4" />
           </Button>
@@ -78,7 +92,10 @@ const PortfolioCard = ({ portfolio, onEdit, onDelete }) => {
             size="sm" 
             variant="ghost" 
             className="h-8 w-8 p-0 text-red-500"
-            onClick={() => onDelete(portfolio)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(portfolio);
+            }}
           >
             <Trash className="h-4 w-4" />
           </Button>
@@ -89,6 +106,7 @@ const PortfolioCard = ({ portfolio, onEdit, onDelete }) => {
 };
 
 const Portfolios = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("all");
   
@@ -188,6 +206,10 @@ const Portfolios = () => {
   const openDeletePortfolioDialog = (portfolio) => {
     setCurrentPortfolio(portfolio);
     setDeletePortfolioOpen(true);
+  };
+  
+  const navigateToProjects = (portfolio) => {
+    navigate(`/projects?portfolioId=${portfolio.id}`);
   };
   
   const filteredPortfolios = portfolios.filter(portfolio => {
@@ -321,6 +343,7 @@ const Portfolios = () => {
                   portfolio={portfolio} 
                   onEdit={openEditPortfolioDialog}
                   onDelete={openDeletePortfolioDialog}
+                  onClick={navigateToProjects}
                 />
               ))}
             </div>

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Header from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,6 @@ import {
   Clock, 
   CheckSquare, 
   SlidersHorizontal,
-  Filter,
   Eye,
   Edit,
   Trash
@@ -102,6 +101,7 @@ const ProjectCard = ({ project, onViewTasks, onEdit, onDelete }) => {
 
 const Projects = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const { user } = useAuth();
   
@@ -114,19 +114,25 @@ const Projects = () => {
   const [currentProject, setCurrentProject] = useState(null);
   
   const [sortOption, setSortOption] = useState("name");
-  const [filterOptions, setFilterOptions] = useState({
-    portfolio: "all",
+  
+  // Get portfolioId from URL query parameter
+  const searchParams = new URLSearchParams(location.search);
+  const portfolioIdFromUrl = searchParams.get('portfolioId');
+  
+  // Find the portfolio name for the header if a portfolio filter is applied
+  const { data: portfolios = [], isLoading: portfoliosLoading } = useQuery({
+    queryKey: ['portfolios'],
+    queryFn: getPortfolios,
+    enabled: !!user,
   });
+  
+  const filteredPortfolio = portfolioIdFromUrl 
+    ? portfolios.find(p => p.id === portfolioIdFromUrl) 
+    : null;
   
   const { data: projects = [], isLoading: projectsLoading, error: projectsError } = useQuery({
     queryKey: ['projects'],
     queryFn: getProjects,
-    enabled: !!user,
-  });
-
-  const { data: portfolios = [], isLoading: portfoliosLoading } = useQuery({
-    queryKey: ['portfolios'],
-    queryFn: getPortfolios,
     enabled: !!user,
   });
 
@@ -152,6 +158,11 @@ const Projects = () => {
   });
   
   const handleAddProject = (projectData: ProjectFormData) => {
+    // If we're filtering by portfolio, automatically set the new project's portfolio
+    if (portfolioIdFromUrl) {
+      projectData.portfolioId = portfolioIdFromUrl;
+    }
+    
     createProjectMutation.mutate(projectData, {
       onSuccess: () => {
         toast({
@@ -225,6 +236,10 @@ const Projects = () => {
     setDeleteProjectOpen(true);
   };
   
+  const clearPortfolioFilter = () => {
+    navigate('/projects');
+  };
+  
   const filteredProjects = projects.filter((project: Project) => {
     if (searchTerm && !project.name.toLowerCase().includes(searchTerm.toLowerCase())) {
       return false;
@@ -237,7 +252,7 @@ const Projects = () => {
       return false;
     }
     
-    if (filterOptions.portfolio !== "all" && project.portfolio_id !== filterOptions.portfolio) {
+    if (portfolioIdFromUrl && project.portfolio_id !== portfolioIdFromUrl) {
       return false;
     }
     
@@ -274,49 +289,25 @@ const Projects = () => {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 space-y-4 sm:space-y-0">
             <div className="flex items-center gap-2">
               <FolderKanban className="h-7 w-7 text-purple-600" />
-              <h1 className="text-3xl font-bold tracking-tight">Projects</h1>
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight">
+                  {filteredPortfolio ? filteredPortfolio.name : "All Projects"}
+                </h1>
+                {filteredPortfolio && (
+                  <div className="flex items-center mt-1">
+                    <Button 
+                      variant="link" 
+                      className="p-0 h-auto text-sm text-muted-foreground hover:text-foreground"
+                      onClick={clearPortfolioFilter}
+                    >
+                      ← View all projects
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
             
             <div className="flex gap-2">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="gap-1">
-                    <Filter size={16} />
-                    <span className="hidden sm:inline">Filters</span>
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-56 p-4">
-                  <div className="space-y-2">
-                    <h4 className="font-medium">Filter Projects</h4>
-                    <div className="pt-2">
-                      <h5 className="text-sm font-medium mb-1.5">Portfolio</h5>
-                      <div className="flex flex-col gap-2">
-                        <label className="flex items-center gap-2 text-sm">
-                          <input
-                            type="radio"
-                            name="portfolio"
-                            checked={filterOptions.portfolio === "all"}
-                            onChange={() => setFilterOptions(prev => ({ ...prev, portfolio: "all" }))}
-                          />
-                          All Portfolios
-                        </label>
-                        {portfolios.map(portfolio => (
-                          <label key={portfolio.id} className="flex items-center gap-2 text-sm">
-                            <input
-                              type="radio"
-                              name="portfolio"
-                              checked={filterOptions.portfolio === portfolio.id}
-                              onChange={() => setFilterOptions(prev => ({ ...prev, portfolio: portfolio.id }))}
-                            />
-                            {portfolio.name}
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
-              
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="gap-1">
@@ -414,7 +405,21 @@ const Projects = () => {
             <div className="flex flex-col items-center justify-center h-[40vh] text-muted-foreground">
               <FolderKanban className="h-16 w-16 text-muted-foreground mb-4 opacity-30" />
               <p className="text-lg">No projects found</p>
-              <p className="text-sm">Try adjusting your search or filters</p>
+              <p className="text-sm">
+                {portfolioIdFromUrl 
+                  ? "This portfolio doesn't have any projects yet." 
+                  : "Try adjusting your search or filters"}
+              </p>
+              {portfolioIdFromUrl && (
+                <Button 
+                  variant="outline" 
+                  className="mt-4"
+                  onClick={() => setAddProjectOpen(true)}
+                >
+                  <Plus size={16} className="mr-2" />
+                  Add a project
+                </Button>
+              )}
             </div>
           )}
         </div>
@@ -425,6 +430,7 @@ const Projects = () => {
         onOpenChange={setAddProjectOpen}
         portfolios={portfolios}
         onSave={handleAddProject}
+        defaultPortfolioId={portfolioIdFromUrl}
       />
       
       <ProjectDialog

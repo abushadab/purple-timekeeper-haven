@@ -124,12 +124,6 @@ const Header = () => {
             active={path === "/portfolios"}
           />
           <HeaderLink
-            href="/projects"
-            icon={FolderKanban}
-            label="Projects"
-            active={path === "/projects" || path.includes("/projects/")}
-          />
-          <HeaderLink
             href="/reports"
             icon={BarChart3}
             label="Reports"
