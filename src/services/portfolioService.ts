@@ -27,7 +27,7 @@ export const getPortfolios = async (): Promise<Portfolio[]> => {
     // Calculate project count and total hours
     const projects = item.projects || [];
     const projectCount = projects.length;
-    const totalHours = projects.reduce((sum, project) => sum + (parseFloat(project.total_hours) || 0), 0);
+    const totalHours = projects.reduce((sum, project) => sum + (parseFloat(String(project.total_hours)) || 0), 0);
 
     return {
       id: item.id,
