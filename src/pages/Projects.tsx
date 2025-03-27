@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Header from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -24,77 +26,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { DropdownActions } from "@/components/ui/dropdown-actions";
 import { ProjectDialog } from "@/components/projects/project-dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-
-const projectsData = [
-  {
-    id: 1,
-    name: "Website Redesign",
-    description: "Complete overhaul of company website with new UI/UX design system",
-    progress: 75,
-    totalHours: 42.5,
-    tasksCount: 12,
-    tasksCompleted: 9,
-    dueDate: "Oct 15",
-    status: "active",
-    portfolioId: 1
-  },
-  {
-    id: 2,
-    name: "Mobile App Development",
-    description: "Building a native app for iOS and Android platforms",
-    progress: 45,
-    totalHours: 68,
-    tasksCount: 24,
-    tasksCompleted: 10,
-    dueDate: "Nov 30",
-    status: "active",
-    portfolioId: 2
-  },
-  {
-    id: 3,
-    name: "E-commerce Integration",
-    description: "Integrating payment gateway and shopping cart functionality",
-    progress: 30,
-    totalHours: 24.5,
-    tasksCount: 18,
-    tasksCompleted: 5,
-    dueDate: "Dec 10",
-    status: "active",
-    portfolioId: 3
-  },
-  {
-    id: 4,
-    name: "Marketing Campaign",
-    description: "Q4 digital marketing campaign for product launch",
-    progress: 100,
-    totalHours: 56,
-    tasksCount: 15,
-    tasksCompleted: 15,
-    dueDate: "Sep 30",
-    status: "completed",
-    portfolioId: 1
-  },
-  {
-    id: 5,
-    name: "Data Analytics Dashboard",
-    description: "Creating interactive data visualization dashboard",
-    progress: 60,
-    totalHours: 32,
-    tasksCount: 10,
-    tasksCompleted: 6,
-    dueDate: "Oct 25",
-    status: "active",
-    portfolioId: 2
-  },
-];
-
-const portfoliosData = [
-  { id: "1", name: "Client Work" },
-  { id: "2", name: "Personal Projects" },
-  { id: "3", name: "Learning & Development" },
-  { id: "4", name: "Administrative" },
-  { id: "5", name: "Content Creation" },
-];
+import { getProjects, createProject, updateProject, deleteProject, Project, ProjectFormData } from "@/services/projectService";
+import { useAuth } from "@/contexts/AuthContext";
+import { getPortfolios } from "@/services/portfolioService";
 
 const ProjectCard = ({ project, onViewTasks, onEdit, onDelete }) => {
   const actions = [
@@ -168,6 +102,8 @@ const ProjectCard = ({ project, onViewTasks, onEdit, onDelete }) => {
 
 const Projects = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
   
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("all");
@@ -182,43 +118,119 @@ const Projects = () => {
     portfolio: "all",
   });
   
-  const handleAddProject = (projectData) => {
-    toast({
-      title: "Project created",
-      description: `"${projectData.name}" has been added to your projects.`,
+  // Fetch projects
+  const { data: projects = [], isLoading: projectsLoading, error: projectsError } = useQuery({
+    queryKey: ['projects'],
+    queryFn: getProjects,
+    enabled: !!user, // Only fetch if user is authenticated
+  });
+
+  // Fetch portfolios
+  const { data: portfolios = [], isLoading: portfoliosLoading } = useQuery({
+    queryKey: ['portfolios'],
+    queryFn: getPortfolios,
+    enabled: !!user, // Only fetch if user is authenticated
+  });
+
+  // Create project mutation
+  const createProjectMutation = useMutation({
+    mutationFn: createProject,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+    },
+  });
+
+  // Update project mutation
+  const updateProjectMutation = useMutation({
+    mutationFn: updateProject,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+    },
+  });
+
+  // Delete project mutation
+  const deleteProjectMutation = useMutation({
+    mutationFn: deleteProject,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+    },
+  });
+  
+  const handleAddProject = (projectData: ProjectFormData) => {
+    createProjectMutation.mutate(projectData, {
+      onSuccess: () => {
+        toast({
+          title: "Project created",
+          description: `"${projectData.name}" has been added to your projects.`,
+        });
+        setAddProjectOpen(false);
+      },
+      onError: (error) => {
+        toast({
+          title: "Error creating project",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     });
   };
   
-  const handleEditProject = (projectData) => {
-    toast({
-      title: "Project updated",
-      description: `"${projectData.name}" has been updated.`,
+  const handleEditProject = (projectData: ProjectFormData) => {
+    updateProjectMutation.mutate(projectData, {
+      onSuccess: () => {
+        toast({
+          title: "Project updated",
+          description: `"${projectData.name}" has been updated.`,
+        });
+        setEditProjectOpen(false);
+      },
+      onError: (error) => {
+        toast({
+          title: "Error updating project",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     });
   };
   
   const handleDeleteProject = () => {
-    toast({
-      title: "Project deleted",
-      description: `"${currentProject?.name}" has been deleted.`,
+    if (!currentProject) return;
+    
+    deleteProjectMutation.mutate(currentProject.id, {
+      onSuccess: () => {
+        toast({
+          title: "Project deleted",
+          description: `"${currentProject.name}" has been deleted.`,
+        });
+        setDeleteProjectOpen(false);
+        setCurrentProject(null);
+      },
+      onError: (error) => {
+        toast({
+          title: "Error deleting project",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     });
-    setDeleteProjectOpen(false);
   };
   
-  const handleViewTasks = (project) => {
+  const handleViewTasks = (project: Project) => {
     navigate(`/projects/${project.id}/tasks`);
   };
   
-  const openEditProjectDialog = (project) => {
+  const openEditProjectDialog = (project: Project) => {
     setCurrentProject(project);
     setEditProjectOpen(true);
   };
   
-  const openDeleteProjectDialog = (project) => {
+  const openDeleteProjectDialog = (project: Project) => {
     setCurrentProject(project);
     setDeleteProjectOpen(true);
   };
   
-  const filteredProjects = projectsData.filter(project => {
+  const filteredProjects = projects.filter((project: Project) => {
     if (searchTerm && !project.name.toLowerCase().includes(searchTerm.toLowerCase())) {
       return false;
     }
@@ -230,25 +242,34 @@ const Projects = () => {
       return false;
     }
     
-    if (filterOptions.portfolio !== "all" && project.portfolioId !== parseInt(filterOptions.portfolio)) {
+    if (filterOptions.portfolio !== "all" && project.portfolio_id !== filterOptions.portfolio) {
       return false;
     }
     
     return true;
   });
   
-  const sortedProjects = [...filteredProjects].sort((a, b) => {
+  const sortedProjects = [...filteredProjects].sort((a: Project, b: Project) => {
     switch (sortOption) {
       case "name":
         return a.name.localeCompare(b.name);
       case "dueDate":
-        return String(a.dueDate).localeCompare(String(b.dueDate));
+        return String(a.due_date).localeCompare(String(b.due_date));
       case "progress":
         return b.progress - a.progress;
       default:
         return 0;
     }
   });
+
+  // Handle errors
+  if (projectsError) {
+    toast({
+      title: "Error loading projects",
+      description: "There was an error loading your projects. Please try again.",
+      variant: "destructive",
+    });
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -285,13 +306,13 @@ const Projects = () => {
                           />
                           All Portfolios
                         </label>
-                        {portfoliosData.map(portfolio => (
+                        {portfolios.map(portfolio => (
                           <label key={portfolio.id} className="flex items-center gap-2 text-sm">
                             <input
                               type="radio"
                               name="portfolio"
-                              checked={filterOptions.portfolio === portfolio.id.toString()}
-                              onChange={() => setFilterOptions(prev => ({ ...prev, portfolio: portfolio.id.toString() }))}
+                              checked={filterOptions.portfolio === portfolio.id}
+                              onChange={() => setFilterOptions(prev => ({ ...prev, portfolio: portfolio.id }))}
                             />
                             {portfolio.name}
                           </label>
@@ -379,7 +400,11 @@ const Projects = () => {
             </TabsList>
           </Tabs>
           
-          {sortedProjects.length > 0 ? (
+          {projectsLoading ? (
+            <div className="flex justify-center items-center h-40">
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-purple-600 border-t-transparent"></div>
+            </div>
+          ) : sortedProjects.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {sortedProjects.map((project) => (
                 <ProjectCard 
@@ -404,15 +429,21 @@ const Projects = () => {
       <ProjectDialog
         open={addProjectOpen}
         onOpenChange={setAddProjectOpen}
-        portfolios={portfoliosData}
+        portfolios={portfolios}
         onSave={handleAddProject}
       />
       
       <ProjectDialog
         open={editProjectOpen}
         onOpenChange={setEditProjectOpen}
-        project={currentProject}
-        portfolios={portfoliosData}
+        project={currentProject && {
+          id: currentProject.id,
+          name: currentProject.name,
+          description: currentProject.description || "",
+          portfolioId: currentProject.portfolio_id,
+          dueDate: currentProject.due_date ? currentProject.due_date.split(' ')[0] : ""
+        }}
+        portfolios={portfolios}
         onSave={handleEditProject}
       />
       

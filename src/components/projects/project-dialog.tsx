@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,21 +7,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-// Project dialog form type - Updated to use string IDs
-interface ProjectFormData {
-  id?: string; // Changed from number to string
-  name: string;
-  description: string;
-  portfolioId: string; // Changed from number to string
-  dueDate: string;
-}
+import { ProjectFormData } from "@/services/projectService";
+import { Portfolio } from "@/types/portfolio";
 
 interface ProjectDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   project?: ProjectFormData;
-  portfolios: { id: string; name: string }[]; // Changed from number to string
+  portfolios: Portfolio[];
   onSave: (project: ProjectFormData) => void;
 }
 
@@ -38,10 +31,25 @@ export function ProjectDialog({
     project || {
       name: "",
       description: "",
-      portfolioId: portfolios[0]?.id || "", // Changed default value to empty string
+      portfolioId: portfolios[0]?.id || "",
       dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 2 weeks from now
     }
   );
+
+  // Update form data when project prop changes
+  useEffect(() => {
+    if (project) {
+      setFormData(project);
+    } else {
+      // Reset form when adding a new project
+      setFormData({
+        name: "",
+        description: "",
+        portfolioId: portfolios[0]?.id || "",
+        dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 2 weeks from now
+      });
+    }
+  }, [project, portfolios, open]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -65,12 +73,6 @@ export function ProjectDialog({
     }
     
     onSave(formData);
-    onOpenChange(false);
-    
-    toast({
-      title: `Project ${isEditing ? "updated" : "created"} successfully`,
-      description: `"${formData.name}" has been ${isEditing ? "updated" : "added"} to your projects.`,
-    });
   };
 
   return (

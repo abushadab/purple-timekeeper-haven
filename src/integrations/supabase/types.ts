@@ -48,6 +48,62 @@ export type Database = {
         }
         Relationships: []
       }
+      projects: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          name: string
+          portfolio_id: string | null
+          progress: number | null
+          status: string | null
+          tasks_completed: number | null
+          tasks_count: number | null
+          total_hours: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          name: string
+          portfolio_id?: string | null
+          progress?: number | null
+          status?: string | null
+          tasks_completed?: number | null
+          tasks_count?: number | null
+          total_hours?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          name?: string
+          portfolio_id?: string | null
+          progress?: number | null
+          status?: string | null
+          tasks_completed?: number | null
+          tasks_count?: number | null
+          total_hours?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_portfolio_id_fkey"
+            columns: ["portfolio_id"]
+            isOneToOne: false
+            referencedRelation: "portfolios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
