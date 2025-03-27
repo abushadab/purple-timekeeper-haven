@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,21 +7,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-// Project dialog form type
-interface ProjectFormData {
-  id?: number;
-  name: string;
-  description: string;
-  portfolioId: number;
-  dueDate: string;
-}
+import { ProjectFormData } from "@/services/projectService";
+import { Portfolio } from "@/types/portfolio";
 
 interface ProjectDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   project?: ProjectFormData;
-  portfolios: { id: number; name: string }[];
+  portfolios: Portfolio[];
   onSave: (project: ProjectFormData) => void;
 }
 
@@ -38,10 +31,25 @@ export function ProjectDialog({
     project || {
       name: "",
       description: "",
-      portfolioId: portfolios[0]?.id || 0,
+      portfolioId: portfolios[0]?.id || "",
       dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 2 weeks from now
     }
   );
+
+  // Update form data when project prop changes
+  useEffect(() => {
+    if (project) {
+      setFormData(project);
+    } else {
+      // Reset form when adding a new project
+      setFormData({
+        name: "",
+        description: "",
+        portfolioId: portfolios[0]?.id || "",
+        dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 2 weeks from now
+      });
+    }
+  }, [project, portfolios, open]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -49,7 +57,7 @@ export function ProjectDialog({
   };
 
   const handlePortfolioChange = (value: string) => {
-    setFormData((prev) => ({ ...prev, portfolioId: parseInt(value) }));
+    setFormData((prev) => ({ ...prev, portfolioId: value }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -65,12 +73,6 @@ export function ProjectDialog({
     }
     
     onSave(formData);
-    onOpenChange(false);
-    
-    toast({
-      title: `Project ${isEditing ? "updated" : "created"} successfully`,
-      description: `"${formData.name}" has been ${isEditing ? "updated" : "added"} to your projects.`,
-    });
   };
 
   return (
@@ -110,7 +112,7 @@ export function ProjectDialog({
           <div className="space-y-2">
             <Label htmlFor="portfolio">Portfolio</Label>
             <Select
-              value={formData.portfolioId.toString()}
+              value={formData.portfolioId}
               onValueChange={handlePortfolioChange}
             >
               <SelectTrigger>
@@ -118,7 +120,7 @@ export function ProjectDialog({
               </SelectTrigger>
               <SelectContent>
                 {portfolios.map((portfolio) => (
-                  <SelectItem key={portfolio.id} value={portfolio.id.toString()}>
+                  <SelectItem key={portfolio.id} value={portfolio.id}>
                     {portfolio.name}
                   </SelectItem>
                 ))}

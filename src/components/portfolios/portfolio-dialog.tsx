@@ -1,24 +1,17 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
-
-// Portfolio dialog form type
-interface PortfolioFormData {
-  id?: number;
-  name: string;
-  description: string;
-  color: string;
-}
+import { PortfolioFormData } from "@/types/portfolio";
 
 interface PortfolioDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  portfolio?: PortfolioFormData;
+  portfolio?: any; // Using any for backward compatibility
   onSave: (portfolio: PortfolioFormData) => void;
 }
 
@@ -33,6 +26,21 @@ export function PortfolioDialog({
   const [formData, setFormData] = useState<PortfolioFormData>(
     portfolio || { name: "", description: "", color: "#9b87f5" }
   );
+
+  // Update form data when portfolio prop changes
+  useEffect(() => {
+    if (portfolio) {
+      setFormData({
+        id: portfolio.id,
+        name: portfolio.name,
+        description: portfolio.description || "",
+        color: portfolio.color,
+      });
+    } else {
+      // Reset form when adding a new portfolio
+      setFormData({ name: "", description: "", color: "#9b87f5" });
+    }
+  }, [portfolio, open]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -53,11 +61,6 @@ export function PortfolioDialog({
     
     onSave(formData);
     onOpenChange(false);
-    
-    toast({
-      title: `Portfolio ${isEditing ? "updated" : "created"} successfully`,
-      description: `"${formData.name}" has been ${isEditing ? "updated" : "added"} to your portfolios.`,
-    });
   };
 
   return (

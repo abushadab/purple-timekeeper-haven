@@ -6,8 +6,9 @@ import { DropdownActions } from "@/components/ui/dropdown-actions";
 import { Edit, Trash2, ExternalLink } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { toast } from "@/hooks/use-toast";
+import { ProjectDialog } from "@/components/projects/project-dialog";
+import { Portfolio } from "@/types/portfolio";
 
 interface ProjectCardProps {
   title: string;
@@ -15,9 +16,57 @@ interface ProjectCardProps {
   progress: number;
   hoursLogged: number;
   dueDate: string;
-  id?: number; // Add id to navigate to the specific project tasks
+  id?: string;
   team?: any[]; // Keep for backwards compatibility but not used anymore
 }
+
+// Create sample portfolios matching the Portfolio type
+const portfoliosData: Portfolio[] = [
+  { 
+    id: "1", 
+    name: "Client Work", 
+    description: "Client-related projects",
+    color: "#9b87f5",
+    projectCount: 0,
+    totalHours: 0,
+    lastUpdated: "Today",
+    archived: false,
+    createdAt: new Date().toISOString()
+  },
+  { 
+    id: "2", 
+    name: "Personal Projects", 
+    description: "Personal development projects",
+    color: "#9b87f5",
+    projectCount: 0,
+    totalHours: 0,
+    lastUpdated: "Today",
+    archived: false,
+    createdAt: new Date().toISOString()
+  },
+  { 
+    id: "3", 
+    name: "Learning & Development", 
+    description: "Learning new skills",
+    color: "#9b87f5",
+    projectCount: 0,
+    totalHours: 0,
+    lastUpdated: "Today",
+    archived: false,
+    createdAt: new Date().toISOString()
+  },
+  { 
+    id: "4", 
+    name: "Administrative", 
+    description: "Administrative tasks",
+    color: "#9b87f5",
+    projectCount: 0,
+    totalHours: 0,
+    lastUpdated: "Today",
+    archived: false,
+    createdAt: new Date().toISOString()
+  },
+];
 
 const ProjectCard = ({
   title,
@@ -25,31 +74,28 @@ const ProjectCard = ({
   progress,
   hoursLogged,
   dueDate,
-  id = 1, // Default to 1 if not provided
+  id = "1", // Default to "1" if not provided
 }: ProjectCardProps) => {
   const navigate = useNavigate();
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [editSheetOpen, setEditSheetOpen] = useState(false);
-  const [projectData, setProjectData] = useState({
-    title,
-    description,
-    progress,
-    dueDate,
-  });
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
-  const handleEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setProjectData(prev => ({ ...prev, [name]: value }));
+  // Create a project object for the dialog
+  const projectData = {
+    id,
+    name: title,
+    description,
+    portfolioId: "1", // Default portfolio
+    dueDate,
   };
 
-  const handleEditSave = () => {
+  const handleEditSave = (updatedProject) => {
     // This would be implemented with the WordPress API integration
-    console.log("Saving project changes for ID:", id, projectData);
+    console.log("Saving project changes for ID:", id, updatedProject);
     toast({
       title: "Project updated",
-      description: `${projectData.title} has been successfully updated.`,
+      description: `${updatedProject.name} has been successfully updated.`,
     });
-    setEditSheetOpen(false);
   };
 
   const handleDelete = () => {
@@ -70,7 +116,7 @@ const ProjectCard = ({
     },
     {
       label: "Edit",
-      onClick: () => setEditSheetOpen(true),
+      onClick: () => setEditDialogOpen(true),
       icon: <Edit size={16} />
     },
     {
@@ -148,91 +194,14 @@ const ProjectCard = ({
         confirmText="Delete"
       />
 
-      {/* Edit Project Sheet */}
-      <Sheet open={editSheetOpen} onOpenChange={setEditSheetOpen}>
-        <SheetContent className="sm:max-w-md">
-          <div className="space-y-6">
-            <div className="space-y-1">
-              <h3 className="text-lg font-semibold">Edit Project</h3>
-              <p className="text-sm text-muted-foreground">
-                Make changes to your project information here.
-              </p>
-            </div>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label htmlFor="title" className="text-sm font-medium">
-                  Project Name
-                </label>
-                <input
-                  id="title"
-                  name="title"
-                  className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm"
-                  placeholder="Project name"
-                  value={projectData.title}
-                  onChange={handleEditChange}
-                />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="description" className="text-sm font-medium">
-                  Description
-                </label>
-                <textarea
-                  id="description"
-                  name="description"
-                  className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm min-h-[100px]"
-                  placeholder="Project description"
-                  value={projectData.description}
-                  onChange={handleEditChange}
-                />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="dueDate" className="text-sm font-medium">
-                  Due Date
-                </label>
-                <input
-                  id="dueDate"
-                  name="dueDate"
-                  className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm"
-                  placeholder="Due date"
-                  value={projectData.dueDate}
-                  onChange={handleEditChange}
-                />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="progress" className="text-sm font-medium">
-                  Progress (%)
-                </label>
-                <input
-                  id="progress"
-                  name="progress"
-                  type="number"
-                  min="0"
-                  max="100"
-                  className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm"
-                  value={projectData.progress}
-                  onChange={handleEditChange}
-                />
-              </div>
-              <div className="flex justify-end space-x-2 pt-4">
-                <button
-                  type="button"
-                  className="rounded-md px-4 py-2 text-sm font-medium border border-input"
-                  onClick={() => setEditSheetOpen(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  className="rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white"
-                  onClick={handleEditSave}
-                >
-                  Save Changes
-                </button>
-              </div>
-            </div>
-          </div>
-        </SheetContent>
-      </Sheet>
+      {/* Edit Project Dialog */}
+      <ProjectDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        project={projectData}
+        portfolios={portfoliosData}
+        onSave={handleEditSave}
+      />
     </>
   );
 };
