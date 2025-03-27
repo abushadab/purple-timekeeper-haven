@@ -1,4 +1,3 @@
-
 import React from "react";
 import { ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -25,9 +24,8 @@ export function BreadcrumbNavigation({ items }: BreadcrumbNavigationProps) {
     <Breadcrumb className="mb-4">
       <BreadcrumbList>
         {items.map((item, index) => {
-          // Use a React key for the Fragment instead of data-lov-id
           return (
-            <React.Fragment key={index}>
+            <span key={index}> {/* Replaced React.Fragment with span */}
               {index !== 0 && <BreadcrumbSeparator />}
               {index === items.length - 1 ? (
                 <BreadcrumbItem>
@@ -40,7 +38,7 @@ export function BreadcrumbNavigation({ items }: BreadcrumbNavigationProps) {
                   </BreadcrumbLink>
                 </BreadcrumbItem>
               )}
-            </React.Fragment>
+            </span>
           );
         })}
       </BreadcrumbList>
