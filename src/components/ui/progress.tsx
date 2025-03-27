@@ -11,8 +11,8 @@ interface ProgressProps extends React.ComponentPropsWithoutRef<typeof ProgressPr
 const Progress = React.forwardRef<
   React.ElementRef<typeof ProgressPrimitive.Root>,
   ProgressProps
->(({ className, value, capAt100 = false, ...props }, ref) => {
-  // Cap the value at 100% if requested
+>(({ className, value, capAt100 = true, ...props }, ref) => {
+  // Cap the value at 100% by default
   const displayValue = capAt100 ? Math.min(value || 0, 100) : (value || 0);
   
   return (

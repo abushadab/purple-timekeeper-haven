@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 export interface Project {
@@ -30,7 +31,7 @@ export const getProjects = async (): Promise<Project[]> => {
 
   const { data, error } = await supabase
     .from("projects")
-    .select("*, tasks(id, status, hours_logged)")
+    .select("*, tasks(id, status, hours_logged, estimated_hours)")
     .order("name");
   
   if (error) {
@@ -45,11 +46,16 @@ export const getProjects = async (): Promise<Project[]> => {
     const tasksCount = tasks.length;
     const tasksCompleted = tasks.filter(task => task.status === 'completed').length;
     const totalHours = tasks.reduce((total, task) => total + (parseFloat(String(task.hours_logged)) || 0), 0);
+    const totalEstimatedHours = tasks.reduce((total, task) => total + (parseFloat(String(task.estimated_hours)) || 0), 0);
     
-    // Calculate progress as percentage of completed tasks
-    const progress = tasksCount > 0 
-      ? Math.round((tasksCompleted / tasksCount) * 100)
-      : 0;
+    // Calculate progress based on hours tracked vs estimated hours
+    let progress = 0;
+    if (totalEstimatedHours > 0) {
+      progress = Math.min(Math.round((totalHours / totalEstimatedHours) * 100), 100); // Cap at 100%
+    } else if (tasksCount > 0) {
+      // Fallback to task completion if no estimated hours
+      progress = Math.round((tasksCompleted / tasksCount) * 100);
+    }
 
     return {
       id: item.id,

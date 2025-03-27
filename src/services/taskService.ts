@@ -152,7 +152,7 @@ export const updateTask = async (task: TaskFormData): Promise<Task> => {
   // Check if we need to auto-update status based on hours
   let finalStatus = task.status;
   
-  // If estimated hours changed and it affects completion status
+  // If estimated hours changed, we need to update status based on hours
   if (estimatedHoursChanged && existingTask) {
     const currentProgress = (existingTask.hours_logged / existingTask.estimated_hours) * 100;
     const newProgress = (existingTask.hours_logged / task.estimated_hours) * 100;
@@ -160,6 +160,11 @@ export const updateTask = async (task: TaskFormData): Promise<Task> => {
     // If task was completed but now progress is less than 100%
     if (existingTask.status === 'completed' && newProgress < 100) {
       finalStatus = 'in_progress';
+      statusChanged = true;
+    }
+    // If task was in progress but now progress is 100% or more
+    else if (existingTask.status !== 'completed' && newProgress >= 100) {
+      finalStatus = 'completed';
       statusChanged = true;
     }
   }
@@ -252,9 +257,13 @@ export const updateTaskHours = async (id: string, hoursLogged: number): Promise<
   let newStatus = taskData.status;
   const progress = (hoursLogged / taskData.estimated_hours) * 100;
   
-  // If hours logged reaches estimated hours, mark as completed
+  // If hours logged reaches or exceeds estimated hours, mark as completed
   if (progress >= 100 && taskData.status !== 'completed') {
     newStatus = 'completed';
+  }
+  // If task was completed but hours are now below 100%, change to in_progress
+  else if (progress < 100 && taskData.status === 'completed') {
+    newStatus = 'in_progress';
   }
   
   const { data, error } = await supabase
