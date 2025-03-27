@@ -276,29 +276,36 @@ const formatDueDate = (date: string | null): string => {
   }
 };
 
+ 
 // Helper function to get the ISO date string for editing
 export const getISODateString = (date: string | null): string => {
-  if (!date) return "";
-  
+  if (!date || typeof date !== 'string') return ""; // Handle null, undefined, or non-string
+
   // If it's already in ISO format (yyyy-MM-dd), return it
   if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return date;
   }
-  
+
   // If it's in "Month Day" format (e.g., "Mar 15"), convert it to ISO
   try {
-    const [month, day] = date.split(' ');
+    const parts = date.trim().split(' ');
+    if (parts.length !== 2) return ""; // Ensure exactly "Month Day"
+
+    const [month, day] = parts;
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const monthIndex = monthNames.indexOf(month);
-    
-    if (monthIndex !== -1) {
-      const today = new Date();
-      const dateObj = new Date(today.getFullYear(), monthIndex, parseInt(day));
-      return dateObj.toISOString().split('T')[0]; // Format as YYYY-MM-DD
-    }
+
+    if (monthIndex === -1) return ""; // Invalid month
+    const dayNum = parseInt(day, 10);
+    if (isNaN(dayNum) || dayNum < 1 || dayNum > 31) return ""; // Invalid day
+
+    const today = new Date();
+    const dateObj = new Date(today.getFullYear(), monthIndex, dayNum);
+    if (isNaN(dateObj.getTime())) return ""; // Invalid date object
+
+    return dateObj.toISOString().split('T')[0]; // Format as YYYY-MM-DD
   } catch (e) {
-    console.error("Error parsing date:", e);
+    console.error("Error parsing date in getISODateString:", e, "Input:", date);
+    return "";
   }
-  
-  return "";
 };
