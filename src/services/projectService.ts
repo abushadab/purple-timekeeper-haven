@@ -259,13 +259,21 @@ async function updatePortfolioStatistics(portfolioId: string) {
 
 // Helper function to format the due date in a user-friendly way
 const formatDueDate = (date: string | null): string => {
-  if (!date) return "";
+  if (!date || typeof date !== 'string') return ""; // Handle null, undefined, or non-string
   
-  const dueDate = new Date(date);
-  const month = dueDate.toLocaleString('default', { month: 'short' });
-  const day = dueDate.getDate();
-  
-  return `${month} ${day}`;
+  try {
+    const dueDate = new Date(date);
+    if (isNaN(dueDate.getTime())) {
+      console.warn(`Invalid date value: ${date}`);
+      return ""; // Return empty string for invalid dates
+    }
+    const month = dueDate.toLocaleString('default', { month: 'short' });
+    const day = dueDate.getDate();
+    return `${month} ${day}`;
+  } catch (e) {
+    console.error("Error parsing date in formatDueDate:", e, "Input:", date);
+    return ""; // Fallback for any parsing errors
+  }
 };
 
 // Helper function to get the ISO date string for editing
