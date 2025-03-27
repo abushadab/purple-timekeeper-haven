@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -50,18 +50,26 @@ const HeaderLink = ({ href, icon: Icon, label, active = false }) => {
 const Header = () => {
   console.log("Rendering Header component");
   
-  // Get all hooks at the top level regardless of any conditions
+  // Call all hooks at the top level, unconditionally
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   
-  // Set up auth context with try/catch but call useAuth at top level
-  const auth = useAuth();
-  const user = auth?.user;
-  const signOut = auth?.signOut;
+  // Safely use the auth context with proper error handling
+  let user = null;
+  let signOut = async () => {};
+  
+  try {
+    const auth = useAuth();
+    user = auth?.user;
+    signOut = auth?.signOut || signOut;
+    console.log("Header - Auth context:", !!auth, "User:", !!user);
+  } catch (error) {
+    console.error("Failed to use auth context:", error);
+  }
   
   const path = location.pathname;
-  const [logoutDialogOpen, setLogoutDialogOpen] = React.useState(false);
   
   // Get cached user data from localStorage for backward compatibility
   const storedUserData = localStorage.getItem('user');
@@ -74,18 +82,25 @@ const Header = () => {
 
   // Handle logout
   const handleLogout = async () => {
-    if (signOut) {
-      await signOut();
+    try {
+      if (signOut) {
+        await signOut();
+      }
+      setLogoutDialogOpen(false);
+      
+      toast({
+        title: "Logged out",
+        description: "You have been successfully logged out.",
+      });
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast({
+        title: "Logout failed",
+        description: "An error occurred while logging out.",
+        variant: "destructive"
+      });
     }
-    setLogoutDialogOpen(false);
-    
-    toast({
-      title: "Logged out",
-      description: "You have been successfully logged out.",
-    });
   };
-
-  console.log("Header - Auth context:", !!auth, "User:", !!user);
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
