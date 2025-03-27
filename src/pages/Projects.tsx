@@ -80,7 +80,7 @@ const ProjectCard = ({ project, onViewTasks, onEdit, onDelete }) => {
             </div>
           </div>
           
-          <Progress value={project.progress} className="h-1.5" />
+          <Progress value={project.progress} capAt100={true} className="h-1.5" />
         </div>
       </CardContent>
       

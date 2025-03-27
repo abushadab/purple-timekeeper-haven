@@ -108,7 +108,7 @@ export const createTask = async (task: TaskFormData): Promise<Task> => {
     throw error;
   }
 
-  // Update project task count
+  // Update project task stats
   await updateProjectTaskStats(task.project_id);
 
   return {
@@ -134,19 +134,34 @@ export const updateTask = async (task: TaskFormData): Promise<Task> => {
     throw new Error("Task ID is required for updates");
   }
 
-  // Check if we're updating the status
+  // Check if we're updating the status or estimated hours
   let statusChanged = false;
+  let estimatedHoursChanged = false;
   let oldTask = null;
 
-  if (task.status) {
-    const { data: existingTask } = await supabase
-      .from("tasks")
-      .select("status, hours_logged, estimated_hours")
-      .eq("id", task.id)
-      .single();
+  const { data: existingTask } = await supabase
+    .from("tasks")
+    .select("status, hours_logged, estimated_hours")
+    .eq("id", task.id)
+    .single();
+  
+  oldTask = existingTask;
+  statusChanged = existingTask && existingTask.status !== task.status;
+  estimatedHoursChanged = existingTask && existingTask.estimated_hours !== task.estimated_hours;
+  
+  // Check if we need to auto-update status based on hours
+  let finalStatus = task.status;
+  
+  // If estimated hours changed and it affects completion status
+  if (estimatedHoursChanged && existingTask) {
+    const currentProgress = (existingTask.hours_logged / existingTask.estimated_hours) * 100;
+    const newProgress = (existingTask.hours_logged / task.estimated_hours) * 100;
     
-    oldTask = existingTask;
-    statusChanged = existingTask && existingTask.status !== task.status;
+    // If task was completed but now progress is less than 100%
+    if (existingTask.status === 'completed' && newProgress < 100) {
+      finalStatus = 'in_progress';
+      statusChanged = true;
+    }
   }
 
   // Update the task
@@ -155,7 +170,7 @@ export const updateTask = async (task: TaskFormData): Promise<Task> => {
     .update({
       title: task.title,
       description: task.description,
-      status: task.status,
+      status: finalStatus,
       priority: task.priority,
       due_date: task.due_date,
       estimated_hours: task.estimated_hours,
@@ -171,8 +186,8 @@ export const updateTask = async (task: TaskFormData): Promise<Task> => {
     throw error;
   }
 
-  // If status changed from or to completed, update project stats
-  if (statusChanged || (oldTask && oldTask.hours_logged !== data.hours_logged)) {
+  // If status changed, estimated hours changed, or hours logged changed, update project stats
+  if (statusChanged || estimatedHoursChanged || (oldTask && oldTask.hours_logged !== data.hours_logged)) {
     await updateProjectTaskStats(data.project_id);
   }
 
@@ -222,10 +237,31 @@ export const deleteTask = async (id: string): Promise<void> => {
 
 // Update hours logged for a task
 export const updateTaskHours = async (id: string, hoursLogged: number): Promise<void> => {
+  // Get current task data
+  const { data: taskData } = await supabase
+    .from("tasks")
+    .select("status, estimated_hours, project_id")
+    .eq("id", id)
+    .single();
+  
+  if (!taskData) {
+    throw new Error("Task not found");
+  }
+  
+  // Determine if status should change based on hours
+  let newStatus = taskData.status;
+  const progress = (hoursLogged / taskData.estimated_hours) * 100;
+  
+  // If hours logged reaches estimated hours, mark as completed
+  if (progress >= 100 && taskData.status !== 'completed') {
+    newStatus = 'completed';
+  }
+  
   const { data, error } = await supabase
     .from("tasks")
     .update({
       hours_logged: hoursLogged,
+      status: newStatus,
       updated_at: new Date().toISOString()
     })
     .eq("id", id)
@@ -320,10 +356,14 @@ const updateProjectTaskStats = async (projectId: string): Promise<void> => {
     const totalTasks = tasks.length;
     const completedTasks = tasks.filter(task => task.status === 'completed').length;
     const totalHours = tasks.reduce((sum, task) => sum + (Number(task.hours_logged) || 0), 0);
+    const totalEstimatedHours = tasks.reduce((sum, task) => sum + (Number(task.estimated_hours) || 0), 0);
     
-    // Calculate progress
+    // Calculate progress based on hours tracked vs estimated
     let progress = 0;
-    if (totalTasks > 0) {
+    if (totalEstimatedHours > 0) {
+      progress = Math.min(Math.round((totalHours / totalEstimatedHours) * 100), 100); // Cap at 100%
+    } else if (totalTasks > 0) {
+      // Fallback to task completion if no estimated hours
       progress = Math.round((completedTasks / totalTasks) * 100);
     }
 

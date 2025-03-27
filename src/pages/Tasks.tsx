@@ -141,9 +141,15 @@ const TaskCard = ({ task, onEdit, onDelete, onView }) => {
             <div className="col-span-2 mt-1">
               <div className="flex justify-between text-xs mb-1">
                 <span className="text-muted-foreground">Progress</span>
-                <span>{Math.round((task.hours_logged / task.estimated_hours) * 100)}%</span>
+                <span>
+                  {Math.min(Math.round((task.hours_logged / task.estimated_hours) * 100), 100)}%
+                </span>
               </div>
-              <Progress value={(task.hours_logged / task.estimated_hours) * 100} className="h-1" />
+              <Progress 
+                value={(task.hours_logged / task.estimated_hours) * 100} 
+                capAt100={true}
+                className="h-1" 
+              />
             </div>
           )}
         </div>
