@@ -3,10 +3,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { Portfolio, PortfolioFormData } from "@/types/portfolio";
 
 export const getPortfolios = async (): Promise<Portfolio[]> => {
-  const { data, error } = await supabase
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData.session?.user?.id;
+
+  const query = supabase
     .from("portfolios")
     .select("*")
     .order("name");
+  
+  // If user is authenticated, filter portfolios by user_id
+  if (userId) {
+    query.eq("user_id", userId);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error("Error fetching portfolios:", error);
@@ -29,12 +39,16 @@ export const getPortfolios = async (): Promise<Portfolio[]> => {
 };
 
 export const createPortfolio = async (portfolio: PortfolioFormData): Promise<Portfolio> => {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData.session?.user?.id;
+
   const { data, error } = await supabase
     .from("portfolios")
     .insert({
       name: portfolio.name,
       description: portfolio.description,
       color: portfolio.color,
+      user_id: userId, // Associate portfolio with current user
     })
     .select()
     .single();
