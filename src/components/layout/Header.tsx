@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,6 @@ import {
   PopoverTrigger
 } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
 
 const HeaderLink = ({ href, icon: Icon, label, active = false }) => {
   return (
@@ -51,27 +50,38 @@ const Header = () => {
   const navigate = useNavigate();
   const path = location.pathname;
   const { toast } = useToast();
-  const { user, signOut } = useAuth();
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
-  
-  // Get cached user data from localStorage for backward compatibility
-  const storedUserData = localStorage.getItem('user');
-  const userData = storedUserData ? JSON.parse(storedUserData) : { 
-    firstName: 'John', 
-    lastName: 'Doe', 
-    email: user?.email || 'user@example.com',
-    avatar: null
-  };
+  const [user, setUser] = useState<{
+    firstName: string;
+    lastName: string;
+    email: string;
+    avatar: string | null;
+  } | null>(null);
 
-  // Handle logout
-  const handleLogout = async () => {
-    await signOut();
-    setLogoutDialogOpen(false);
-    
+  useEffect(() => {
+    // Get user from localStorage
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    } else {
+      // For demonstration purposes, set a demo user (will be replaced by WordPress API integration)
+      setUser({
+        firstName: 'Demo',
+        lastName: 'User',
+        email: 'demo@example.com',
+        avatar: null
+      });
+    }
+  }, []);
+
+  // Placeholder logout function - will be replaced with WordPress API logout
+  const handleLogout = () => {
     toast({
-      title: "Logged out",
-      description: "You have been successfully logged out.",
+      title: "Logout",
+      description: "This is a placeholder. Actual logout will be handled by WordPress integration.",
     });
+    
+    setLogoutDialogOpen(false);
   };
 
   return (
@@ -114,17 +124,17 @@ const Header = () => {
             <PopoverTrigger asChild>
               <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full">
                 <Avatar className="h-9 w-9">
-                  <AvatarImage src={userData?.avatar || undefined} alt="Profile" />
+                  <AvatarImage src={user?.avatar || undefined} alt="Profile" />
                   <AvatarFallback className="bg-purple-100 text-purple-700">
-                    {userData?.firstName?.[0]}{userData?.lastName?.[0]}
+                    {user?.firstName?.[0]}{user?.lastName?.[0]}
                   </AvatarFallback>
                 </Avatar>
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-56 p-2" align="end">
               <div className="flex flex-col space-y-1 p-2">
-                <p className="text-sm font-medium">{userData?.firstName} {userData?.lastName}</p>
-                <p className="text-xs text-muted-foreground truncate">{userData?.email}</p>
+                <p className="text-sm font-medium">{user?.firstName} {user?.lastName}</p>
+                <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
               </div>
               <div className="border-t my-1"></div>
               <Button 
@@ -153,7 +163,7 @@ const Header = () => {
           <DialogHeader>
             <DialogTitle>Confirm Logout</DialogTitle>
           </DialogHeader>
-          <p className="py-4">Are you sure you want to log out?</p>
+          <p className="py-4">This is a placeholder for WordPress integration. In the actual implementation, this would log you out of your WordPress account.</p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setLogoutDialogOpen(false)}>
               Cancel

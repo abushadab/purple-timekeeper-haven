@@ -7,13 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { Task } from "@/services/taskService";
 
 const formatDateForInput = (dateString: string): string => {
-  if (!dateString) {
-    return new Date().toISOString().split('T')[0];
-  }
-  
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
     return dateString;
   }
@@ -30,23 +25,21 @@ const formatDateForInput = (dateString: string): string => {
 };
 
 interface TaskFormData {
-  id?: string;
+  id?: number;
   title: string;
   description: string;
   status: "not_started" | "in_progress" | "completed";
   priority: "low" | "medium" | "high";
-  due_date: string;
-  estimated_hours: number;
-  url_mapping?: string;
-  project_id?: string;
+  dueDate: string;
+  estimatedHours: number;
+  urlMapping?: string; // New field for URL mapping
 }
 
 interface TaskDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  task?: Task;
+  task?: TaskFormData;
   onSave: (task: TaskFormData) => void;
-  projectId?: string;
 }
 
 export function TaskDialog({
@@ -54,7 +47,6 @@ export function TaskDialog({
   onOpenChange,
   task,
   onSave,
-  projectId
 }: TaskDialogProps) {
   const isEditing = !!task?.id;
   
@@ -63,10 +55,9 @@ export function TaskDialog({
     description: "",
     status: "not_started" as const,
     priority: "medium" as const,
-    due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    estimated_hours: 0,
-    url_mapping: "",
-    project_id: projectId
+    dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    estimatedHours: 0,
+    urlMapping: "", // Default empty URL mapping
   };
   
   const [formData, setFormData] = useState<TaskFormData>(task || defaultTask);
@@ -75,21 +66,17 @@ export function TaskDialog({
     if (task) {
       setFormData({
         ...task,
-        due_date: formatDateForInput(task.due_date),
-        url_mapping: task.url_mapping || "",
-        project_id: projectId || task.project_id
+        dueDate: formatDateForInput(task.dueDate),
+        urlMapping: task.urlMapping || "" // Ensure urlMapping is included with default value if missing
       });
     } else if (!open) {
-      setFormData({
-        ...defaultTask,
-        project_id: projectId
-      });
+      setFormData(defaultTask);
     }
-  }, [task, open, projectId]);
+  }, [task, open]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    const newValue = name === "estimated_hours" ? parseFloat(value) : value;
+    const newValue = name === "estimatedHours" ? parseFloat(value) : value;
     setFormData((prev) => ({ ...prev, [name]: newValue }));
   };
 
@@ -109,11 +96,13 @@ export function TaskDialog({
       return;
     }
     
-    if (!formData.project_id && projectId) {
-      formData.project_id = projectId;
-    }
-    
     onSave(formData);
+    onOpenChange(false);
+    
+    toast({
+      title: `Task ${isEditing ? "updated" : "created"} successfully`,
+      description: `"${formData.title}" has been ${isEditing ? "updated" : "added"} to your tasks.`,
+    });
   };
 
   const handleDialogClose = () => {
@@ -190,34 +179,34 @@ export function TaskDialog({
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="due_date">Due Date</Label>
+              <Label htmlFor="dueDate">Due Date</Label>
               <Input
-                id="due_date"
-                name="due_date"
+                id="dueDate"
+                name="dueDate"
                 type="date"
-                value={formData.due_date}
+                value={formData.dueDate}
                 onChange={handleChange}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="estimated_hours">Estimated Hours</Label>
+              <Label htmlFor="estimatedHours">Estimated Hours</Label>
               <Input
-                id="estimated_hours"
-                name="estimated_hours"
+                id="estimatedHours"
+                name="estimatedHours"
                 type="number"
                 min="0"
                 step="0.5"
-                value={formData.estimated_hours}
+                value={formData.estimatedHours}
                 onChange={handleChange}
               />
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="url_mapping">URL Mapping</Label>
+            <Label htmlFor="urlMapping">URL Mapping</Label>
             <Input
-              id="url_mapping"
-              name="url_mapping"
-              value={formData.url_mapping}
+              id="urlMapping"
+              name="urlMapping"
+              value={formData.urlMapping}
               onChange={handleChange}
               placeholder="Enter URL path mapping (e.g., /dashboard/users)"
             />

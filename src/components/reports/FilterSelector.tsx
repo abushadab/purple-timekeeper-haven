@@ -129,6 +129,12 @@ const FilterSelector: React.FC<FilterSelectorProps> = ({
     
     // Close the popover
     setOpen(false);
+    
+    // Show a toast notification
+    toast({
+      title: "Filters applied",
+      description: "Your report view has been updated with the selected filters."
+    });
   };
 
   return (
