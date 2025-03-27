@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -251,7 +252,7 @@ const Tasks = () => {
       onSuccess: () => {
         toast({
           title: "Task created",
-          description: `"${taskData.title}" has been added to your tasks.",
+          description: `"${taskData.title}" has been added to your tasks.`
         });
         setAddTaskOpen(false);
       },
@@ -273,7 +274,7 @@ const Tasks = () => {
       onSuccess: () => {
         toast({
           title: "Task updated",
-          description: `"${taskData.title}" has been updated.",
+          description: `"${taskData.title}" has been updated.`
         });
         setEditTaskOpen(false);
       },
@@ -294,7 +295,7 @@ const Tasks = () => {
       onSuccess: () => {
         toast({
           title: "Task deleted",
-          description: `"${currentTask.title}" has been deleted.",
+          description: `"${currentTask.title}" has been deleted.`
         });
         setDeleteTaskOpen(false);
         setCurrentTask(null);
