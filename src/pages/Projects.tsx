@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -77,7 +76,7 @@ const ProjectCard = ({ project, onViewTasks, onEdit, onDelete }) => {
               Progress: <span className="font-medium text-foreground">{project.progress}%</span>
             </div>
             <div className="text-sm text-muted-foreground">
-              {project.tasksCompleted}/{project.tasksCount} Tasks
+              {project.tasks_completed}/{project.tasks_count} Tasks
             </div>
           </div>
           
@@ -88,12 +87,12 @@ const ProjectCard = ({ project, onViewTasks, onEdit, onDelete }) => {
       <CardFooter className="p-6 pt-4 border-t border-border/50 flex justify-between text-sm text-muted-foreground">
         <div className="flex items-center gap-1">
           <Clock className="w-4 h-4 text-purple-500" />
-          <span>{project.totalHours} hours</span>
+          <span>{project.total_hours} hours</span>
         </div>
         
         <div className="flex items-center gap-1">
           <CheckSquare className="w-4 h-4 text-purple-500" />
-          <span>{project.tasksCompleted} tasks done</span>
+          <span>{project.tasks_completed} tasks done</span>
         </div>
       </CardFooter>
     </Card>
@@ -118,21 +117,18 @@ const Projects = () => {
     portfolio: "all",
   });
   
-  // Fetch projects
   const { data: projects = [], isLoading: projectsLoading, error: projectsError } = useQuery({
     queryKey: ['projects'],
     queryFn: getProjects,
-    enabled: !!user, // Only fetch if user is authenticated
+    enabled: !!user,
   });
 
-  // Fetch portfolios
   const { data: portfolios = [], isLoading: portfoliosLoading } = useQuery({
     queryKey: ['portfolios'],
     queryFn: getPortfolios,
-    enabled: !!user, // Only fetch if user is authenticated
+    enabled: !!user,
   });
 
-  // Create project mutation
   const createProjectMutation = useMutation({
     mutationFn: createProject,
     onSuccess: () => {
@@ -140,7 +136,6 @@ const Projects = () => {
     },
   });
 
-  // Update project mutation
   const updateProjectMutation = useMutation({
     mutationFn: updateProject,
     onSuccess: () => {
@@ -148,7 +143,6 @@ const Projects = () => {
     },
   });
 
-  // Delete project mutation
   const deleteProjectMutation = useMutation({
     mutationFn: deleteProject,
     onSuccess: () => {
@@ -161,7 +155,7 @@ const Projects = () => {
       onSuccess: () => {
         toast({
           title: "Project created",
-          description: `"${projectData.name}" has been added to your projects.`,
+          description: `"${projectData.name}" has been added to your projects.",
         });
         setAddProjectOpen(false);
       },
@@ -262,7 +256,6 @@ const Projects = () => {
     }
   });
 
-  // Handle errors
   if (projectsError) {
     toast({
       title: "Error loading projects",
