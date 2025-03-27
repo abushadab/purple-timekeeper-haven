@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -9,9 +9,8 @@ import {
   BarChart3,
   Clock,
   Folder,
-  User,
-  LogOut,
   Edit,
+  LogOut,
   Users
 } from "lucide-react";
 import {
@@ -49,35 +48,20 @@ const HeaderLink = ({ href, icon: Icon, label, active = false }) => {
 };
 
 const Header = () => {
-  // Add a useState fallback for auth data
-  const [hasMounted, setHasMounted] = useState(false);
+  console.log("Rendering Header component");
   
-  useEffect(() => {
-    setHasMounted(true);
-  }, []);
-  
-  // Don't attempt to use useAuth until component has mounted
-  if (!hasMounted) {
-    return null; // Return null on first render
-  }
-  
+  // Get all hooks at the top level regardless of any conditions
   const location = useLocation();
   const navigate = useNavigate();
-  const path = location.pathname;
   const { toast } = useToast();
   
-  // Wrap auth usage in try/catch to avoid crashes
-  let authData = { user: null, signOut: async () => {} };
-  try {
-    authData = useAuth();
-  } catch (error) {
-    console.error("Failed to use auth context:", error);
-    // Continue with default values
-  }
+  // Set up auth context with try/catch but call useAuth at top level
+  const auth = useAuth();
+  const user = auth?.user;
+  const signOut = auth?.signOut;
   
-  const { user, signOut } = authData;
-  
-  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+  const path = location.pathname;
+  const [logoutDialogOpen, setLogoutDialogOpen] = React.useState(false);
   
   // Get cached user data from localStorage for backward compatibility
   const storedUserData = localStorage.getItem('user');
@@ -90,7 +74,9 @@ const Header = () => {
 
   // Handle logout
   const handleLogout = async () => {
-    await signOut();
+    if (signOut) {
+      await signOut();
+    }
     setLogoutDialogOpen(false);
     
     toast({
@@ -98,6 +84,8 @@ const Header = () => {
       description: "You have been successfully logged out.",
     });
   };
+
+  console.log("Header - Auth context:", !!auth, "User:", !!user);
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">

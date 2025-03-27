@@ -8,9 +8,21 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { user, loading } = useAuth();
+  // Use try-catch to handle potential auth context errors
+  let authData = { user: null, loading: true };
+  try {
+    authData = useAuth();
+  } catch (error) {
+    console.error("Auth context error:", error);
+    // Redirect to login on auth error
+    return <Navigate to="/login" replace />;
+  }
   
-  // Show loading state or spinner while checking authentication
+  const { user, loading } = authData;
+  
+  console.log("ProtectedRoute - Auth check:", "loading:", loading, "user:", !!user);
+  
+  // Show loading state while checking authentication
   if (loading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -20,6 +32,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
   
   if (!user) {
+    console.log("ProtectedRoute - No user found, redirecting to login");
     // Redirect to login if not authenticated
     return <Navigate to="/login" replace />;
   }
