@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface Project {
@@ -31,7 +30,7 @@ export const getProjects = async (): Promise<Project[]> => {
 
   const { data, error } = await supabase
     .from("projects")
-    .select("*")
+    .select("*, tasks(id, status, hours_logged)")
     .order("name");
   
   if (error) {
@@ -40,21 +39,34 @@ export const getProjects = async (): Promise<Project[]> => {
   }
 
   // Transform the data to match our frontend model
-  return data.map((item) => ({
-    id: item.id,
-    name: item.name,
-    description: item.description || "",
-    progress: item.progress,
-    total_hours: item.total_hours,
-    tasks_count: item.tasks_count,
-    tasks_completed: item.tasks_completed,
-    due_date: formatDueDate(item.due_date),
-    status: item.status || "active",
-    portfolio_id: item.portfolio_id,
-    user_id: item.user_id,
-    created_at: item.created_at,
-    updated_at: item.updated_at
-  }));
+  return data.map((item) => {
+    // Calculate task statistics if tasks are available
+    const tasks = item.tasks || [];
+    const tasksCount = tasks.length;
+    const tasksCompleted = tasks.filter(task => task.status === 'completed').length;
+    const totalHours = tasks.reduce((total, task) => total + (parseFloat(task.hours_logged) || 0), 0);
+    
+    // Calculate progress as percentage of completed tasks
+    const progress = tasksCount > 0 
+      ? Math.round((tasksCompleted / tasksCount) * 100)
+      : 0;
+
+    return {
+      id: item.id,
+      name: item.name,
+      description: item.description || "",
+      progress: progress,
+      total_hours: totalHours,
+      tasks_count: tasksCount,
+      tasks_completed: tasksCompleted,
+      due_date: formatDueDate(item.due_date),
+      status: item.status || "active",
+      portfolio_id: item.portfolio_id,
+      user_id: item.user_id,
+      created_at: item.created_at,
+      updated_at: item.updated_at
+    };
+  });
 };
 
 export const createProject = async (project: ProjectFormData): Promise<Project> => {
@@ -87,6 +99,9 @@ export const createProject = async (project: ProjectFormData): Promise<Project> 
     throw error;
   }
 
+  // Update the portfolio statistics after creating a project
+  await updatePortfolioStatistics(project.portfolioId);
+
   return {
     id: data.id,
     name: data.name,
@@ -109,6 +124,15 @@ export const updateProject = async (project: ProjectFormData): Promise<Project> 
     throw new Error("Project ID is required for updates");
   }
 
+  // Get the current project to check if portfolio has changed
+  const { data: currentProject } = await supabase
+    .from("projects")
+    .select("portfolio_id")
+    .eq("id", project.id)
+    .single();
+
+  const oldPortfolioId = currentProject?.portfolio_id;
+
   const { data, error } = await supabase
     .from("projects")
     .update({
@@ -125,6 +149,17 @@ export const updateProject = async (project: ProjectFormData): Promise<Project> 
   if (error) {
     console.error("Error updating project:", error);
     throw error;
+  }
+
+  // If portfolio has changed, update statistics for both old and new portfolios
+  if (oldPortfolioId !== project.portfolioId) {
+    if (oldPortfolioId) {
+      await updatePortfolioStatistics(oldPortfolioId);
+    }
+    await updatePortfolioStatistics(project.portfolioId);
+  } else {
+    // Otherwise just update the current portfolio
+    await updatePortfolioStatistics(project.portfolioId);
   }
 
   return {
@@ -145,6 +180,15 @@ export const updateProject = async (project: ProjectFormData): Promise<Project> 
 };
 
 export const deleteProject = async (id: string): Promise<void> => {
+  // Get the portfolio ID before deleting the project
+  const { data: project } = await supabase
+    .from("projects")
+    .select("portfolio_id")
+    .eq("id", id)
+    .single();
+
+  const portfolioId = project?.portfolio_id;
+
   const { error } = await supabase
     .from("projects")
     .delete()
@@ -154,7 +198,59 @@ export const deleteProject = async (id: string): Promise<void> => {
     console.error("Error deleting project:", error);
     throw error;
   }
+
+  // Update portfolio statistics after deleting a project
+  if (portfolioId) {
+    await updatePortfolioStatistics(portfolioId);
+  }
 };
+
+// Helper function to update portfolio statistics
+async function updatePortfolioStatistics(portfolioId: string) {
+  try {
+    // Get all projects for this portfolio
+    const { data: projects, error: projectsError } = await supabase
+      .from("projects")
+      .select("id")
+      .eq("portfolio_id", portfolioId);
+
+    if (projectsError) {
+      console.error("Error fetching projects for portfolio:", projectsError);
+      return;
+    }
+
+    const projectCount = projects?.length || 0;
+
+    // Get total hours across all tasks in all projects for this portfolio
+    const { data: hours, error: hoursError } = await supabase
+      .from("tasks")
+      .select("hours_logged")
+      .in("project_id", projects?.map(p => p.id) || []);
+
+    if (hoursError) {
+      console.error("Error fetching hours for portfolio:", hoursError);
+      return;
+    }
+
+    const totalHours = hours?.reduce((sum, task) => sum + (parseFloat(task.hours_logged) || 0), 0) || 0;
+
+    // Update the portfolio with the new statistics
+    const { error: updateError } = await supabase
+      .from("portfolios")
+      .update({
+        project_count: projectCount,
+        total_hours: totalHours,
+        last_updated: new Date().toISOString()
+      })
+      .eq("id", portfolioId);
+
+    if (updateError) {
+      console.error("Error updating portfolio statistics:", updateError);
+    }
+  } catch (error) {
+    console.error("Error in updatePortfolioStatistics:", error);
+  }
+}
 
 // Helper function to format the due date in a user-friendly way
 const formatDueDate = (date: string | null): string => {

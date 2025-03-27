@@ -8,7 +8,7 @@ export const getPortfolios = async (): Promise<Portfolio[]> => {
 
   const query = supabase
     .from("portfolios")
-    .select("*")
+    .select("*, projects(id, total_hours)")
     .order("name");
   
   // If user is authenticated, filter portfolios by user_id
@@ -24,18 +24,25 @@ export const getPortfolios = async (): Promise<Portfolio[]> => {
   }
 
   // Transform the data to match our frontend model
-  return data.map((item) => ({
-    id: item.id,
-    name: item.name,
-    description: item.description,
-    color: item.color,
-    projectCount: item.project_count,
-    totalHours: item.total_hours,
-    lastUpdated: formatLastUpdated(item.last_updated),
-    archived: item.archived,
-    userId: item.user_id,
-    createdAt: item.created_at,
-  }));
+  return data.map((item) => {
+    // Calculate project count and total hours
+    const projects = item.projects || [];
+    const projectCount = projects.length;
+    const totalHours = projects.reduce((sum, project) => sum + (parseFloat(project.total_hours) || 0), 0);
+
+    return {
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      color: item.color,
+      projectCount: projectCount,
+      totalHours: totalHours,
+      lastUpdated: formatLastUpdated(item.last_updated),
+      archived: item.archived,
+      userId: item.user_id,
+      createdAt: item.created_at,
+    };
+  });
 };
 
 export const createPortfolio = async (portfolio: PortfolioFormData): Promise<Portfolio> => {
@@ -49,6 +56,8 @@ export const createPortfolio = async (portfolio: PortfolioFormData): Promise<Por
       description: portfolio.description,
       color: portfolio.color,
       user_id: userId, // Associate portfolio with current user
+      project_count: 0,
+      total_hours: 0,
     })
     .select()
     .single();
@@ -84,6 +93,7 @@ export const updatePortfolio = async (portfolio: PortfolioFormData): Promise<Por
       name: portfolio.name,
       description: portfolio.description,
       color: portfolio.color,
+      last_updated: new Date().toISOString(),
     })
     .eq("id", portfolio.id)
     .select()
