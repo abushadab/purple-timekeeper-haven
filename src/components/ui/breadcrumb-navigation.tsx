@@ -27,7 +27,7 @@ export function BreadcrumbNavigation({ items }: BreadcrumbNavigationProps) {
         {items.map((item, index) => {
           // Use a React key for the Fragment instead of data-lov-id
           return (
-            <React.Fragment key={index}>
+            <li key={index}>
               {index !== 0 && <BreadcrumbSeparator />}
               {index === items.length - 1 ? (
                 <BreadcrumbItem>
@@ -40,7 +40,7 @@ export function BreadcrumbNavigation({ items }: BreadcrumbNavigationProps) {
                   </BreadcrumbLink>
                 </BreadcrumbItem>
               )}
-            </React.Fragment>
+            </li>
           );
         })}
       </BreadcrumbList>
