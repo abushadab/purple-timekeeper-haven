@@ -1,6 +1,5 @@
-
 import React, { useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Header from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
@@ -28,6 +27,7 @@ import { TaskDialog } from "@/components/tasks/task-dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DropdownActions } from "@/components/ui/dropdown-actions";
 import ScreenshotsDialog from "@/components/tasks/screenshots-dialog";
+import { BreadcrumbNavigation } from "@/components/ui/breadcrumb-navigation";
 import { 
   getTasksByProject, 
   createTask, 
@@ -157,6 +157,7 @@ const Tasks = () => {
   const [activeTab, setActiveTab] = useState("all");
   const { projectId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const { user } = useAuth();
   
@@ -171,7 +172,6 @@ const Tasks = () => {
     priority: "all",
   });
 
-  // Fetch tasks for the current project
   const { 
     data: tasks = [], 
     isLoading: tasksLoading,
@@ -182,7 +182,6 @@ const Tasks = () => {
     enabled: !!projectId && !!user,
   });
 
-  // Fetch project details
   const {
     data: project,
     isLoading: projectLoading,
@@ -192,7 +191,7 @@ const Tasks = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('projects')
-        .select('*')
+        .select('*, portfolios(id, name)')
         .eq('id', projectId)
         .single();
       
@@ -202,7 +201,6 @@ const Tasks = () => {
     enabled: !!projectId && !!user,
   });
 
-  // Fetch screenshots for the current task
   const {
     data: screenshots = [],
     isLoading: screenshotsLoading,
@@ -213,7 +211,6 @@ const Tasks = () => {
     enabled: !!currentTask && screenshotsOpen,
   });
 
-  // Create task mutation
   const createTaskMutation = useMutation({
     mutationFn: createTask,
     onSuccess: () => {
@@ -222,7 +219,6 @@ const Tasks = () => {
     },
   });
 
-  // Update task mutation
   const updateTaskMutation = useMutation({
     mutationFn: updateTask,
     onSuccess: () => {
@@ -231,7 +227,6 @@ const Tasks = () => {
     },
   });
 
-  // Delete task mutation
   const deleteTaskMutation = useMutation({
     mutationFn: deleteTask,
     onSuccess: () => {
@@ -357,7 +352,6 @@ const Tasks = () => {
     }
   });
 
-  // Handle errors
   if (tasksError || projectError) {
     toast({
       title: "Error loading data",
@@ -366,18 +360,47 @@ const Tasks = () => {
     });
   }
 
+  const handleBackNavigation = () => {
+    const searchParams = new URLSearchParams(location.search);
+    const portfolioId = searchParams.get('portfolioId');
+    
+    const portfolioIdToUse = project?.portfolio_id || portfolioId;
+    
+    if (portfolioIdToUse) {
+      navigate(`/projects?portfolioId=${portfolioIdToUse}`);
+    } else {
+      navigate('/projects');
+    }
+  };
+
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
       
       <main className="flex-1">
         <div className="container px-4 sm:px-6 py-6 sm:py-8">
+          {project && !projectLoading && (
+            <BreadcrumbNavigation 
+              items={[
+                { label: "Portfolios", href: "/portfolios" },
+                { 
+                  label: project.portfolios?.name || "Projects", 
+                  href: project.portfolio_id ? `/projects?portfolioId=${project.portfolio_id}` : "/projects"
+                },
+                { label: project.name }
+              ]}
+            />
+          )}
+          
           <div className="flex items-center gap-2 mb-6">
-            <Link to="/projects">
-              <Button variant="ghost" size="icon" className="rounded-full h-8 w-8">
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-            </Link>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="rounded-full h-8 w-8"
+              onClick={handleBackNavigation}
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
             <div>
               <h1 className="text-2xl font-bold tracking-tight">
                 Project: {projectLoading ? "Loading..." : project?.name}

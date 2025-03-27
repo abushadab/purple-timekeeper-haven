@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -28,6 +27,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { getProjects, createProject, updateProject, deleteProject, Project, ProjectFormData } from "@/services/projectService";
 import { useAuth } from "@/contexts/AuthContext";
 import { getPortfolios } from "@/services/portfolioService";
+import { BreadcrumbNavigation } from "@/components/ui/breadcrumb-navigation";
 
 const ProjectCard = ({ project, onViewTasks, onEdit, onDelete }) => {
   const actions = [
@@ -115,11 +115,9 @@ const Projects = () => {
   
   const [sortOption, setSortOption] = useState("name");
   
-  // Get portfolioId from URL query parameter
   const searchParams = new URLSearchParams(location.search);
   const portfolioIdFromUrl = searchParams.get('portfolioId');
   
-  // Find the portfolio name for the header if a portfolio filter is applied
   const { data: portfolios = [], isLoading: portfoliosLoading } = useQuery({
     queryKey: ['portfolios'],
     queryFn: getPortfolios,
@@ -158,7 +156,6 @@ const Projects = () => {
   });
   
   const handleAddProject = (projectData: ProjectFormData) => {
-    // If we're filtering by portfolio, automatically set the new project's portfolio
     if (portfolioIdFromUrl) {
       projectData.portfolioId = portfolioIdFromUrl;
     }
@@ -237,7 +234,7 @@ const Projects = () => {
   };
   
   const clearPortfolioFilter = () => {
-    navigate('/projects');
+    navigate('/portfolios');
   };
   
   const filteredProjects = projects.filter((project: Project) => {
@@ -286,6 +283,15 @@ const Projects = () => {
       
       <main className="flex-1">
         <div className="container px-4 sm:px-6 py-6 sm:py-8">
+          {portfolioIdFromUrl && (
+            <BreadcrumbNavigation 
+              items={[
+                { label: "Portfolios", href: "/portfolios" },
+                { label: filteredPortfolio?.name || "Portfolio" }
+              ]}
+            />
+          )}
+          
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 space-y-4 sm:space-y-0">
             <div className="flex items-center gap-2">
               <FolderKanban className="h-7 w-7 text-purple-600" />
@@ -300,7 +306,7 @@ const Projects = () => {
                       className="p-0 h-auto text-sm text-muted-foreground hover:text-foreground"
                       onClick={clearPortfolioFilter}
                     >
-                      ← View all projects
+                      ← Back to portfolios
                     </Button>
                   </div>
                 )}
