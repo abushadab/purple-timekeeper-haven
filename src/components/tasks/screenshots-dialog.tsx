@@ -1,18 +1,18 @@
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { X, Plus, Upload, Trash2 } from "lucide-react";
+import { X, Plus, Upload, Trash2, Image, FileImage } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { addTaskScreenshot, deleteTaskScreenshot, Screenshot } from "@/services/taskService";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ScreenshotsDialogProps {
   open: boolean;
@@ -32,18 +32,48 @@ const ScreenshotsDialog: React.FC<ScreenshotsDialogProps> = ({
   onScreenshotsUpdated,
 }) => {
   const [selectedImage, setSelectedImage] = useState<Screenshot | null>(null);
-  const [newScreenshotUrl, setNewScreenshotUrl] = useState<string>("");
-  const [newThumbnailUrl, setNewThumbnailUrl] = useState<string>("");
   const [isAdding, setIsAdding] = useState<boolean>(false);
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState<boolean>(false);
   const [screenshotToDelete, setScreenshotToDelete] = useState<Screenshot | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      
+      // Check file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Image must be less than 5MB",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Check file type
+      if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)) {
+        toast({
+          title: "Invalid file type",
+          description: "Only JPG, PNG, GIF and WebP images are supported",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      setSelectedFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    }
+  };
 
   const handleAddScreenshot = async () => {
-    if (!newScreenshotUrl.trim()) {
+    if (!selectedFile) {
       toast({
         title: "Error",
-        description: "Screenshot URL is required",
+        description: "Please select an image to upload",
         variant: "destructive",
       });
       return;
@@ -51,22 +81,46 @@ const ScreenshotsDialog: React.FC<ScreenshotsDialogProps> = ({
 
     setIsUploading(true);
     try {
-      await addTaskScreenshot(taskId, newScreenshotUrl, newThumbnailUrl || newScreenshotUrl);
+      // 1. Upload the image to Supabase Storage
+      const timestamp = new Date().toISOString();
+      const fileExt = selectedFile.name.split('.').pop();
+      const fileName = `${timestamp.replace(/:/g, '-')}.${fileExt}`;
+      const filePath = `${taskId}/${fileName}`;
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('task-screenshots')
+        .upload(filePath, selectedFile);
+      
+      if (uploadError) throw uploadError;
+      
+      // 2. Get the public URL for the uploaded image
+      const { data: { publicUrl } } = supabase.storage
+        .from('task-screenshots')
+        .getPublicUrl(filePath);
+      
+      // 3. Create a thumbnail if needed (for simplicity, we're using the same image as both screenshot and thumbnail)
+      const thumbnailUrl = publicUrl;
+      
+      // 4. Save the screenshot info to the database
+      await addTaskScreenshot(taskId, publicUrl, thumbnailUrl);
+      
       toast({
         title: "Screenshot added",
-        description: "The screenshot has been added successfully",
+        description: "The screenshot has been uploaded successfully",
       });
-      setNewScreenshotUrl("");
-      setNewThumbnailUrl("");
+      
+      // Reset state
+      setSelectedFile(null);
+      setPreviewUrl(null);
       setIsAdding(false);
       onScreenshotsUpdated();
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to add screenshot",
+        description: "Failed to upload screenshot",
         variant: "destructive",
       });
-      console.error("Error adding screenshot:", error);
+      console.error("Error uploading screenshot:", error);
     } finally {
       setIsUploading(false);
     }
@@ -81,7 +135,21 @@ const ScreenshotsDialog: React.FC<ScreenshotsDialogProps> = ({
     if (!screenshotToDelete) return;
 
     try {
+      // 1. Delete from database
       await deleteTaskScreenshot(screenshotToDelete.id);
+      
+      // 2. Extract the storage path from the URL
+      // Example URL: https://oeawkdfkvrezcitqczuy.supabase.co/storage/v1/object/public/task-screenshots/taskId/filename.jpg
+      const urlParts = screenshotToDelete.url.split('task-screenshots/');
+      if (urlParts.length > 1) {
+        const storagePath = urlParts[1];
+        
+        // 3. Delete from storage
+        await supabase.storage
+          .from('task-screenshots')
+          .remove([storagePath]);
+      }
+      
       toast({
         title: "Screenshot deleted",
         description: "The screenshot has been deleted successfully",
@@ -112,6 +180,18 @@ const ScreenshotsDialog: React.FC<ScreenshotsDialogProps> = ({
     }
   };
 
+  const handleClickUpload = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleCancelUpload = () => {
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    setIsAdding(false);
+  };
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -133,53 +213,58 @@ const ScreenshotsDialog: React.FC<ScreenshotsDialogProps> = ({
 
           {isAdding && (
             <div className="border rounded-md p-4 mb-4">
-              <h3 className="font-medium mb-2">Add New Screenshot</h3>
-              <div className="space-y-3">
-                <div>
-                  <Label htmlFor="screenshotUrl">Screenshot URL</Label>
-                  <Input 
-                    id="screenshotUrl" 
-                    value={newScreenshotUrl}
-                    onChange={(e) => setNewScreenshotUrl(e.target.value)}
-                    placeholder="https://example.com/screenshot.jpg"
-                  />
+              <h3 className="font-medium mb-2">Upload New Screenshot</h3>
+              
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                accept="image/jpeg,image/png,image/gif,image/webp"
+                className="hidden"
+              />
+
+              {previewUrl ? (
+                <div className="space-y-4">
+                  <div className="border rounded-md overflow-hidden">
+                    <img 
+                      src={previewUrl} 
+                      alt="Screenshot preview" 
+                      className="w-full h-auto max-h-[300px] object-contain"
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={handleCancelUpload}
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      className="flex items-center gap-1"
+                      onClick={handleAddScreenshot}
+                      disabled={isUploading}
+                    >
+                      {isUploading ? (
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                      ) : (
+                        <Upload size={16} />
+                      )}
+                      <span>Upload Screenshot</span>
+                    </Button>
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="thumbnailUrl">Thumbnail URL (optional)</Label>
-                  <Input 
-                    id="thumbnailUrl" 
-                    value={newThumbnailUrl}
-                    onChange={(e) => setNewThumbnailUrl(e.target.value)}
-                    placeholder="https://example.com/thumbnail.jpg"
-                  />
+              ) : (
+                <div 
+                  className="border-2 border-dashed rounded-md p-8 text-center cursor-pointer hover:bg-muted/50 transition-colors"
+                  onClick={handleClickUpload}
+                >
+                  <FileImage className="w-10 h-10 mx-auto text-muted-foreground mb-2" />
+                  <p className="text-sm font-medium">Click to select or drop an image</p>
+                  <p className="text-xs text-muted-foreground mt-1">JPG, PNG, GIF or WebP (max 5MB)</p>
                 </div>
-                <div className="flex justify-end gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => {
-                      setIsAdding(false);
-                      setNewScreenshotUrl("");
-                      setNewThumbnailUrl("");
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    className="flex items-center gap-1"
-                    onClick={handleAddScreenshot}
-                    disabled={isUploading}
-                  >
-                    {isUploading ? (
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-                    ) : (
-                      <Upload size={16} />
-                    )}
-                    <span>Add Screenshot</span>
-                  </Button>
-                </div>
-              </div>
+              )}
             </div>
           )}
 
