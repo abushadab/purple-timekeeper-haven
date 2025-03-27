@@ -89,11 +89,11 @@ const projectsData = [
 ];
 
 const portfoliosData = [
-  { id: 1, name: "Client Work" },
-  { id: 2, name: "Personal Projects" },
-  { id: 3, name: "Learning & Development" },
-  { id: 4, name: "Administrative" },
-  { id: 5, name: "Content Creation" },
+  { id: "1", name: "Client Work" },
+  { id: "2", name: "Personal Projects" },
+  { id: "3", name: "Learning & Development" },
+  { id: "4", name: "Administrative" },
+  { id: "5", name: "Content Creation" },
 ];
 
 const ProjectCard = ({ project, onViewTasks, onEdit, onDelete }) => {
