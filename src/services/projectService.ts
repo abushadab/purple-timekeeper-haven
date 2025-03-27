@@ -65,7 +65,7 @@ export const getProjects = async (): Promise<Project[]> => {
       total_hours: totalHours,
       tasks_count: tasksCount,
       tasks_completed: tasksCompleted,
-      due_date: formatDueDate(item.due_date),
+      due_date: item.due_date,
       status: item.status || "active",
       portfolio_id: item.portfolio_id,
       user_id: item.user_id,
