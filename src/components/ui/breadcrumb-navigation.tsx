@@ -21,21 +21,19 @@ interface BreadcrumbNavigationProps {
 
 export function BreadcrumbNavigation({ items }: BreadcrumbNavigationProps) {
   return (
-    <Breadcrumb className="mb-4">
-      <BreadcrumbList>
-        {items.map((item, index) => (
-          <BreadcrumbItem key={index}>
-            {index !== 0 && <BreadcrumbSeparator />}
-            {index === items.length - 1 ? (
-              <BreadcrumbPage>{item.label}</BreadcrumbPage>
-            ) : (
-              <BreadcrumbLink asChild>
-                <Link to={item.href || "#"}>{item.label}</Link>
-              </BreadcrumbLink>
-            )}
-          </BreadcrumbItem>
-        ))}
-      </BreadcrumbList>
-    </Breadcrumb>
+<BreadcrumbList>
+  {items.map((item, index) => [
+    index !== 0 && <BreadcrumbSeparator key={`separator-${index}`} />,
+    <BreadcrumbItem key={index}>
+      {index === items.length - 1 ? (
+        <BreadcrumbPage>{item.label}</BreadcrumbPage>
+      ) : (
+        <BreadcrumbLink asChild>
+          <Link to={item.href || "#"}>{item.label}</Link>
+        </BreadcrumbLink>
+      )}
+    </BreadcrumbItem>,
+  ])}
+</BreadcrumbList>
   );
 }
