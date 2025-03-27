@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Header from "@/components/layout/Header";
@@ -178,6 +178,8 @@ const Tasks = () => {
     priority: "all",
   });
 
+  const [calculatedProgress, setCalculatedProgress] = useState(0);
+
   const { 
     data: tasks = [], 
     isLoading: tasksLoading,
@@ -249,7 +251,7 @@ const Tasks = () => {
       onSuccess: () => {
         toast({
           title: "Task created",
-          description: `"${taskData.title}" has been added to your tasks.`,
+          description: `"${taskData.title}" has been added to your tasks.",
         });
         setAddTaskOpen(false);
       },
@@ -271,7 +273,7 @@ const Tasks = () => {
       onSuccess: () => {
         toast({
           title: "Task updated",
-          description: `"${taskData.title}" has been updated.`,
+          description: `"${taskData.title}" has been updated.",
         });
         setEditTaskOpen(false);
       },
@@ -292,7 +294,7 @@ const Tasks = () => {
       onSuccess: () => {
         toast({
           title: "Task deleted",
-          description: `"${currentTask.title}" has been deleted.`,
+          description: `"${currentTask.title}" has been deleted.",
         });
         setDeleteTaskOpen(false);
         setCurrentTask(null);
@@ -357,6 +359,25 @@ const Tasks = () => {
         return 0;
     }
   });
+
+  useEffect(() => {
+    if (tasks && tasks.length > 0) {
+      const totalHoursLogged = tasks.reduce((sum, task) => sum + (task.hours_logged || 0), 0);
+      const totalEstimatedHours = tasks.reduce((sum, task) => sum + (task.estimated_hours || 0), 0);
+      
+      let newProgress = 0;
+      if (totalEstimatedHours > 0) {
+        newProgress = Math.min(Math.round((totalHoursLogged / totalEstimatedHours) * 100), 100);
+      } else if (tasks.length > 0) {
+        const completedTasks = tasks.filter(task => task.status === 'completed').length;
+        newProgress = Math.round((completedTasks / tasks.length) * 100);
+      }
+      
+      setCalculatedProgress(newProgress);
+    } else {
+      setCalculatedProgress(0);
+    }
+  }, [tasks]);
 
   if (tasksError || projectError) {
     toast({
@@ -437,22 +458,22 @@ const Tasks = () => {
                   <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-4">
                     <div className="p-4 bg-muted/50 rounded-lg">
                       <h3 className="text-sm font-medium mb-1">Tasks</h3>
-                      <p className="text-2xl font-semibold">{project.tasks_completed}/{project.tasks_count}</p>
+                      <p className="text-2xl font-semibold">{tasks.filter(task => task.status === 'completed').length}/{tasks.length}</p>
                       <p className="text-xs text-muted-foreground">Completed</p>
                     </div>
                     
                     <div className="p-4 bg-muted/50 rounded-lg">
                       <h3 className="text-sm font-medium mb-1">Hours</h3>
-                      <p className="text-2xl font-semibold">{project.total_hours}</p>
+                      <p className="text-2xl font-semibold">{tasks.reduce((sum, task) => sum + (task.hours_logged || 0), 0).toFixed(1)}</p>
                       <p className="text-xs text-muted-foreground">Logged</p>
                     </div>
                     
                     <div className="col-span-2 mt-2">
                       <div className="flex justify-between text-sm mb-1">
                         <span>Progress</span>
-                        <span className="font-medium">{project.progress}%</span>
+                        <span className="font-medium">{calculatedProgress}%</span>
                       </div>
-                      <Progress value={project.progress} className="h-2" />
+                      <Progress value={calculatedProgress} className="h-2" />
                     </div>
                   </div>
                 </div>
