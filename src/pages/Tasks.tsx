@@ -1,5 +1,7 @@
+
 import React, { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Header from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,10 +15,9 @@ import {
   ArrowLeft,
   SlidersHorizontal,
   Filter,
-  Eye,
+  Images,
   Edit,
-  Trash,
-  Images
+  Trash
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -27,76 +28,17 @@ import { TaskDialog } from "@/components/tasks/task-dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DropdownActions } from "@/components/ui/dropdown-actions";
 import ScreenshotsDialog from "@/components/tasks/screenshots-dialog";
-
-const tasksData = [
-  {
-    id: 1,
-    title: "Design homepage wireframes",
-    description: "Create low-fidelity wireframes for the new homepage design",
-    status: "completed",
-    priority: "high",
-    dueDate: "2023-10-10",
-    hoursLogged: 4.5,
-    estimatedHours: 4,
-  },
-  {
-    id: 2,
-    title: "Implement navigation component",
-    description: "Build the responsive navigation bar according to design specs",
-    status: "in_progress",
-    priority: "high",
-    dueDate: "2023-10-12",
-    hoursLogged: 3.2,
-    estimatedHours: 6,
-  },
-  {
-    id: 3,
-    title: "Create hero section",
-    description: "Implement the hero section with animations",
-    status: "not_started",
-    priority: "medium",
-    dueDate: "2023-10-14",
-    hoursLogged: 0,
-    estimatedHours: 5,
-  },
-  {
-    id: 4,
-    title: "Set up image optimization",
-    description: "Configure image processing and optimization for better performance",
-    status: "not_started",
-    priority: "low",
-    dueDate: "2023-10-16",
-    hoursLogged: 0,
-    estimatedHours: 3,
-  },
-  {
-    id: 5,
-    title: "Implement footer",
-    description: "Build the responsive footer with all required sections",
-    status: "not_started",
-    priority: "medium",
-    dueDate: "2023-10-18",
-    hoursLogged: 0,
-    estimatedHours: 4,
-  },
-];
-
-const screenshotsData = {
-  1: [
-    { id: "1", url: "https://picsum.photos/id/1/800/600", thumbnailUrl: "https://picsum.photos/id/1/200/150", timestamp: "Oct 10, 2023, 14:30" },
-    { id: "2", url: "https://picsum.photos/id/2/800/600", thumbnailUrl: "https://picsum.photos/id/2/200/150", timestamp: "Oct 10, 2023, 15:45" },
-  ],
-  2: [
-    { id: "3", url: "https://picsum.photos/id/3/800/600", thumbnailUrl: "https://picsum.photos/id/3/200/150", timestamp: "Oct 11, 2023, 09:15" },
-    { id: "4", url: "https://picsum.photos/id/4/800/600", thumbnailUrl: "https://picsum.photos/id/4/200/150", timestamp: "Oct 11, 2023, 10:30" },
-    { id: "5", url: "https://picsum.photos/id/5/800/600", thumbnailUrl: "https://picsum.photos/id/5/200/150", timestamp: "Oct 11, 2023, 11:45" },
-  ],
-  3: [
-    { id: "6", url: "https://picsum.photos/id/6/800/600", thumbnailUrl: "https://picsum.photos/id/6/200/150", timestamp: "Oct 12, 2023, 13:15" },
-  ],
-  4: [],
-  5: [],
-};
+import { 
+  getTasksByProject, 
+  createTask, 
+  updateTask, 
+  deleteTask,
+  getTaskScreenshots,
+  TaskFormData, 
+  Task
+} from "@/services/taskService";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 const formatDateForDisplay = (dateString: string): string => {
   try {
@@ -108,20 +50,6 @@ const formatDateForDisplay = (dateString: string): string => {
   } catch (e) {
     return dateString;
   }
-};
-
-const project = {
-  id: 1,
-  name: "Website Redesign",
-  description: "Complete overhaul of company website with new UI/UX design system",
-  progress: 36,
-  totalHours: 7.7,
-  estimatedHours: 22,
-  tasksCompleted: 1,
-  tasksTotal: 5,
-  dueDate: "Oct 20, 2023",
-  portfolio: "Client Work",
-  portfolioId: 1
 };
 
 const TaskCard = ({ task, onEdit, onDelete, onView }) => {
@@ -202,20 +130,20 @@ const TaskCard = ({ task, onEdit, onDelete, onView }) => {
         <div className="mt-4 grid grid-cols-2 gap-y-3">
           <div className="flex items-center gap-1 text-sm text-muted-foreground">
             <Calendar className="w-4 h-4 text-purple-500" />
-            <span>Due: {formatDateForDisplay(task.dueDate)}</span>
+            <span>Due: {formatDateForDisplay(task.due_date)}</span>
           </div>
           <div className="flex items-center gap-1 text-sm text-muted-foreground">
             <Clock className="w-4 h-4 text-purple-500" />
-            <span>{task.hoursLogged}/{task.estimatedHours} hrs</span>
+            <span>{task.hours_logged}/{task.estimated_hours} hrs</span>
           </div>
           
           {(task.status === "completed" || task.status === "in_progress") && (
             <div className="col-span-2 mt-1">
               <div className="flex justify-between text-xs mb-1">
                 <span className="text-muted-foreground">Progress</span>
-                <span>{Math.round((task.hoursLogged / task.estimatedHours) * 100)}%</span>
+                <span>{Math.round((task.hours_logged / task.estimated_hours) * 100)}%</span>
               </div>
-              <Progress value={(task.hoursLogged / task.estimatedHours) * 100} className="h-1" />
+              <Progress value={(task.hours_logged / task.estimated_hours) * 100} className="h-1" />
             </div>
           )}
         </div>
@@ -228,56 +156,172 @@ const Tasks = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("all");
   const { projectId } = useParams();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
   
   const [addTaskOpen, setAddTaskOpen] = useState(false);
   const [editTaskOpen, setEditTaskOpen] = useState(false);
   const [deleteTaskOpen, setDeleteTaskOpen] = useState(false);
   const [screenshotsOpen, setScreenshotsOpen] = useState(false);
-  const [currentTask, setCurrentTask] = useState(null);
+  const [currentTask, setCurrentTask] = useState<Task | null>(null);
   
   const [sortOption, setSortOption] = useState("dueDate");
   const [filterOptions, setFilterOptions] = useState({
     priority: "all",
   });
+
+  // Fetch tasks for the current project
+  const { 
+    data: tasks = [], 
+    isLoading: tasksLoading,
+    error: tasksError
+  } = useQuery({
+    queryKey: ['tasks', projectId],
+    queryFn: () => getTasksByProject(projectId),
+    enabled: !!projectId && !!user,
+  });
+
+  // Fetch project details
+  const {
+    data: project,
+    isLoading: projectLoading,
+    error: projectError
+  } = useQuery({
+    queryKey: ['project', projectId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('id', projectId)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!projectId && !!user,
+  });
+
+  // Fetch screenshots for the current task
+  const {
+    data: screenshots = [],
+    isLoading: screenshotsLoading,
+    refetch: refetchScreenshots
+  } = useQuery({
+    queryKey: ['screenshots', currentTask?.id],
+    queryFn: () => getTaskScreenshots(currentTask.id),
+    enabled: !!currentTask && screenshotsOpen,
+  });
+
+  // Create task mutation
+  const createTaskMutation = useMutation({
+    mutationFn: createTask,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['project', projectId] });
+    },
+  });
+
+  // Update task mutation
+  const updateTaskMutation = useMutation({
+    mutationFn: updateTask,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['project', projectId] });
+    },
+  });
+
+  // Delete task mutation
+  const deleteTaskMutation = useMutation({
+    mutationFn: deleteTask,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['project', projectId] });
+    },
+  });
   
-  const handleAddTask = (taskData) => {
-    toast({
-      title: "Task created",
-      description: `"${taskData.title}" has been added to your tasks.`,
+  const handleAddTask = (taskData: TaskFormData) => {
+    createTaskMutation.mutate({
+      ...taskData,
+      project_id: projectId,
+    }, {
+      onSuccess: () => {
+        toast({
+          title: "Task created",
+          description: `"${taskData.title}" has been added to your tasks.`,
+        });
+        setAddTaskOpen(false);
+      },
+      onError: (error) => {
+        toast({
+          title: "Error creating task",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     });
   };
   
-  const handleEditTask = (taskData) => {
-    toast({
-      title: "Task updated",
-      description: `"${taskData.title}" has been updated.`,
+  const handleEditTask = (taskData: TaskFormData) => {
+    updateTaskMutation.mutate({
+      ...taskData,
+      project_id: projectId,
+    }, {
+      onSuccess: () => {
+        toast({
+          title: "Task updated",
+          description: `"${taskData.title}" has been updated.`,
+        });
+        setEditTaskOpen(false);
+      },
+      onError: (error) => {
+        toast({
+          title: "Error updating task",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     });
   };
   
   const handleDeleteTask = () => {
-    toast({
-      title: "Task deleted",
-      description: `"${currentTask?.title}" has been deleted.`,
+    if (!currentTask) return;
+    
+    deleteTaskMutation.mutate(currentTask.id, {
+      onSuccess: () => {
+        toast({
+          title: "Task deleted",
+          description: `"${currentTask.title}" has been deleted.`,
+        });
+        setDeleteTaskOpen(false);
+        setCurrentTask(null);
+      },
+      onError: (error) => {
+        toast({
+          title: "Error deleting task",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     });
-    setDeleteTaskOpen(false);
   };
   
-  const openEditTaskDialog = (task) => {
+  const openEditTaskDialog = (task: Task) => {
     setCurrentTask(task);
     setEditTaskOpen(true);
   };
   
-  const openDeleteTaskDialog = (task) => {
+  const openDeleteTaskDialog = (task: Task) => {
     setCurrentTask(task);
     setDeleteTaskOpen(true);
   };
   
-  const openScreenshotsDialog = (task) => {
+  const openScreenshotsDialog = (task: Task) => {
     setCurrentTask(task);
     setScreenshotsOpen(true);
   };
   
-  const filteredTasks = tasksData.filter(task => {
+  const filteredTasks = tasks.filter(task => {
     if (searchTerm && !task.title.toLowerCase().includes(searchTerm.toLowerCase())) {
       return false;
     }
@@ -302,7 +346,7 @@ const Tasks = () => {
   const sortedTasks = [...filteredTasks].sort((a, b) => {
     switch (sortOption) {
       case "dueDate":
-        return String(a.dueDate).localeCompare(String(b.dueDate));
+        return String(a.due_date).localeCompare(String(b.due_date));
       case "priority":
         const priorityOrder = { high: 0, medium: 1, low: 2 };
         return priorityOrder[a.priority] - priorityOrder[b.priority];
@@ -312,6 +356,15 @@ const Tasks = () => {
         return 0;
     }
   });
+
+  // Handle errors
+  if (tasksError || projectError) {
+    toast({
+      title: "Error loading data",
+      description: "There was an error loading the project or tasks. Please try again.",
+      variant: "destructive",
+    });
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -326,49 +379,57 @@ const Tasks = () => {
               </Button>
             </Link>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">Project: {project.name}</h1>
+              <h1 className="text-2xl font-bold tracking-tight">
+                Project: {projectLoading ? "Loading..." : project?.name}
+              </h1>
             </div>
           </div>
           
-          <Card className="mb-8 card-glass">
-            <CardContent className="p-6">
-              <div className="flex flex-col lg:flex-row gap-6 justify-between">
-                <div className="lg:max-w-[60%]">
-                  <h2 className="font-semibold mb-2">Description</h2>
-                  <p className="text-muted-foreground text-sm">{project.description}</p>
+          {projectLoading ? (
+            <div className="flex justify-center items-center h-40">
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-purple-600 border-t-transparent"></div>
+            </div>
+          ) : project ? (
+            <Card className="mb-8 card-glass">
+              <CardContent className="p-6">
+                <div className="flex flex-col lg:flex-row gap-6 justify-between">
+                  <div className="lg:max-w-[60%]">
+                    <h2 className="font-semibold mb-2">Description</h2>
+                    <p className="text-muted-foreground text-sm">{project.description}</p>
+                    
+                    <div className="mt-4 flex flex-wrap gap-4">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Due Date</p>
+                        <p className="font-medium">{formatDateForDisplay(project.due_date)}</p>
+                      </div>
+                    </div>
+                  </div>
                   
-                  <div className="mt-4 flex flex-wrap gap-4">
-                    <div>
-                      <p className="text-xs text-muted-foreground">Due Date</p>
-                      <p className="font-medium">{project.dueDate}</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-4">
+                    <div className="p-4 bg-muted/50 rounded-lg">
+                      <h3 className="text-sm font-medium mb-1">Tasks</h3>
+                      <p className="text-2xl font-semibold">{project.tasks_completed}/{project.tasks_count}</p>
+                      <p className="text-xs text-muted-foreground">Completed</p>
+                    </div>
+                    
+                    <div className="p-4 bg-muted/50 rounded-lg">
+                      <h3 className="text-sm font-medium mb-1">Hours</h3>
+                      <p className="text-2xl font-semibold">{project.total_hours}</p>
+                      <p className="text-xs text-muted-foreground">Logged</p>
+                    </div>
+                    
+                    <div className="col-span-2 mt-2">
+                      <div className="flex justify-between text-sm mb-1">
+                        <span>Progress</span>
+                        <span className="font-medium">{project.progress}%</span>
+                      </div>
+                      <Progress value={project.progress} className="h-2" />
                     </div>
                   </div>
                 </div>
-                
-                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-4">
-                  <div className="p-4 bg-muted/50 rounded-lg">
-                    <h3 className="text-sm font-medium mb-1">Tasks</h3>
-                    <p className="text-2xl font-semibold">{project.tasksCompleted}/{project.tasksTotal}</p>
-                    <p className="text-xs text-muted-foreground">Completed</p>
-                  </div>
-                  
-                  <div className="p-4 bg-muted/50 rounded-lg">
-                    <h3 className="text-sm font-medium mb-1">Hours</h3>
-                    <p className="text-2xl font-semibold">{project.totalHours}/{project.estimatedHours}</p>
-                    <p className="text-xs text-muted-foreground">Logged</p>
-                  </div>
-                  
-                  <div className="col-span-2 mt-2">
-                    <div className="flex justify-between text-sm mb-1">
-                      <span>Progress</span>
-                      <span className="font-medium">{project.progress}%</span>
-                    </div>
-                    <Progress value={project.progress} className="h-2" />
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          ) : null}
           
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
             <div className="flex items-center gap-2">
@@ -510,7 +571,11 @@ const Tasks = () => {
             </TabsList>
           </Tabs>
           
-          {sortedTasks.length > 0 ? (
+          {tasksLoading ? (
+            <div className="flex justify-center items-center h-40">
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-purple-600 border-t-transparent"></div>
+            </div>
+          ) : sortedTasks.length > 0 ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {sortedTasks.map((task) => (
                 <TaskCard 
@@ -536,14 +601,18 @@ const Tasks = () => {
         open={addTaskOpen}
         onOpenChange={setAddTaskOpen}
         onSave={handleAddTask}
+        projectId={projectId}
       />
       
-      <TaskDialog
-        open={editTaskOpen}
-        onOpenChange={setEditTaskOpen}
-        task={currentTask}
-        onSave={handleEditTask}
-      />
+      {currentTask && (
+        <TaskDialog
+          open={editTaskOpen}
+          onOpenChange={setEditTaskOpen}
+          task={currentTask}
+          onSave={handleEditTask}
+          projectId={projectId}
+        />
+      )}
       
       <ConfirmDialog
         open={deleteTaskOpen}
@@ -558,7 +627,9 @@ const Tasks = () => {
           open={screenshotsOpen}
           onOpenChange={setScreenshotsOpen}
           taskName={currentTask.title}
-          screenshots={screenshotsData[currentTask.id] || []}
+          screenshots={screenshots}
+          taskId={currentTask.id}
+          onScreenshotsUpdated={() => refetchScreenshots()}
         />
       )}
     </div>
