@@ -123,7 +123,7 @@ const ScreenshotsDialog: React.FC<ScreenshotsDialogProps> = ({
                 onClick={() => setIsAdding(true)} 
                 variant="outline" 
                 size="sm" 
-                className="flex items-center gap-1"
+                className="flex items-center gap-1 mr-[15px]"
               >
                 <Plus size={16} />
                 <span>Add Screenshot</span>
