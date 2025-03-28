@@ -118,6 +118,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const storeUserProfile = async (userData: Partial<UserProfile>) => {
     try {
+      // Ensure the Supabase client has the API key in headers for all requests
       const { data: existingUser, error: fetchError } = await supabase
         .from('user_profiles')
         .select()
