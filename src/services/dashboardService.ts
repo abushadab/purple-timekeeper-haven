@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfWeek, endOfWeek } from "date-fns";
 
@@ -27,9 +28,8 @@ export interface WeeklySummary {
 
 export interface ActivityItem {
   id: string;
-  title: string;
-  projectName: string;
-  status: 'in_progress' | 'completed' | 'not_started';
+  type: 'started' | 'paused' | 'completed' | 'updated';
+  description: string;
   time: string;
   timestamp: Date;
 }
@@ -241,16 +241,20 @@ export const getRecentActivity = async (limit = 4): Promise<ActivityItem[]> => {
       return [];
     }
 
-    return recentTasks.map((task) => {
-      // Map task status to our component status
-      let status: 'in_progress' | 'completed' | 'not_started';
+    return recentTasks.map((task, index) => {
+      // Determine activity type based on task status
+      let type: 'started' | 'paused' | 'completed' | 'updated';
+      let description = '';
       
       if (task.status === 'completed') {
-        status = 'completed';
+        type = 'completed';
+        description = `${task.title} in ${task.projects?.name || 'Unknown Project'}`;
       } else if (task.status === 'in_progress') {
-        status = 'in_progress';
+        type = index % 2 === 0 ? 'started' : 'paused'; // Alternate for variety
+        description = `${task.title} - ${task.projects?.name || 'Unknown Project'}`;
       } else {
-        status = 'not_started';
+        type = 'updated';
+        description = `${task.title} in ${task.projects?.name || 'Unknown Project'}`;
       }
 
       // Calculate relative time
@@ -263,18 +267,17 @@ export const getRecentActivity = async (limit = 4): Promise<ActivityItem[]> => {
 
       let timeAgo;
       if (diffMins < 60) {
-        timeAgo = `${diffMins} mins ago`;
+        timeAgo = `${diffMins} min${diffMins !== 1 ? 's' : ''} ago`;
       } else if (diffHours < 24) {
-        timeAgo = `${diffHours} hours ago`;
+        timeAgo = `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
       } else {
-        timeAgo = `${diffDays} days ago`;
+        timeAgo = `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
       }
 
       return {
         id: task.id,
-        title: task.title,
-        projectName: task.projects?.name || 'Unknown Project',
-        status,
+        type,
+        description,
         time: timeAgo,
         timestamp: updatedAt
       };
