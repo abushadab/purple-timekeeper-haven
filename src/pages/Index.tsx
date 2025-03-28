@@ -44,7 +44,7 @@ const Dashboard = () => {
     tasksDue: "0"
   });
   const [recentProjects, setRecentProjects] = useState<RecentProject[]>([]);
-  const [weeklyData, setWeeklyData] = useState<WeeklySummary>({
+  const [weeklyData, setWeeklySummary] = useState<WeeklySummary>({
     hoursTarget: 40.0,
     hoursLogged: 0,
     completion: 0,
@@ -68,7 +68,7 @@ const Dashboard = () => {
       
       setStats(statsData);
       setRecentProjects(projectsData);
-      setWeeklyData(weeklyData);
+      setWeeklySummary(weeklyData);
       setActivities(activitiesData);
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
