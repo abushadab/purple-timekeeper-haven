@@ -1,6 +1,8 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, eachDayOfInterval, eachMonthOfInterval, isSameDay, isSameMonth } from "date-fns";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
 
 export interface TimeDataPoint {
   name: string;
@@ -158,8 +160,7 @@ export const getProjectData = async (): Promise<ProjectDataPoint[]> => {
         name, 
         total_hours
       `)
-      .eq("user_id", userId)
-      .is("archived", null);
+      .eq("user_id", userId);
     
     if (!projects || projects.length === 0) {
       return [];
@@ -300,7 +301,6 @@ export const getTaskEfficiencyData = async (): Promise<TaskEfficiencyData[]> => 
         tasks!inner(estimated_hours, hours_logged)
       `)
       .eq("user_id", userId)
-      .is("archived", null)
       .limit(5);  // Limit to 5 projects for readability
     
     if (!projects || projects.length === 0) {
@@ -420,52 +420,192 @@ export const getProductivityData = async (): Promise<ProductivityData[]> => {
 };
 
 // Export data functions
-export const exportReportData = (
+export const exportReportData = async (
   reportType: string, 
   period: string, 
   format: string
 ): Promise<string> => {
-  return new Promise(async (resolve, reject) => {
-    try {
-      // Collect data based on report type
-      let reportData;
-      
-      switch (reportType) {
-        case 'time':
-          reportData = {
-            timeData: await getTimeData(period),
-            portfolioData: await getPortfolioData(),
-            projectData: await getProjectData()
-          };
-          break;
-        case 'tasks':
-          reportData = {
-            taskStatusData: await getTaskStatusData(),
-            taskEfficiencyData: await getTaskEfficiencyData()
-          };
-          break;
-        case 'productivity':
-          reportData = {
-            productivityData: await getProductivityData(),
-            projectData: await getProjectData()
-          };
-          break;
-        default:
-          reportData = {
-            timeData: await getTimeData(period)
-          };
-      }
-      
-      // Format report name
-      const reportName = `${reportType}_report_${period}_${format}`;
-      
-      resolve(reportName);
-      
-      // In a real implementation, we would actually create and download the file
-      // Return the filename for now as a placeholder
-    } catch (error) {
-      console.error("Error exporting report:", error);
-      reject(error);
+  try {
+    // Collect data based on report type
+    let reportData;
+    let fileName = `${reportType}_report_${period}`;
+    
+    switch (reportType) {
+      case 'time':
+        const timeData = await getTimeData(period);
+        const portfolioData = await getPortfolioData();
+        const projectData = await getProjectData();
+        reportData = { timeData, portfolioData, projectData };
+        break;
+      case 'tasks':
+        const taskStatusData = await getTaskStatusData();
+        const taskEfficiencyData = await getTaskEfficiencyData();
+        reportData = { taskStatusData, taskEfficiencyData };
+        break;
+      case 'productivity':
+        const productivityData = await getProductivityData();
+        const projectDataForProductivity = await getProjectData();
+        reportData = { productivityData, projectData: projectDataForProductivity };
+        break;
+      default:
+        reportData = {
+          timeData: await getTimeData(period)
+        };
     }
-  });
+
+    switch (format.toLowerCase()) {
+      case 'excel':
+        fileName = await exportToExcel(reportData, fileName);
+        break;
+      case 'csv':
+        fileName = await exportToCSV(reportData, fileName);
+        break;
+      case 'pdf':
+        fileName = await exportToPDF(reportData, fileName);
+        break;
+      default:
+        throw new Error(`Unsupported format: ${format}`);
+    }
+    
+    return fileName;
+  } catch (error) {
+    console.error("Error exporting report:", error);
+    throw error;
+  }
+};
+
+// Helper function to convert data to a worksheet
+const dataToWorksheet = (data: any[]): XLSX.WorkSheet => {
+  const ws = XLSX.utils.json_to_sheet(data);
+  return ws;
+};
+
+// Export to Excel file
+const exportToExcel = async (data: any, fileName: string): Promise<string> => {
+  try {
+    const wb = XLSX.utils.book_new();
+    
+    // Add each dataset as a sheet
+    Object.entries(data).forEach(([key, value]) => {
+      if (Array.isArray(value) && value.length > 0) {
+        const ws = dataToWorksheet(value);
+        XLSX.utils.book_append_sheet(wb, ws, key);
+      }
+    });
+    
+    // Generate file name
+    const fullFileName = `${fileName}.xlsx`;
+    
+    // Generate binary string
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
+    
+    // Convert to blob and download
+    const blob = new Blob([s2ab(wbout)], { type: 'application/octet-stream' });
+    downloadBlob(blob, fullFileName);
+    
+    return fullFileName;
+  } catch (error) {
+    console.error("Error exporting to Excel:", error);
+    throw error;
+  }
+};
+
+// Export to CSV file
+const exportToCSV = async (data: any, fileName: string): Promise<string> => {
+  try {
+    // For CSV, we'll create a separate file for each dataset
+    let mainDataKey = Object.keys(data)[0];
+    let mainData = data[mainDataKey];
+    
+    if (Array.isArray(mainData) && mainData.length > 0) {
+      const ws = dataToWorksheet(mainData);
+      const csv = XLSX.utils.sheet_to_csv(ws);
+      
+      // Generate file name
+      const fullFileName = `${fileName}_${mainDataKey}.csv`;
+      
+      // Convert to blob and download
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      downloadBlob(blob, fullFileName);
+      
+      return fullFileName;
+    } else {
+      throw new Error("No data available for export");
+    }
+  } catch (error) {
+    console.error("Error exporting to CSV:", error);
+    throw error;
+  }
+};
+
+// Export to PDF file
+const exportToPDF = async (data: any, fileName: string): Promise<string> => {
+  try {
+    const doc = new jsPDF();
+    let yPos = 20;
+    
+    // Add title
+    doc.setFontSize(16);
+    doc.text(`${fileName.replace(/_/g, ' ').toUpperCase()}`, 14, yPos);
+    yPos += 10;
+    
+    // Process each dataset
+    Object.entries(data).forEach(([key, value]) => {
+      if (Array.isArray(value) && value.length > 0) {
+        yPos += 10;
+        
+        // Add section title
+        doc.setFontSize(12);
+        doc.text(`${key.replace(/([A-Z])/g, ' $1').trim()}`, 14, yPos);
+        yPos += 10;
+        
+        // Create table
+        const tableData = value as any[];
+        const columns = Object.keys(tableData[0]);
+        const rows = tableData.map(item => columns.map(col => item[col]));
+        
+        autoTable(doc, {
+          head: [columns],
+          body: rows,
+          startY: yPos
+        });
+        
+        yPos = (doc as any).lastAutoTable.finalY + 10;
+      }
+    });
+    
+    // Generate file name
+    const fullFileName = `${fileName}.pdf`;
+    
+    // Download the PDF
+    doc.save(fullFileName);
+    
+    return fullFileName;
+  } catch (error) {
+    console.error("Error exporting to PDF:", error);
+    throw error;
+  }
+};
+
+// Helper function to convert string to ArrayBuffer
+const s2ab = (s: string): ArrayBuffer => {
+  const buf = new ArrayBuffer(s.length);
+  const view = new Uint8Array(buf);
+  for (let i = 0; i < s.length; i++) {
+    view[i] = s.charCodeAt(i) & 0xFF;
+  }
+  return buf;
+};
+
+// Helper function to download blob
+const downloadBlob = (blob: Blob, fileName: string): void => {
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.style.display = 'none';
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(url);
+  document.body.removeChild(a);
 };
