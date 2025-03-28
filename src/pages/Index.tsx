@@ -9,10 +9,6 @@ import {
   Folder,
   FolderKanban,
   Calendar,
-  Play,
-  Pause,
-  CheckCircle,
-  FileEdit,
   Bell
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -270,18 +266,13 @@ const Dashboard = () => {
             </div>
             
             <div>
-              <Card className="overflow-hidden card-glass h-full">
+              <Card className="overflow-hidden h-full bg-white shadow-sm">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                    <span className="bg-blue-100 p-2 rounded-md">
-                      <Bell className="h-4 w-4 text-blue-600" />
-                    </span>
-                    Recent Activity
-                  </CardTitle>
+                  <h3 className="text-xl font-semibold">Recent Activity</h3>
                 </CardHeader>
-                <CardContent className="p-4">
+                <CardContent className="p-0">
                   {loading ? (
-                    <div className="space-y-4">
+                    <div className="p-4 space-y-4">
                       {[1, 2, 3, 4].map((i) => (
                         <div key={i} className="space-y-2">
                           <div className="flex justify-between">
@@ -294,15 +285,14 @@ const Dashboard = () => {
                       ))}
                     </div>
                   ) : activities.length > 0 ? (
-                    <div>
-                      {activities.map((activity, index) => (
+                    <div className="p-4">
+                      {activities.map((activity) => (
                         <TimelineItem
                           key={activity.id}
                           title={activity.title}
                           projectName={activity.projectName}
                           time={activity.time}
                           status={activity.status}
-                          isLast={index === activities.length - 1}
                         />
                       ))}
                     </div>

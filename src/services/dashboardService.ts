@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfWeek, endOfWeek } from "date-fns";
 
@@ -28,7 +27,6 @@ export interface WeeklySummary {
 
 export interface ActivityItem {
   id: string;
-  type: 'started' | 'paused' | 'completed' | 'updated';
   title: string;
   projectName: string;
   status: 'in_progress' | 'completed' | 'not_started';
@@ -254,17 +252,6 @@ export const getRecentActivity = async (limit = 4): Promise<ActivityItem[]> => {
       } else {
         status = 'not_started';
       }
-      
-      // Determine activity type based on task status for backward compatibility
-      let type: 'started' | 'paused' | 'completed' | 'updated';
-      
-      if (task.status === 'completed') {
-        type = 'completed';
-      } else if (task.status === 'in_progress') {
-        type = 'started';
-      } else {
-        type = 'updated';
-      }
 
       // Calculate relative time
       const updatedAt = new Date(task.updated_at);
@@ -276,16 +263,15 @@ export const getRecentActivity = async (limit = 4): Promise<ActivityItem[]> => {
 
       let timeAgo;
       if (diffMins < 60) {
-        timeAgo = `${diffMins} min${diffMins !== 1 ? 's' : ''} ago`;
+        timeAgo = `${diffMins} mins ago`;
       } else if (diffHours < 24) {
-        timeAgo = `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+        timeAgo = `${diffHours} hours ago`;
       } else {
-        timeAgo = `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+        timeAgo = `${diffDays} days ago`;
       }
 
       return {
         id: task.id,
-        type,
         title: task.title,
         projectName: task.projects?.name || 'Unknown Project',
         status,
