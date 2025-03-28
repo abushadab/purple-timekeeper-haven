@@ -273,9 +273,7 @@ const Dashboard = () => {
               <Card className="overflow-hidden card-glass h-full">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                    <span className="bg-blue-100 p-2 rounded-md">
-                      <Bell className="h-4 w-4 text-blue-600" />
-                    </span>
+                 
                     Recent Activity
                   </CardTitle>
                 </CardHeader>
