@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, eachDayOfInterval, eachMonthOfInterval, isSameDay, isSameMonth } from "date-fns";
 import { jsPDF } from "jspdf";
@@ -197,19 +198,20 @@ export const getPortfolioData = async (): Promise<PortfolioDataPoint[]> => {
         total_hours,
         color
       `)
-      .eq("user_id", userId)
-      .eq("archived", false);
+      .eq("user_id", userId);
     
     if (!portfolios || portfolios.length === 0) {
       return [];
     }
     
-    // Format portfolio data with colors
-    return portfolios.map((portfolio, index) => ({
-      name: portfolio.name,
-      hours: parseFloat(String(portfolio.total_hours)) || 0,
-      color: portfolio.color || chartColors[index % chartColors.length]
-    }));
+    // Format portfolio data with colors and filter out ones with 0 hours
+    return portfolios
+      .map((portfolio, index) => ({
+        name: portfolio.name,
+        hours: parseFloat(String(portfolio.total_hours)) || 0,
+        color: portfolio.color || chartColors[index % chartColors.length]
+      }))
+      .filter(portfolio => portfolio.hours > 0);
   } catch (error) {
     console.error("Error fetching portfolio data:", error);
     return [];
@@ -435,17 +437,40 @@ export const exportReportData = async (
         const timeData = await getTimeData(period);
         const portfolioData = await getPortfolioData();
         const projectData = await getProjectData();
-        reportData = { timeData, portfolioData, projectData };
+        
+        // Remove color property from exported data
+        const exportPortfolioData = portfolioData.map(({ name, hours }) => ({ name, hours }));
+        const exportProjectData = projectData.map(({ name, hours }) => ({ name, hours }));
+        
+        reportData = { 
+          timeData, 
+          portfolioData: exportPortfolioData, 
+          projectData: exportProjectData 
+        };
         break;
       case 'tasks':
         const taskStatusData = await getTaskStatusData();
         const taskEfficiencyData = await getTaskEfficiencyData();
-        reportData = { taskStatusData, taskEfficiencyData };
+        
+        // Remove color property from exported data
+        const exportTaskStatusData = taskStatusData.map(({ name, value }) => ({ name, value }));
+        
+        reportData = { 
+          taskStatusData: exportTaskStatusData, 
+          taskEfficiencyData 
+        };
         break;
       case 'productivity':
         const productivityData = await getProductivityData();
         const projectDataForProductivity = await getProjectData();
-        reportData = { productivityData, projectData: projectDataForProductivity };
+        
+        // Remove color property from exported data
+        const exportProjectDataForProductivity = projectDataForProductivity.map(({ name, hours }) => ({ name, hours }));
+        
+        reportData = { 
+          productivityData, 
+          projectData: exportProjectDataForProductivity 
+        };
         break;
       default:
         reportData = {
@@ -513,25 +538,36 @@ const exportToExcel = async (data: any, fileName: string): Promise<string> => {
 // Export to CSV file
 const exportToCSV = async (data: any, fileName: string): Promise<string> => {
   try {
-    // For CSV, we'll create a separate file for each dataset
-    let mainDataKey = Object.keys(data)[0];
-    let mainData = data[mainDataKey];
+    // Create a zip-like approach where we create multiple CSV files
+    const csvFiles: { data: string, name: string }[] = [];
     
-    if (Array.isArray(mainData) && mainData.length > 0) {
-      const ws = dataToWorksheet(mainData);
-      const csv = XLSX.utils.sheet_to_csv(ws);
-      
-      // Generate file name
-      const fullFileName = `${fileName}_${mainDataKey}.csv`;
-      
-      // Convert to blob and download
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      downloadBlob(blob, fullFileName);
-      
-      return fullFileName;
-    } else {
-      throw new Error("No data available for export");
-    }
+    // Create a CSV for each dataset
+    Object.entries(data).forEach(([key, value]) => {
+      if (Array.isArray(value) && value.length > 0) {
+        const ws = dataToWorksheet(value);
+        const csv = XLSX.utils.sheet_to_csv(ws);
+        
+        // Generate file name
+        const datasetFileName = `${fileName}_${key}.csv`;
+        
+        // Store CSV data
+        csvFiles.push({
+          data: csv,
+          name: datasetFileName
+        });
+      }
+    });
+    
+    // Download each CSV file
+    csvFiles.forEach(csvFile => {
+      const blob = new Blob([csvFile.data], { type: 'text/csv;charset=utf-8;' });
+      downloadBlob(blob, csvFile.name);
+    });
+    
+    // Return a descriptive message if multiple files were created
+    return csvFiles.length > 1 
+      ? `${csvFiles.length} CSV files created` 
+      : csvFiles[0]?.name || `${fileName}.csv`;
   } catch (error) {
     console.error("Error exporting to CSV:", error);
     throw error;
@@ -544,9 +580,13 @@ const exportToPDF = async (data: any, fileName: string): Promise<string> => {
     const doc = new jsPDF();
     let yPos = 20;
     
-    // Add title
+    // Add title with proper capitalization
     doc.setFontSize(16);
-    doc.text(`${fileName.replace(/_/g, ' ').toUpperCase()}`, 14, yPos);
+    const title = fileName.replace(/_/g, ' ')
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+    doc.text(title, 14, yPos);
     yPos += 10;
     
     // Process each dataset
@@ -554,9 +594,15 @@ const exportToPDF = async (data: any, fileName: string): Promise<string> => {
       if (Array.isArray(value) && value.length > 0) {
         yPos += 10;
         
-        // Add section title
+        // Add section title with proper capitalization
         doc.setFontSize(12);
-        doc.text(`${key.replace(/([A-Z])/g, ' $1').trim()}`, 14, yPos);
+        const sectionTitle = key
+          .replace(/([A-Z])/g, ' $1')
+          .trim()
+          .split(' ')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+        doc.text(sectionTitle, 14, yPos);
         yPos += 10;
         
         // Create table
@@ -565,7 +611,7 @@ const exportToPDF = async (data: any, fileName: string): Promise<string> => {
         const rows = tableData.map(item => columns.map(col => item[col]));
         
         autoTable(doc, {
-          head: [columns],
+          head: [columns.map(col => col.charAt(0).toUpperCase() + col.slice(1))],
           body: rows,
           startY: yPos
         });

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { DateRange } from "react-day-picker";
 import Header from "@/components/layout/Header";
@@ -37,7 +36,6 @@ const Reports = () => {
     to: new Date(),
   });
   
-  // Initial filter options
   const [projectFilters, setProjectFilters] = useState<FilterOption[]>([
     { id: "website-redesign", label: "Website Redesign", checked: false },
     { id: "mobile-app", label: "Mobile App Development", checked: false },
@@ -59,7 +57,6 @@ const Reports = () => {
     { id: "research", label: "Research", checked: false },
   ]);
   
-  // Data fetching with React Query
   const { data: timeData = [], isLoading: timeLoading } = useQuery({
     queryKey: ['timeData', period],
     queryFn: () => getTimeData(period)
@@ -128,7 +125,6 @@ const Reports = () => {
   };
   
   const handleApplyFilters = () => {
-    // In a real application, this would filter the data shown in charts
     console.log("Applied filters:", {
       projects: projectFilters.filter(f => f.checked).map(f => f.id),
       status: statusFilters.filter(f => f.checked).map(f => f.id),
@@ -143,7 +139,6 @@ const Reports = () => {
   
   const handleExport = async (format: string) => {
     try {
-      // Export the report data
       const fileName = await exportReportData(reportType, period, format);
       
       toast({
@@ -158,6 +153,33 @@ const Reports = () => {
         variant: "destructive"
       });
     }
+  };
+  
+  const preparePortfolioDataForChart = (data: PortfolioDataPoint[]): PortfolioDataPoint[] => {
+    const hourGroups: Record<number, PortfolioDataPoint[]> = {};
+    
+    data.forEach(portfolio => {
+      if (!hourGroups[portfolio.hours]) {
+        hourGroups[portfolio.hours] = [];
+      }
+      hourGroups[portfolio.hours].push(portfolio);
+    });
+    
+    return data.map(portfolio => {
+      const group = hourGroups[portfolio.hours];
+      
+      if (group.length > 1) {
+        const index = group.findIndex(p => p.name === portfolio.name);
+        const adjustedHours = portfolio.hours + (index * 0.001);
+        
+        return {
+          ...portfolio,
+          hours: adjustedHours
+        };
+      }
+      
+      return portfolio;
+    });
   };
   
   return (
@@ -182,7 +204,7 @@ const Reports = () => {
                 onResetFilters={handleResetFilters}
                 onApplyFilters={handleApplyFilters}
               />
-              <ExportOptions onExport={handleExport} />
+              <ExportOptions onExport={handleExport} isLoading={timeLoading || projectLoading || portfolioLoading} />
             </div>
           </div>
           
@@ -269,7 +291,7 @@ const Reports = () => {
                         ) : (
                           <RPieChart>
                             <Pie
-                              data={portfolioData}
+                              data={preparePortfolioDataForChart(portfolioData)}
                               cx="50%"
                               cy="50%"
                               labelLine={false}
@@ -277,7 +299,7 @@ const Reports = () => {
                               dataKey="hours"
                               label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                             >
-                              {portfolioData.map((entry, index) => (
+                              {preparePortfolioDataForChart(portfolioData).map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={entry.color} />
                               ))}
                             </Pie>
@@ -540,7 +562,7 @@ const Reports = () => {
                         ) : (
                           <RPieChart>
                             <Pie
-                              data={projectData}
+                              data={projectData.filter(project => project.hours > 0)}
                               cx="50%"
                               cy="50%"
                               labelLine={false}
@@ -548,7 +570,7 @@ const Reports = () => {
                               dataKey="hours"
                               label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                             >
-                              {projectData.map((entry, index) => (
+                              {projectData.filter(project => project.hours > 0).map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={entry.color} />
                               ))}
                             </Pie>
