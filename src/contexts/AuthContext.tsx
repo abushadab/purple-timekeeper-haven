@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -49,63 +48,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       if (data.success) {
         console.log("Token validation successful for user:", data.user_id);
-        try {
-          await storeUserProfile({
-            wordpress_user_id: data.user_id,
-            email: data.user_email || '',
-            first_name: data.user_firstname || null,
-            last_name: data.user_lastname || null,
-            subscription_id: data.subscription_id || null,
-            subscription_status: data.subscription_status || null,
-            subscription_next_payment: data.subscription_nextpayment || null,
-            subscription_subtotal: data.subscription_subtotal || null,
-            token: token,
-          });
-          return true;
-        } catch (error: any) {
-          console.error("Error storing user profile:", error);
-          
-          // If there's an RLS policy error, create a local user object instead
-          if (error.code === '42P17' && error.message.includes('infinite recursion detected')) {
-            // Create a temporary user object from the WordPress data
-            const tempUser: UserProfile = {
-              id: 'temp-' + Date.now(),
-              wordpress_user_id: data.user_id,
-              email: data.user_email || '',
-              first_name: data.user_firstname || null,
-              last_name: data.user_lastname || null,
-              subscription_id: data.subscription_id || null,
-              subscription_status: data.subscription_status || null,
-              subscription_next_payment: data.subscription_nextpayment || null,
-              subscription_subtotal: data.subscription_subtotal || null,
-              token: token,
-            };
-            
-            setUser(tempUser);
-            
-            // Store in localStorage as a fallback
-            const localUserData = {
-              email: tempUser.email,
-              firstName: tempUser.first_name || 'User', 
-              lastName: tempUser.last_name || '',
-              phone: '',
-              avatar: null,
-            };
-            localStorage.setItem('user', JSON.stringify(localUserData));
-            
-            // Show a warning toast about the database issue
-            toast({
-              title: "Database Policy Error",
-              description: "Using local authentication due to database policy configuration issue. Some features may be limited.",
-              variant: "destructive",
-            });
-            
-            return true;
-          }
-          
-          // For other errors, fail the validation
-          return false;
-        }
+        await storeUserProfile({
+          wordpress_user_id: data.user_id,
+          email: data.user_email || '',
+          first_name: data.user_firstname || null,
+          last_name: data.user_lastname || null,
+          subscription_id: data.subscription_id || null,
+          subscription_status: data.subscription_status || null,
+          subscription_next_payment: data.subscription_nextpayment || null,
+          subscription_subtotal: data.subscription_subtotal || null,
+          token: token,
+        });
+        return true;
       } else {
         console.error("Token validation failed:", data);
         return false;
@@ -277,12 +231,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (data.success && data.data.access_token) {
         setCookie('token', data.data.access_token, 30);
         
-        try {
-          await validateToken(data.data.access_token);
-        } catch (error) {
-          console.error("Error during validation after login:", error);
-          // Continue anyway since we have the token
-        }
+        const isValid = await validateToken(data.data.access_token);
         
         setLoading(false);
         return { error: null };
