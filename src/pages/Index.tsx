@@ -18,108 +18,77 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Skeleton } from "@/components/ui/skeleton";
-import { 
-  getDashboardStats, 
-  getRecentProjects,
-  getWeeklySummary,
-  getRecentActivity,
-  type DashboardStats,
-  type RecentProject,
-  type WeeklySummary,
-  type ActivityItem
-} from "@/services/dashboardService";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [user] = useState({ firstName: 'User' });
-  
-  // State for all dashboard data
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<DashboardStats>({
+  const [stats, setStats] = useState({
     portfolios: "0",
     projects: "0",
     totalHours: "0",
     tasksDue: "0"
   });
-  const [recentProjects, setRecentProjects] = useState<RecentProject[]>([]);
-  const [weeklyData, setWeeklyData] = useState<WeeklySummary>({
-    hoursTarget: 40.0,
-    hoursLogged: 0,
-    completion: 0,
-    mostActiveProject: 'None',
-    mostActiveHours: 0
-  });
-  const [activities, setActivities] = useState<ActivityItem[]>([]);
-  const [error, setError] = useState<string | null>(null);
 
-  // Fetch all dashboard data
-  const fetchDashboardData = async () => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      // Fetch all data in parallel
-      const [statsData, projectsData, weeklyData, activitiesData] = await Promise.all([
-        getDashboardStats(),
-        getRecentProjects(),
-        getWeeklySummary(),
-        getRecentActivity()
-      ]);
-      
-      setStats(statsData);
-      setRecentProjects(projectsData);
-      setWeeklyData(weeklyData);
-      setActivities(activitiesData);
-    } catch (err) {
-      console.error("Error fetching dashboard data:", err);
-      setError("Failed to load dashboard data. Please try again later.");
-      toast({
-        title: "Error",
-        description: "Failed to load dashboard data",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
+  // Recent projects data
+  const [recentProjects, setRecentProjects] = useState([
+    {
+      id: "1",
+      title: "Website Redesign",
+      description: "Complete overhaul of company website with new UI/UX design system",
+      progress: 75,
+      hoursLogged: 42.5,
+      dueDate: "Oct 15",
+    },
+    {
+      id: "2",
+      title: "Mobile App Development",
+      description: "Building a native app for iOS and Android platforms",
+      progress: 45,
+      hoursLogged: 68,
+      dueDate: "Nov 30",
+    },
+    {
+      id: "3",
+      title: "Marketing Campaign",
+      description: "Q4 digital marketing campaign for new product launch",
+      progress: 30,
+      hoursLogged: 24,
+      dueDate: "Dec 01",
     }
-  };
-  
+  ]);
+
+  const [weeklyData, setWeeklyData] = useState({
+    hoursTarget: 40.0,
+    hoursLogged: 32.5,
+    completion: 81,
+    mostActiveProject: "Website Redesign",
+    mostActiveHours: 14.5
+  });
+
+  // Simulate loading data from an API
   useEffect(() => {
+    // Simulating API call
+    const fetchDashboardData = () => {
+      setLoading(true);
+      
+      // In a real implementation, this would be an API call
+      setTimeout(() => {
+        // Sample data - in a real app, this would come from your API
+        setStats({
+          portfolios: "8",
+          projects: "24",
+          totalHours: "187.5",
+          tasksDue: "12"
+        });
+        
+        setLoading(false);
+      }, 1000);
+    };
+    
     fetchDashboardData();
   }, []);
-
-  // Helper function to get the appropriate icon for activity type
-  const getActivityIcon = (type: ActivityItem['type']) => {
-    switch (type) {
-      case 'started':
-        return Play;
-      case 'paused':
-        return Pause;
-      case 'completed':
-        return CheckCircle;
-      case 'updated':
-        return FileEdit;
-      default:
-        return FileEdit;
-    }
-  };
-  
-  // Helper function to get the appropriate icon background for activity type
-  const getActivityIconClass = (type: ActivityItem['type']) => {
-    switch (type) {
-      case 'started':
-        return "bg-green-100";
-      case 'paused':
-        return "bg-orange-100";
-      case 'completed':
-        return "bg-blue-100";
-      case 'updated':
-        return "bg-purple-100";
-      default:
-        return "bg-purple-100";
-    }
-  };
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -132,14 +101,6 @@ const Dashboard = () => {
               <div className="text-sm text-muted-foreground mb-1">Welcome back,</div>
               <h1 className="text-3xl font-bold tracking-tight">{user?.firstName || 'User'}</h1>
             </div>
-            {error && (
-              <div className="bg-red-100 text-red-800 p-3 rounded-md">
-                {error}
-                <Button variant="outline" size="sm" className="ml-2" onClick={fetchDashboardData}>
-                  Retry
-                </Button>
-              </div>
-            )}
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -147,25 +108,25 @@ const Dashboard = () => {
               title="Portfolios"
               value={loading ? "..." : stats.portfolios}
               icon={Folder}
-              trend={{ value: 0, isPositive: true }}
+              trend={{ value: 2, isPositive: true }}
             />
             <StatCard
               title="Projects"
               value={loading ? "..." : stats.projects}
               icon={FolderKanban}
-              trend={{ value: 0, isPositive: true }}
+              trend={{ value: 5, isPositive: true }}
             />
             <StatCard
               title="Total Hours"
               value={loading ? "..." : stats.totalHours}
               icon={Clock}
-              trend={{ value: 0, isPositive: true }}
+              trend={{ value: 12, isPositive: true }}
             />
             <StatCard
               title="Tasks Due This Week"
               value={loading ? "..." : stats.tasksDue}
               icon={Calendar}
-              trend={{ value: 0, isPositive: true }}
+              trend={{ value: 4, isPositive: false }}
             />
           </div>
           
@@ -177,18 +138,7 @@ const Dashboard = () => {
                 </CardHeader>
                 <CardContent className="p-6 space-y-6">
                   {loading ? (
-                    <div className="space-y-6">
-                      {[1, 2, 3].map((i) => (
-                        <div key={i} className="space-y-2">
-                          <div className="flex justify-between">
-                            <Skeleton className="h-4 w-1/4" />
-                            <Skeleton className="h-4 w-16" />
-                          </div>
-                          <Skeleton className="h-3 w-full" />
-                          <Skeleton className="h-2 w-full" />
-                        </div>
-                      ))}
-                    </div>
+                    <div className="text-center py-4 text-muted-foreground">Loading projects...</div>
                   ) : recentProjects.length > 0 ? (
                     recentProjects.map((project) => (
                       <ProjectCard
@@ -223,27 +173,7 @@ const Dashboard = () => {
                 </CardHeader>
                 <CardContent>
                   {loading ? (
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center">
-                        {[1, 2, 3].map((i) => (
-                          <div key={i} className="space-y-2">
-                            <Skeleton className="h-3 w-24" />
-                            <Skeleton className="h-4 w-16" />
-                          </div>
-                        ))}
-                      </div>
-                      <div className="space-y-1">
-                        <div className="flex justify-between">
-                          <Skeleton className="h-3 w-16" />
-                          <Skeleton className="h-3 w-16" />
-                        </div>
-                        <Skeleton className="h-2 w-full" />
-                      </div>
-                      <div className="pt-4 space-y-2">
-                        <Skeleton className="h-4 w-40" />
-                        <Skeleton className="h-3 w-60" />
-                      </div>
-                    </div>
+                    <div className="text-center py-4 text-muted-foreground">Loading summary...</div>
                   ) : (
                     <div className="space-y-4">
                       <div className="flex justify-between items-center">
@@ -278,9 +208,7 @@ const Dashboard = () => {
                         <p className="font-medium mb-2">Most Active Project</p>
                         <div className="flex items-center gap-2">
                           <div className="w-3 h-3 rounded-full bg-purple-600"></div>
-                          <p className="text-muted-foreground">
-                            {weeklyData.mostActiveProject} ({weeklyData.mostActiveHours.toFixed(1)} hrs)
-                          </p>
+                          <p className="text-muted-foreground">{weeklyData.mostActiveProject} ({weeklyData.mostActiveHours} hrs)</p>
                         </div>
                       </div>
                     </div>
@@ -296,40 +224,41 @@ const Dashboard = () => {
                 </CardHeader>
                 <CardContent>
                   {loading ? (
-                    <div className="space-y-6">
-                      {[1, 2, 3, 4].map((i) => (
-                        <div key={i} className="flex gap-4">
-                          <div className="flex flex-col items-center">
-                            <Skeleton className="h-8 w-8 rounded-full" />
-                            {i < 4 && <Skeleton className="w-1 h-16 mt-2" />}
-                          </div>
-                          <div className="space-y-2 flex-1">
-                            <div className="flex justify-between">
-                              <Skeleton className="h-4 w-1/3" />
-                              <Skeleton className="h-3 w-16" />
-                            </div>
-                            <Skeleton className="h-3 w-full" />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : activities.length > 0 ? (
-                    <div className="space-y-0">
-                      {activities.map((activity, index) => (
-                        <TimelineItem
-                          key={activity.id}
-                          icon={getActivityIcon(activity.type)}
-                          iconClassName={getActivityIconClass(activity.type)}
-                          title={activity.type.charAt(0).toUpperCase() + activity.type.slice(1)}
-                          description={activity.description}
-                          time={activity.time}
-                          isLast={index === activities.length - 1}
-                        />
-                      ))}
-                    </div>
+                    <div className="text-center py-4 text-muted-foreground">Loading activity...</div>
                   ) : (
-                    <div className="text-center py-4 text-muted-foreground">
-                      No recent activity found. Start working on tasks to see your activity here.
+                    <div className="space-y-0">
+                      <TimelineItem
+                        icon={Play}
+                        iconClassName="bg-green-100"
+                        title="Started tracking"
+                        description="Website Redesign - Frontend Development"
+                        time="2 mins ago"
+                      />
+                      
+                      <TimelineItem
+                        icon={Pause}
+                        iconClassName="bg-orange-100"
+                        title="Paused tracking"
+                        description="Website Redesign - UI Components"
+                        time="15 mins ago"
+                      />
+                      
+                      <TimelineItem
+                        icon={CheckCircle}
+                        iconClassName="bg-blue-100"
+                        title="Completed task"
+                        description="Project Planning and Requirements Gathering"
+                        time="1 hour ago"
+                      />
+                      
+                      <TimelineItem
+                        icon={FileEdit}
+                        iconClassName="bg-purple-100"
+                        title="Updated time log"
+                        description="Added 2h 30m to API Development"
+                        time="2 hours ago"
+                        isLast={true}
+                      />
                     </div>
                   )}
                 </CardContent>
