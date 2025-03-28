@@ -1,6 +1,6 @@
 
 import * as React from "react";
-import { Download, FileSpreadsheet, FileText, FileIcon } from "lucide-react";
+import { Download, FileSpreadsheet, FileIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -48,14 +48,6 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({ onExport, isLoading = fal
         >
           <FileSpreadsheet className="mr-2 h-4 w-4" />
           <span>Excel (.xlsx)</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem 
-          onClick={() => handleExport("csv")} 
-          className="cursor-pointer"
-          disabled={isLoading}
-        >
-          <FileText className="mr-2 h-4 w-4" />
-          <span>CSV (.csv)</span>
         </DropdownMenuItem>
         <DropdownMenuItem 
           onClick={() => handleExport("pdf")} 

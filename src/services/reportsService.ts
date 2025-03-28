@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, eachDayOfInterval, eachMonthOfInterval, isSameDay, isSameMonth } from "date-fns";
 import { jsPDF } from "jspdf";
@@ -482,11 +481,8 @@ export const exportReportData = async (
       case 'excel':
         fileName = await exportToExcel(reportData, fileName);
         break;
-      case 'csv':
-        fileName = await exportToCSV(reportData, fileName);
-        break;
       case 'pdf':
-        fileName = await exportToPDF(reportData, fileName);
+        fileName = await exportToPDF(reportData, fileName, period);
         break;
       default:
         throw new Error(`Unsupported format: ${format}`);
@@ -535,57 +531,30 @@ const exportToExcel = async (data: any, fileName: string): Promise<string> => {
   }
 };
 
-// Export to CSV file
-const exportToCSV = async (data: any, fileName: string): Promise<string> => {
-  try {
-    // Create a zip-like approach where we create multiple CSV files
-    const csvFiles: { data: string, name: string }[] = [];
-    
-    // Create a CSV for each dataset
-    Object.entries(data).forEach(([key, value]) => {
-      if (Array.isArray(value) && value.length > 0) {
-        const ws = dataToWorksheet(value);
-        const csv = XLSX.utils.sheet_to_csv(ws);
-        
-        // Generate file name
-        const datasetFileName = `${fileName}_${key}.csv`;
-        
-        // Store CSV data
-        csvFiles.push({
-          data: csv,
-          name: datasetFileName
-        });
-      }
-    });
-    
-    // Download each CSV file
-    csvFiles.forEach(csvFile => {
-      const blob = new Blob([csvFile.data], { type: 'text/csv;charset=utf-8;' });
-      downloadBlob(blob, csvFile.name);
-    });
-    
-    // Return a descriptive message if multiple files were created
-    return csvFiles.length > 1 
-      ? `${csvFiles.length} CSV files created` 
-      : csvFiles[0]?.name || `${fileName}.csv`;
-  } catch (error) {
-    console.error("Error exporting to CSV:", error);
-    throw error;
-  }
-};
-
 // Export to PDF file
-const exportToPDF = async (data: any, fileName: string): Promise<string> => {
+const exportToPDF = async (data: any, fileName: string, period: string): Promise<string> => {
   try {
     const doc = new jsPDF();
     let yPos = 20;
     
-    // Add title with proper capitalization
+    // Add title with proper capitalization and "This" before period
     doc.setFontSize(16);
-    const title = fileName.replace(/_/g, ' ')
+    let title = fileName.replace(/_/g, ' ')
       .split(' ')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
+    
+    // Add "This" before period if it's a time period
+    if (period === 'week') {
+      title = title.replace('Week', 'This Week');
+    } else if (period === 'month') {
+      title = title.replace('Month', 'This Month');
+    } else if (period === 'quarter') {
+      title = title.replace('Quarter', 'This Quarter');
+    } else if (period === 'year') {
+      title = title.replace('Year', 'This Year');
+    }
+    
     doc.text(title, 14, yPos);
     yPos += 10;
     
