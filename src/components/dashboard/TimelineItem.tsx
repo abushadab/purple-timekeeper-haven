@@ -71,7 +71,7 @@ const TimelineItem = ({
           <span className="text-sm text-slate-500 ml-auto">{time}</span>
         </div>
         
-        <h4 className="text-base font-bold text-slate-900 mb-1">{title}</h4>
+        <h4 className="text-base font-medium text-slate-900 mb-1">{title}</h4>
         <p className="text-sm font-medium text-slate-700">{projectName}</p>
       </div>
     </div>
