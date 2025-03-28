@@ -24,15 +24,15 @@ const TimelineItem = ({
     switch (status) {
       case 'in_progress':
         return {
-          card: "bg-blue-50 border-blue-50",
-          icon: <Activity className="h-5 w-5 text-blue-500" />,
-          iconContainer: "text-blue-500",
+          card: "bg-purple-50 border-purple-50",
+          icon: <Activity className="h-5 w-5 text-purple-700" />,
+          iconContainer: "text-purple-700",
         };
       case 'completed':
         return {
           card: "bg-green-50 border-green-50",
-          icon: <CheckCircle className="h-5 w-5 text-green-500" />,
-          iconContainer: "text-green-500",
+          icon: <CheckCircle className="h-5 w-5 text-green-600" />,
+          iconContainer: "text-green-600",
         };
       case 'not_started':
       default:
