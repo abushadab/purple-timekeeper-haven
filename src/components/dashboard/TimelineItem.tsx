@@ -65,7 +65,7 @@ const TimelineItem = ({
       <div className={`p-4 rounded-lg ${styles.card}`}>
         <div className="flex items-center gap-3 mb-2">
           {styles.icon}
-          <span className={`text-sm font-bold ${styles.iconContainer}`}>
+          <span className={`text-sm font-semi-bold ${styles.iconContainer}`}>
             {getStatusText()}
           </span>
           <span className="text-sm text-slate-500 ml-auto">{time}</span>
