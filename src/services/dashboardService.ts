@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfWeek, endOfWeek } from "date-fns";
 
@@ -271,7 +270,7 @@ export const getRecentActivity = async (limit = 4): Promise<ActivityItem[]> => {
       const now = new Date();
       const diffMs = now.getTime() - updatedAt.getTime();
       const diffMins = Math.floor(diffMs / 60000);
-      const diffHours = Math.floor(diffMins / 60);
+      const diffHours = Math.floor(diffMs / 3600000);
       const diffDays = Math.floor(diffHours / 24);
 
       let timeAgo;

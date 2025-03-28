@@ -16,10 +16,14 @@ interface ExportOptionsProps {
 
 const ExportOptions: React.FC<ExportOptionsProps> = ({ onExport }) => {
   const handleExport = (format: string) => {
-    onExport(format);
-    toast.success(`Report exported as ${format.toUpperCase()}`, {
-      description: `Your report has been exported successfully in ${format.toUpperCase()} format.`,
-    });
+    try {
+      onExport(format);
+    } catch (error) {
+      console.error("Export error:", error);
+      toast.error("Export failed", {
+        description: "There was an error exporting your report.",
+      });
+    }
   };
 
   return (

@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { DateRange } from "react-day-picker";
 import Header from "@/components/layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,80 +12,22 @@ import DateRangeSelector from "@/components/reports/DateRangeSelector";
 import FilterSelector, { FilterOption } from "@/components/reports/FilterSelector";
 import ExportOptions from "@/components/reports/ExportOptions";
 import { toast } from "@/hooks/use-toast";
-
-// Sample data for charts
-const timeData = [
-  { name: 'Mon', hours: 5.2 },
-  { name: 'Tue', hours: 7.8 },
-  { name: 'Wed', hours: 6.5 },
-  { name: 'Thu', hours: 8.0 },
-  { name: 'Fri', hours: 4.5 },
-  { name: 'Sat', hours: 2.0 },
-  { name: 'Sun', hours: 0.5 },
-];
-
-const monthlyData = [
-  { name: 'Jan', hours: 82 },
-  { name: 'Feb', hours: 75 },
-  { name: 'Mar', hours: 98 },
-  { name: 'Apr', hours: 87 },
-  { name: 'May', hours: 105 },
-  { name: 'Jun', hours: 92 },
-  { name: 'Jul', hours: 78 },
-  { name: 'Aug', hours: 110 },
-  { name: 'Sep', hours: 95 },
-  { name: 'Oct', hours: 86 },
-  { name: 'Nov', hours: 0 },
-  { name: 'Dec', hours: 0 },
-];
-
-const projectData = [
-  { name: 'Website Redesign', hours: 42.5, color: '#9b87f5' },
-  { name: 'Mobile App Development', hours: 68, color: '#7E69AB' },
-  { name: 'E-commerce Integration', hours: 24.5, color: '#6E59A5' },
-  { name: 'Marketing Campaign', hours: 56, color: '#D6BCFA' },
-  { name: 'Data Analytics Dashboard', hours: 32, color: '#E5DEFF' },
-];
-
-const portfolioData = [
-  { name: 'Client Work', hours: 156.5, color: '#9b87f5' },
-  { name: 'Personal Projects', hours: 42.5, color: '#f97316' },
-  { name: 'Learning & Development', hours: 28.0, color: '#4ade80' },
-  { name: 'Administrative', hours: 12.5, color: '#0ea5e9' },
-  { name: 'Content Creation', hours: 36.0, color: '#d946ef' },
-];
-
-const taskStatusData = [
-  { name: 'Completed', value: 45, color: '#4ade80' },
-  { name: 'In Progress', value: 30, color: '#f97316' },
-  { name: 'Not Started', value: 25, color: '#9b87f5' }
-];
-
-const taskEfficiencyData = [
-  { name: 'Website Redesign', estimate: 50, actual: 42.5 },
-  { name: 'Mobile App', estimate: 80, actual: 68 },
-  { name: 'E-commerce', estimate: 30, actual: 24.5 },
-  { name: 'Marketing', estimate: 45, actual: 56 },
-  { name: 'Analytics', estimate: 25, actual: 32 },
-];
-
-const productivityData = [
-  { hour: '6am', productivity: 20 },
-  { hour: '7am', productivity: 40 },
-  { hour: '8am', productivity: 65 },
-  { hour: '9am', productivity: 90 },
-  { hour: '10am', productivity: 95 },
-  { hour: '11am', productivity: 85 },
-  { hour: '12pm', productivity: 70 },
-  { hour: '1pm', productivity: 60 },
-  { hour: '2pm', productivity: 80 },
-  { hour: '3pm', productivity: 85 },
-  { hour: '4pm', productivity: 75 },
-  { hour: '5pm', productivity: 60 },
-  { hour: '6pm', productivity: 50 },
-  { hour: '7pm', productivity: 40 },
-  { hour: '8pm', productivity: 30 },
-];
+import { useQuery } from "@tanstack/react-query";
+import { 
+  getTimeData, 
+  getProjectData,
+  getPortfolioData,
+  getTaskStatusData,
+  getTaskEfficiencyData,
+  getProductivityData,
+  exportReportData,
+  type TimeDataPoint,
+  type ProjectDataPoint,
+  type PortfolioDataPoint,
+  type TaskStatusData,
+  type TaskEfficiencyData,
+  type ProductivityData
+} from "@/services/reportsService";
 
 const Reports = () => {
   const [period, setPeriod] = useState("week");
@@ -116,6 +58,37 @@ const Reports = () => {
     { id: "content", label: "Content Creation", checked: false },
     { id: "research", label: "Research", checked: false },
   ]);
+  
+  // Data fetching with React Query
+  const { data: timeData = [], isLoading: timeLoading } = useQuery({
+    queryKey: ['timeData', period],
+    queryFn: () => getTimeData(period)
+  });
+  
+  const { data: projectData = [], isLoading: projectLoading } = useQuery({
+    queryKey: ['projectData'],
+    queryFn: getProjectData
+  });
+  
+  const { data: portfolioData = [], isLoading: portfolioLoading } = useQuery({
+    queryKey: ['portfolioData'],
+    queryFn: getPortfolioData
+  });
+  
+  const { data: taskStatusData = [], isLoading: taskStatusLoading } = useQuery({
+    queryKey: ['taskStatusData'],
+    queryFn: getTaskStatusData
+  });
+  
+  const { data: taskEfficiencyData = [], isLoading: taskEfficiencyLoading } = useQuery({
+    queryKey: ['taskEfficiencyData'],
+    queryFn: getTaskEfficiencyData
+  });
+  
+  const { data: productivityData = [], isLoading: productivityLoading } = useQuery({
+    queryKey: ['productivityData'],
+    queryFn: getProductivityData
+  });
   
   const handleFilterChange = (category: string, id: string, checked: boolean) => {
     switch (category) {
@@ -168,13 +141,23 @@ const Reports = () => {
     });
   };
   
-  const handleExport = (format: string) => {
-    console.log(`Exporting report as ${format}`);
-    // In a real application, this would trigger the export functionality
-    toast({
-      title: `Report exported as ${format.toUpperCase()}`,
-      description: "Your report has been exported successfully."
-    });
+  const handleExport = async (format: string) => {
+    try {
+      // Export the report data
+      const fileName = await exportReportData(reportType, period, format);
+      
+      toast({
+        title: `Report exported as ${format.toUpperCase()}`,
+        description: "Your report has been exported successfully."
+      });
+    } catch (error) {
+      console.error("Export error:", error);
+      toast({
+        title: "Export failed",
+        description: "There was an error exporting your report.",
+        variant: "destructive"
+      });
+    }
   };
   
   return (
@@ -238,21 +221,31 @@ const Reports = () => {
                   <CardContent>
                     <div className="h-80">
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={period === "year" ? monthlyData : timeData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="name" />
-                          <YAxis />
-                          <Tooltip 
-                            formatter={(value) => [`${value} hrs`, 'Hours']}
-                            contentStyle={{ 
-                              backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                              borderRadius: '0.5rem',
-                              border: 'none', 
-                              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                            }}
-                          />
-                          <Bar dataKey="hours" fill="#9b87f5" radius={[4, 4, 0, 0]} />
-                        </BarChart>
+                        {timeLoading ? (
+                          <div className="flex h-full w-full items-center justify-center">
+                            <div className="text-center text-muted-foreground">Loading data...</div>
+                          </div>
+                        ) : timeData.length === 0 ? (
+                          <div className="flex h-full w-full items-center justify-center">
+                            <div className="text-center text-muted-foreground">No data available</div>
+                          </div>
+                        ) : (
+                          <BarChart data={timeData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="name" />
+                            <YAxis />
+                            <Tooltip 
+                              formatter={(value) => [`${value} hrs`, 'Hours']}
+                              contentStyle={{ 
+                                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                borderRadius: '0.5rem',
+                                border: 'none', 
+                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                              }}
+                            />
+                            <Bar dataKey="hours" fill="#9b87f5" radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        )}
                       </ResponsiveContainer>
                     </div>
                   </CardContent>
@@ -265,31 +258,41 @@ const Reports = () => {
                   <CardContent>
                     <div className="h-80">
                       <ResponsiveContainer width="100%" height="100%">
-                        <RPieChart>
-                          <Pie
-                            data={portfolioData}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={false}
-                            outerRadius={100}
-                            dataKey="hours"
-                            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                          >
-                            {portfolioData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} />
-                            ))}
-                          </Pie>
-                          <Legend />
-                          <Tooltip 
-                            formatter={(value) => [`${value} hrs`, 'Hours']}
-                            contentStyle={{ 
-                              backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                              borderRadius: '0.5rem',
-                              border: 'none', 
-                              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                            }}
-                          />
-                        </RPieChart>
+                        {portfolioLoading ? (
+                          <div className="flex h-full w-full items-center justify-center">
+                            <div className="text-center text-muted-foreground">Loading data...</div>
+                          </div>
+                        ) : portfolioData.length === 0 ? (
+                          <div className="flex h-full w-full items-center justify-center">
+                            <div className="text-center text-muted-foreground">No portfolios found</div>
+                          </div>
+                        ) : (
+                          <RPieChart>
+                            <Pie
+                              data={portfolioData}
+                              cx="50%"
+                              cy="50%"
+                              labelLine={false}
+                              outerRadius={100}
+                              dataKey="hours"
+                              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                            >
+                              {portfolioData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                              ))}
+                            </Pie>
+                            <Legend />
+                            <Tooltip 
+                              formatter={(value) => [`${value} hrs`, 'Hours']}
+                              contentStyle={{ 
+                                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                borderRadius: '0.5rem',
+                                border: 'none', 
+                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                              }}
+                            />
+                          </RPieChart>
+                        )}
                       </ResponsiveContainer>
                     </div>
                   </CardContent>
@@ -303,25 +306,35 @@ const Reports = () => {
                 <CardContent>
                   <div className="h-80">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        layout="vertical"
-                        data={projectData}
-                        margin={{ top: 20, right: 30, left: 100, bottom: 5 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis type="number" />
-                        <YAxis type="category" dataKey="name" />
-                        <Tooltip 
-                          formatter={(value) => [`${value} hrs`, 'Hours']}
-                          contentStyle={{ 
-                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                            borderRadius: '0.5rem',
-                            border: 'none', 
-                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                          }}
-                        />
-                        <Bar dataKey="hours" fill="#9b87f5" radius={[0, 4, 4, 0]} />
-                      </BarChart>
+                      {projectLoading ? (
+                        <div className="flex h-full w-full items-center justify-center">
+                          <div className="text-center text-muted-foreground">Loading data...</div>
+                        </div>
+                      ) : projectData.length === 0 ? (
+                        <div className="flex h-full w-full items-center justify-center">
+                          <div className="text-center text-muted-foreground">No projects found</div>
+                        </div>
+                      ) : (
+                        <BarChart
+                          layout="vertical"
+                          data={projectData}
+                          margin={{ top: 20, right: 30, left: 100, bottom: 5 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis type="number" />
+                          <YAxis type="category" dataKey="name" />
+                          <Tooltip 
+                            formatter={(value) => [`${value} hrs`, 'Hours']}
+                            contentStyle={{ 
+                              backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                              borderRadius: '0.5rem',
+                              border: 'none', 
+                              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                            }}
+                          />
+                          <Bar dataKey="hours" fill="#9b87f5" radius={[0, 4, 4, 0]} />
+                        </BarChart>
+                      )}
                     </ResponsiveContainer>
                   </div>
                 </CardContent>
@@ -339,31 +352,41 @@ const Reports = () => {
                   <CardContent>
                     <div className="h-80">
                       <ResponsiveContainer width="100%" height="100%">
-                        <RPieChart>
-                          <Pie
-                            data={taskStatusData}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={60}
-                            outerRadius={90}
-                            paddingAngle={5}
-                            dataKey="value"
-                          >
-                            {taskStatusData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} />
-                            ))}
-                          </Pie>
-                          <Legend />
-                          <Tooltip 
-                            formatter={(value, name) => [`${value}%`, name]}
-                            contentStyle={{ 
-                              backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                              borderRadius: '0.5rem',
-                              border: 'none', 
-                              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                            }}
-                          />
-                        </RPieChart>
+                        {taskStatusLoading ? (
+                          <div className="flex h-full w-full items-center justify-center">
+                            <div className="text-center text-muted-foreground">Loading data...</div>
+                          </div>
+                        ) : taskStatusData.length === 0 ? (
+                          <div className="flex h-full w-full items-center justify-center">
+                            <div className="text-center text-muted-foreground">No tasks found</div>
+                          </div>
+                        ) : (
+                          <RPieChart>
+                            <Pie
+                              data={taskStatusData}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={60}
+                              outerRadius={90}
+                              paddingAngle={5}
+                              dataKey="value"
+                            >
+                              {taskStatusData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                              ))}
+                            </Pie>
+                            <Legend />
+                            <Tooltip 
+                              formatter={(value, name) => [`${value}%`, name]}
+                              contentStyle={{ 
+                                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                borderRadius: '0.5rem',
+                                border: 'none', 
+                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                              }}
+                            />
+                          </RPieChart>
+                        )}
                       </ResponsiveContainer>
                     </div>
                   </CardContent>
@@ -376,26 +399,36 @@ const Reports = () => {
                   <CardContent>
                     <div className="h-80">
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                          data={taskEfficiencyData}
-                          margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="name" />
-                          <YAxis />
-                          <Tooltip 
-                            formatter={(value) => [`${value} hrs`, 'Hours']}
-                            contentStyle={{ 
-                              backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                              borderRadius: '0.5rem',
-                              border: 'none', 
-                              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                            }}
-                          />
-                          <Legend />
-                          <Bar dataKey="estimate" fill="#9b87f5" name="Estimated" />
-                          <Bar dataKey="actual" fill="#E5DEFF" name="Actual" />
-                        </BarChart>
+                        {taskEfficiencyLoading ? (
+                          <div className="flex h-full w-full items-center justify-center">
+                            <div className="text-center text-muted-foreground">Loading data...</div>
+                          </div>
+                        ) : taskEfficiencyData.length === 0 ? (
+                          <div className="flex h-full w-full items-center justify-center">
+                            <div className="text-center text-muted-foreground">No task efficiency data available</div>
+                          </div>
+                        ) : (
+                          <BarChart
+                            data={taskEfficiencyData}
+                            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="name" />
+                            <YAxis />
+                            <Tooltip 
+                              formatter={(value) => [`${value} hrs`, 'Hours']}
+                              contentStyle={{ 
+                                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                borderRadius: '0.5rem',
+                                border: 'none', 
+                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                              }}
+                            />
+                            <Legend />
+                            <Bar dataKey="estimate" fill="#9b87f5" name="Estimated" />
+                            <Bar dataKey="actual" fill="#E5DEFF" name="Actual" />
+                          </BarChart>
+                        )}
                       </ResponsiveContainer>
                     </div>
                   </CardContent>
@@ -409,24 +442,34 @@ const Reports = () => {
                 <CardContent>
                   <div className="h-80">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart
-                        data={monthlyData}
-                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip 
-                          formatter={(value) => [`${value} tasks`, 'Completed']}
-                          contentStyle={{ 
-                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                            borderRadius: '0.5rem',
-                            border: 'none', 
-                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                          }}
-                        />
-                        <Line type="monotone" dataKey="hours" stroke="#9b87f5" strokeWidth={2} name="Tasks Completed" />
-                      </LineChart>
+                      {timeLoading ? (
+                        <div className="flex h-full w-full items-center justify-center">
+                          <div className="text-center text-muted-foreground">Loading data...</div>
+                        </div>
+                      ) : timeData.length === 0 ? (
+                        <div className="flex h-full w-full items-center justify-center">
+                          <div className="text-center text-muted-foreground">No data available</div>
+                        </div>
+                      ) : (
+                        <LineChart
+                          data={timeData}
+                          margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="name" />
+                          <YAxis />
+                          <Tooltip 
+                            formatter={(value) => [`${value} tasks`, 'Completed']}
+                            contentStyle={{ 
+                              backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                              borderRadius: '0.5rem',
+                              border: 'none', 
+                              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                            }}
+                          />
+                          <Line type="monotone" dataKey="hours" stroke="#9b87f5" strokeWidth={2} name="Tasks Completed" />
+                        </LineChart>
+                      )}
                     </ResponsiveContainer>
                   </div>
                 </CardContent>
@@ -444,24 +487,34 @@ const Reports = () => {
                   <CardContent>
                     <div className="h-80">
                       <ResponsiveContainer width="100%" height="100%">
-                        <LineChart
-                          data={productivityData}
-                          margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="hour" />
-                          <YAxis />
-                          <Tooltip 
-                            formatter={(value) => [`${value}%`, 'Productivity']}
-                            contentStyle={{ 
-                              backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                              borderRadius: '0.5rem',
-                              border: 'none', 
-                              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                            }}
-                          />
-                          <Line type="monotone" dataKey="productivity" stroke="#9b87f5" strokeWidth={2} name="Productivity" />
-                        </LineChart>
+                        {productivityLoading ? (
+                          <div className="flex h-full w-full items-center justify-center">
+                            <div className="text-center text-muted-foreground">Loading data...</div>
+                          </div>
+                        ) : productivityData.length === 0 ? (
+                          <div className="flex h-full w-full items-center justify-center">
+                            <div className="text-center text-muted-foreground">No productivity data available</div>
+                          </div>
+                        ) : (
+                          <LineChart
+                            data={productivityData}
+                            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="hour" />
+                            <YAxis />
+                            <Tooltip 
+                              formatter={(value) => [`${value}%`, 'Productivity']}
+                              contentStyle={{ 
+                                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                borderRadius: '0.5rem',
+                                border: 'none', 
+                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                              }}
+                            />
+                            <Line type="monotone" dataKey="productivity" stroke="#9b87f5" strokeWidth={2} name="Productivity" />
+                          </LineChart>
+                        )}
                       </ResponsiveContainer>
                     </div>
                   </CardContent>
@@ -476,31 +529,41 @@ const Reports = () => {
                   <CardContent>
                     <div className="h-80">
                       <ResponsiveContainer width="100%" height="100%">
-                        <RPieChart>
-                          <Pie
-                            data={projectData}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={false}
-                            outerRadius={100}
-                            dataKey="hours"
-                            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                          >
-                            {projectData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} />
-                            ))}
-                          </Pie>
-                          <Legend />
-                          <Tooltip 
-                            formatter={(value) => [`${value} hrs`, 'Focus Time']}
-                            contentStyle={{ 
-                              backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                              borderRadius: '0.5rem',
-                              border: 'none', 
-                              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                            }}
-                          />
-                        </RPieChart>
+                        {projectLoading ? (
+                          <div className="flex h-full w-full items-center justify-center">
+                            <div className="text-center text-muted-foreground">Loading data...</div>
+                          </div>
+                        ) : projectData.length === 0 ? (
+                          <div className="flex h-full w-full items-center justify-center">
+                            <div className="text-center text-muted-foreground">No projects found</div>
+                          </div>
+                        ) : (
+                          <RPieChart>
+                            <Pie
+                              data={projectData}
+                              cx="50%"
+                              cy="50%"
+                              labelLine={false}
+                              outerRadius={100}
+                              dataKey="hours"
+                              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                            >
+                              {projectData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                              ))}
+                            </Pie>
+                            <Legend />
+                            <Tooltip 
+                              formatter={(value) => [`${value} hrs`, 'Focus Time']}
+                              contentStyle={{ 
+                                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                borderRadius: '0.5rem',
+                                border: 'none', 
+                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                              }}
+                            />
+                          </RPieChart>
+                        )}
                       </ResponsiveContainer>
                     </div>
                   </CardContent>
@@ -513,24 +576,34 @@ const Reports = () => {
                   <CardContent>
                     <div className="h-80">
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart 
-                          data={timeData} 
-                          margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="name" />
-                          <YAxis />
-                          <Tooltip 
-                            formatter={(value) => [`${value} hrs`, 'Hours']}
-                            contentStyle={{ 
-                              backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                              borderRadius: '0.5rem',
-                              border: 'none', 
-                              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                            }}
-                          />
-                          <Bar dataKey="hours" fill="#9b87f5" radius={[4, 4, 0, 0]} />
-                        </BarChart>
+                        {timeLoading ? (
+                          <div className="flex h-full w-full items-center justify-center">
+                            <div className="text-center text-muted-foreground">Loading data...</div>
+                          </div>
+                        ) : timeData.length === 0 ? (
+                          <div className="flex h-full w-full items-center justify-center">
+                            <div className="text-center text-muted-foreground">No data available</div>
+                          </div>
+                        ) : (
+                          <BarChart 
+                            data={timeData} 
+                            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="name" />
+                            <YAxis />
+                            <Tooltip 
+                              formatter={(value) => [`${value} hrs`, 'Hours']}
+                              contentStyle={{ 
+                                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                borderRadius: '0.5rem',
+                                border: 'none', 
+                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                              }}
+                            />
+                            <Bar dataKey="hours" fill="#9b87f5" radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        )}
                       </ResponsiveContainer>
                     </div>
                   </CardContent>
