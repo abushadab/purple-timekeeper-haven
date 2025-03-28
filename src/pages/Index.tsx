@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import StatCard from "@/components/dashboard/StatCard";
@@ -12,18 +13,26 @@ import {
   Play,
   Pause,
   CheckCircle,
-  FileEdit,
-  ChevronRight
+  FileEdit
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [user] = useState({ firstName: 'User' });
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    portfolios: "0",
+    projects: "0",
+    totalHours: "0",
+    tasksDue: "0"
+  });
 
-  // Recent projects data - updated to use string IDs
-  const recentProjects = [
+  // Recent projects data
+  const [recentProjects, setRecentProjects] = useState([
     {
       id: "1",
       title: "Website Redesign",
@@ -48,7 +57,38 @@ const Dashboard = () => {
       hoursLogged: 24,
       dueDate: "Dec 01",
     }
-  ];
+  ]);
+
+  const [weeklyData, setWeeklyData] = useState({
+    hoursTarget: 40.0,
+    hoursLogged: 32.5,
+    completion: 81,
+    mostActiveProject: "Website Redesign",
+    mostActiveHours: 14.5
+  });
+
+  // Simulate loading data from an API
+  useEffect(() => {
+    // Simulating API call
+    const fetchDashboardData = () => {
+      setLoading(true);
+      
+      // In a real implementation, this would be an API call
+      setTimeout(() => {
+        // Sample data - in a real app, this would come from your API
+        setStats({
+          portfolios: "8",
+          projects: "24",
+          totalHours: "187.5",
+          tasksDue: "12"
+        });
+        
+        setLoading(false);
+      }, 1000);
+    };
+    
+    fetchDashboardData();
+  }, []);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -66,25 +106,25 @@ const Dashboard = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <StatCard
               title="Portfolios"
-              value="8"
+              value={loading ? "..." : stats.portfolios}
               icon={Folder}
               trend={{ value: 2, isPositive: true }}
             />
             <StatCard
               title="Projects"
-              value="24"
+              value={loading ? "..." : stats.projects}
               icon={FolderKanban}
               trend={{ value: 5, isPositive: true }}
             />
             <StatCard
               title="Total Hours"
-              value="187.5"
+              value={loading ? "..." : stats.totalHours}
               icon={Clock}
               trend={{ value: 12, isPositive: true }}
             />
             <StatCard
               title="Tasks Due This Week"
-              value="12"
+              value={loading ? "..." : stats.tasksDue}
               icon={Calendar}
               trend={{ value: 4, isPositive: false }}
             />
@@ -93,30 +133,37 @@ const Dashboard = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
             <div className="lg:col-span-2 space-y-6">
               <Card className="overflow-hidden card-glass">
-                <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                <CardHeader className="pb-3">
                   <CardTitle className="text-lg font-semibold">Recent Projects</CardTitle>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="text-sm text-purple-600 hover:text-purple-700"
-                    onClick={() => navigate('/projects')}
-                  >
-                    View all
-                    <ChevronRight className="h-4 w-4 ml-1" />
-                  </Button>
                 </CardHeader>
                 <CardContent className="p-6 space-y-6">
-                  {recentProjects.map((project) => (
-                    <ProjectCard
-                      key={project.id}
-                      id={project.id}
-                      title={project.title}
-                      description={project.description}
-                      progress={project.progress}
-                      hoursLogged={project.hoursLogged}
-                      dueDate={project.dueDate}
-                    />
-                  ))}
+                  {loading ? (
+                    <div className="text-center py-4 text-muted-foreground">Loading projects...</div>
+                  ) : recentProjects.length > 0 ? (
+                    recentProjects.map((project) => (
+                      <ProjectCard
+                        key={project.id}
+                        id={project.id}
+                        title={project.title}
+                        description={project.description}
+                        progress={project.progress}
+                        hoursLogged={project.hoursLogged}
+                        dueDate={project.dueDate}
+                      />
+                    ))
+                  ) : (
+                    <div className="text-center py-4 text-muted-foreground">
+                      No projects found. Create your first project to get started.
+                      <div className="mt-4">
+                        <Button 
+                          onClick={() => navigate('/projects')}
+                          className="bg-purple-600 hover:bg-purple-700"
+                        >
+                          Create Project
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
               
@@ -125,43 +172,47 @@ const Dashboard = () => {
                   <CardTitle className="text-lg font-semibold">Weekly Summary</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Hours Target</p>
-                        <p className="text-lg font-semibold">40.0 hrs</p>
+                  {loading ? (
+                    <div className="text-center py-4 text-muted-foreground">Loading summary...</div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Hours Target</p>
+                          <p className="text-lg font-semibold">{weeklyData.hoursTarget.toFixed(1)} hrs</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Hours Logged</p>
+                          <p className="text-lg font-semibold">{weeklyData.hoursLogged.toFixed(1)} hrs</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Completion</p>
+                          <p className="text-lg font-semibold text-purple-600">{weeklyData.completion}%</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Hours Logged</p>
-                        <p className="text-lg font-semibold">32.5 hrs</p>
+                      
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Progress</span>
+                          <span className="font-medium">{weeklyData.hoursLogged.toFixed(1)}/{weeklyData.hoursTarget.toFixed(1)} hrs</span>
+                        </div>
+                        <div className="h-2 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-purple-600 rounded-full"
+                            style={{ width: `${weeklyData.completion}%` }}
+                          ></div>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Completion</p>
-                        <p className="text-lg font-semibold text-purple-600">81%</p>
+                      
+                      <div className="pt-4">
+                        <p className="font-medium mb-2">Most Active Project</p>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-purple-600"></div>
+                          <p className="text-muted-foreground">{weeklyData.mostActiveProject} ({weeklyData.mostActiveHours} hrs)</p>
+                        </div>
                       </div>
                     </div>
-                    
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Progress</span>
-                        <span className="font-medium">32.5/40.0 hrs</span>
-                      </div>
-                      <div className="h-2 bg-muted rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-purple-600 rounded-full"
-                          style={{ width: '81%' }}
-                        ></div>
-                      </div>
-                    </div>
-                    
-                    <div className="pt-4">
-                      <p className="font-medium mb-2">Most Active Project</p>
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-purple-600"></div>
-                        <p className="text-muted-foreground">Website Redesign (14.5 hrs)</p>
-                      </div>
-                    </div>
-                  </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -172,40 +223,44 @@ const Dashboard = () => {
                   <CardTitle className="text-lg font-semibold">Recent Activity</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-0">
-                    <TimelineItem
-                      icon={Play}
-                      iconClassName="bg-green-100"
-                      title="Started tracking"
-                      description="Website Redesign - Frontend Development"
-                      time="2 mins ago"
-                    />
-                    
-                    <TimelineItem
-                      icon={Pause}
-                      iconClassName="bg-orange-100"
-                      title="Paused tracking"
-                      description="Website Redesign - UI Components"
-                      time="15 mins ago"
-                    />
-                    
-                    <TimelineItem
-                      icon={CheckCircle}
-                      iconClassName="bg-blue-100"
-                      title="Completed task"
-                      description="Project Planning and Requirements Gathering"
-                      time="1 hour ago"
-                    />
-                    
-                    <TimelineItem
-                      icon={FileEdit}
-                      iconClassName="bg-purple-100"
-                      title="Updated time log"
-                      description="Added 2h 30m to API Development"
-                      time="2 hours ago"
-                      isLast={true}
-                    />
-                  </div>
+                  {loading ? (
+                    <div className="text-center py-4 text-muted-foreground">Loading activity...</div>
+                  ) : (
+                    <div className="space-y-0">
+                      <TimelineItem
+                        icon={Play}
+                        iconClassName="bg-green-100"
+                        title="Started tracking"
+                        description="Website Redesign - Frontend Development"
+                        time="2 mins ago"
+                      />
+                      
+                      <TimelineItem
+                        icon={Pause}
+                        iconClassName="bg-orange-100"
+                        title="Paused tracking"
+                        description="Website Redesign - UI Components"
+                        time="15 mins ago"
+                      />
+                      
+                      <TimelineItem
+                        icon={CheckCircle}
+                        iconClassName="bg-blue-100"
+                        title="Completed task"
+                        description="Project Planning and Requirements Gathering"
+                        time="1 hour ago"
+                      />
+                      
+                      <TimelineItem
+                        icon={FileEdit}
+                        iconClassName="bg-purple-100"
+                        title="Updated time log"
+                        description="Added 2h 30m to API Development"
+                        time="2 hours ago"
+                        isLast={true}
+                      />
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
