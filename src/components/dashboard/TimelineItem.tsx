@@ -1,22 +1,20 @@
 
 import React from "react";
-import { LucideIcon } from "lucide-react";
+import { LucideIcon, Activity, CheckCircle, Circle } from "lucide-react";
 
 interface TimelineItemProps {
-  icon: LucideIcon;
-  iconClassName?: string;
+  icon?: LucideIcon;
   title: string;
-  description: string;
+  projectName: string;
   time: string;
   isLast?: boolean;
-  status?: 'in_progress' | 'completed' | 'not_started';
+  status: 'in_progress' | 'completed' | 'not_started';
 }
 
 const TimelineItem = ({
-  icon: Icon,
-  iconClassName,
+  icon,
   title,
-  description,
+  projectName,
   time,
   isLast = false,
   status = 'not_started',
@@ -26,44 +24,55 @@ const TimelineItem = ({
     switch (status) {
       case 'in_progress':
         return {
-          card: "bg-blue-50 border-blue-200",
-          icon: "bg-blue-100 text-blue-600",
+          card: "bg-blue-50 border-blue-50",
+          icon: <Activity className="h-5 w-5 text-blue-500" />,
+          iconContainer: "text-blue-500",
         };
       case 'completed':
         return {
-          card: "bg-green-50 border-green-200",
-          icon: "bg-green-100 text-green-600",
+          card: "bg-green-50 border-green-50",
+          icon: <CheckCircle className="h-5 w-5 text-green-500" />,
+          iconContainer: "text-green-500",
         };
       case 'not_started':
       default:
         return {
-          card: "bg-white border-gray-200",
-          icon: iconClassName || "bg-purple-100 text-purple-600",
+          card: "bg-slate-50 border-slate-50",
+          icon: <Circle className="h-5 w-5 text-slate-400" />,
+          iconContainer: "text-slate-400",
         };
     }
   };
 
   const styles = getStatusStyles();
+  
+  // Get status text
+  const getStatusText = () => {
+    switch (status) {
+      case 'in_progress':
+        return "In Progress";
+      case 'completed':
+        return "Completed";
+      case 'not_started':
+        return "Not Started";
+      default:
+        return "Not Started";
+    }
+  };
 
   return (
-    <div className="pb-4 animate-fade-in" style={{ animationDelay: "100ms" }}>
-      <div className={`flex items-start p-3 rounded-lg border ${styles.card}`}>
-        <div className="mr-3">
-          <div className={`flex items-center justify-center w-8 h-8 rounded-full ${styles.icon}`}>
-            <Icon className="h-4 w-4" />
-          </div>
+    <div className="mb-4 animate-fade-in" style={{ animationDelay: "100ms" }}>
+      <div className={`p-4 rounded-lg ${styles.card}`}>
+        <div className="flex items-center gap-3 mb-2">
+          {styles.icon}
+          <span className={`text-sm font-bold ${styles.iconContainer}`}>
+            {getStatusText()}
+          </span>
+          <span className="text-sm text-slate-500 ml-auto">{time}</span>
         </div>
         
-        <div className="flex-1">
-          <div className="flex flex-col">
-            <h4 className="text-sm font-medium">{title}</h4>
-            <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
-          </div>
-        </div>
-        
-        <div className="ml-2">
-          <span className="text-xs text-muted-foreground whitespace-nowrap">{time}</span>
-        </div>
+        <h4 className="text-base font-bold text-slate-900 mb-1">{title}</h4>
+        <p className="text-sm font-medium text-slate-700">{projectName}</p>
       </div>
     </div>
   );
