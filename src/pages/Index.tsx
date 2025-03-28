@@ -105,19 +105,17 @@ const Dashboard = () => {
     }
   };
   
-  // Helper function to get the appropriate icon background for activity type
-  const getActivityIconClass = (type: ActivityItem['type']) => {
+  // Helper function to get the appropriate activity status
+  const getActivityStatus = (type: ActivityItem['type']) => {
     switch (type) {
       case 'started':
-        return "bg-green-100";
-      case 'paused':
-        return "bg-orange-100";
+        return 'in_progress';
       case 'completed':
-        return "bg-blue-100";
+        return 'completed';
+      case 'paused':
       case 'updated':
-        return "bg-purple-100";
       default:
-        return "bg-purple-100";
+        return 'not_started';
     }
   };
 
@@ -294,14 +292,13 @@ const Dashboard = () => {
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg font-semibold">Recent Activity</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-4">
                   {loading ? (
-                    <div className="space-y-6">
+                    <div className="space-y-4">
                       {[1, 2, 3, 4].map((i) => (
                         <div key={i} className="flex gap-4">
                           <div className="flex flex-col items-center">
                             <Skeleton className="h-8 w-8 rounded-full" />
-                            {i < 4 && <Skeleton className="w-1 h-16 mt-2" />}
                           </div>
                           <div className="space-y-2 flex-1">
                             <div className="flex justify-between">
@@ -319,10 +316,10 @@ const Dashboard = () => {
                         <TimelineItem
                           key={activity.id}
                           icon={getActivityIcon(activity.type)}
-                          iconClassName={getActivityIconClass(activity.type)}
                           title={activity.type.charAt(0).toUpperCase() + activity.type.slice(1)}
                           description={activity.description}
                           time={activity.time}
+                          status={getActivityStatus(activity.type) as any}
                           isLast={index === activities.length - 1}
                         />
                       ))}
