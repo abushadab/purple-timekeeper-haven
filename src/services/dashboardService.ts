@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfWeek, endOfWeek } from "date-fns";
 
@@ -36,113 +35,13 @@ export interface ActivityItem {
   timestamp: Date;
 }
 
-// Helper function to get the WordPress user ID from the authenticated user
-const getWordpressUserId = async () => {
-  try {
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-    
-    if (sessionError) {
-      console.error("Session error:", sessionError);
-      return null;
-    }
-    
-    const authId = sessionData.session?.user?.id;
-    
-    if (!authId) {
-      console.log("No authenticated user found");
-      return null;
-    }
-    
-    // Get the WordPress user ID from the user_profiles table
-    const { data: profileData, error: profileError } = await supabase
-      .from("user_profiles")
-      .select("wordpress_user_id")
-      .eq("id", authId)
-      .single();
-    
-    if (profileError) {
-      console.error("Error fetching user profile:", profileError);
-      return null;
-    }
-    
-    return profileData?.wordpress_user_id;
-  } catch (error) {
-    console.error("Error getting WordPress user ID:", error);
-    return null;
-  }
-};
-
-// Function to get demo data for unauthenticated users
-const getDemoStats = (): DashboardStats => {
-  return {
-    portfolios: "3",
-    projects: "7",
-    totalHours: "42.5",
-    tasksDue: "4"
-  };
-};
-
-const getDemoProjects = (): RecentProject[] => {
-  return [
-    {
-      id: "demo-1",
-      title: "Website Redesign",
-      description: "Updating the marketing website with new branding",
-      progress: 65,
-      hoursLogged: 24.5,
-      dueDate: "Apr 15"
-    },
-    {
-      id: "demo-2",
-      title: "Mobile App Development",
-      description: "Building a companion app for the web platform",
-      progress: 30,
-      hoursLogged: 18.0,
-      dueDate: "May 20"
-    }
-  ];
-};
-
-const getDemoWeeklySummary = (): WeeklySummary => {
-  return {
-    hoursTarget: 40,
-    hoursLogged: 28.5,
-    completion: 71,
-    mostActiveProject: "Website Redesign",
-    mostActiveHours: 15.5
-  };
-};
-
-const getDemoActivity = (): ActivityItem[] => {
-  return [
-    {
-      id: "act-1",
-      type: 'completed',
-      title: "Update header component",
-      projectName: "Website Redesign",
-      status: 'completed',
-      time: "2 hours ago",
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000)
-    },
-    {
-      id: "act-2",
-      type: 'started',
-      title: "Create login screen",
-      projectName: "Mobile App Development",
-      status: 'in_progress',
-      time: "4 hours ago",
-      timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000)
-    }
-  ];
-};
-
 // Fetch dashboard statistics
 export const getDashboardStats = async (): Promise<DashboardStats> => {
-  const userId = await getWordpressUserId();
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData.session?.user?.id;
 
   if (!userId) {
-    console.log("No user ID found, returning demo data");
-    return getDemoStats();
+    throw new Error("User not authenticated");
   }
 
   try {
@@ -188,16 +87,22 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
     };
   } catch (error) {
     console.error("Error fetching dashboard stats:", error);
-    return getDemoStats();
+    return {
+      portfolios: "0",
+      projects: "0",
+      totalHours: "0",
+      tasksDue: "0"
+    };
   }
 };
 
 // Fetch recent projects
 export const getRecentProjects = async (limit = 3): Promise<RecentProject[]> => {
-  const userId = await getWordpressUserId();
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData.session?.user?.id;
 
   if (!userId) {
-    return getDemoProjects();
+    throw new Error("User not authenticated");
   }
 
   try {
@@ -229,16 +134,17 @@ export const getRecentProjects = async (limit = 3): Promise<RecentProject[]> => 
     });
   } catch (error) {
     console.error("Error fetching recent projects:", error);
-    return getDemoProjects();
+    return [];
   }
 };
 
 // Get weekly summary
 export const getWeeklySummary = async (): Promise<WeeklySummary> => {
-  const userId = await getWordpressUserId();
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData.session?.user?.id;
 
   if (!userId) {
-    return getDemoWeeklySummary();
+    throw new Error("User not authenticated");
   }
 
   try {
@@ -304,16 +210,23 @@ export const getWeeklySummary = async (): Promise<WeeklySummary> => {
     };
   } catch (error) {
     console.error("Error fetching weekly summary:", error);
-    return getDemoWeeklySummary();
+    return {
+      hoursTarget: 40.0,
+      hoursLogged: 0,
+      completion: 0,
+      mostActiveProject: 'None',
+      mostActiveHours: 0
+    };
   }
 };
 
 // Get recent activity
 export const getRecentActivity = async (limit = 4): Promise<ActivityItem[]> => {
-  const userId = await getWordpressUserId();
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData.session?.user?.id;
 
   if (!userId) {
-    return getDemoActivity();
+    throw new Error("User not authenticated");
   }
 
   try {
@@ -381,6 +294,6 @@ export const getRecentActivity = async (limit = 4): Promise<ActivityItem[]> => {
     });
   } catch (error) {
     console.error("Error fetching recent activity:", error);
-    return getDemoActivity();
+    return [];
   }
 };
