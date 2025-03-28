@@ -12,12 +12,9 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { signIn, signUp, user } = useAuth();
+  const { signIn, user } = useAuth();
 
   // Redirect if already logged in
   useEffect(() => {
@@ -31,42 +28,24 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      if (isSignUp) {
-        // Handle signup
-        const { error } = await signUp(email, password, { firstName, lastName });
-        if (error) {
-          toast({
-            title: "Registration failed",
-            description: error.message,
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Registration successful",
-            description: "Please check your email to confirm your account.",
-          });
-          setIsSignUp(false); // Switch back to login view
-        }
+      // Handle login
+      const { error } = await signIn(email, password);
+      if (error) {
+        toast({
+          title: "Login failed",
+          description: error.message,
+          variant: "destructive",
+        });
       } else {
-        // Handle login
-        const { error } = await signIn(email, password);
-        if (error) {
-          toast({
-            title: "Login failed",
-            description: error.message,
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Logged in successfully",
-            description: "Welcome to TimeTrack!",
-          });
-          navigate('/');
-        }
+        toast({
+          title: "Logged in successfully",
+          description: "Welcome to TimeTrack!",
+        });
+        navigate('/');
       }
     } catch (error: any) {
       toast({
-        title: isSignUp ? "Registration failed" : "Login failed",
+        title: "Login failed",
         description: error.message || "An unexpected error occurred",
         variant: "destructive",
       });
@@ -84,39 +63,11 @@ const Login = () => {
           </div>
           <CardTitle className="text-2xl font-bold">TimeTrack</CardTitle>
           <CardDescription>
-            {isSignUp 
-              ? "Create a new account to start tracking your time" 
-              : "Enter your credentials to access your account"}
+            Enter your credentials to access your account
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {isSignUp && (
-              <>
-                <div className="space-y-2">
-                  <label htmlFor="firstName" className="text-sm font-medium">First Name</label>
-                  <Input 
-                    id="firstName" 
-                    type="text" 
-                    placeholder="John" 
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label htmlFor="lastName" className="text-sm font-medium">Last Name</label>
-                  <Input 
-                    id="lastName" 
-                    type="text" 
-                    placeholder="Doe" 
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    required
-                  />
-                </div>
-              </>
-            )}
             <div className="space-y-2">
               <label htmlFor="email" className="text-sm font-medium">Email</label>
               <Input 
@@ -131,11 +82,9 @@ const Login = () => {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label htmlFor="password" className="text-sm font-medium">Password</label>
-                {!isSignUp && (
-                  <Button variant="link" className="p-0 h-auto text-xs text-purple-600">
-                    Forgot password?
-                  </Button>
-                )}
+                <a href="https://tabtracker.ai/my-account/lost-password/" target="_blank" rel="noopener noreferrer" className="text-xs text-purple-600 hover:underline">
+                  Forgot password?
+                </a>
               </div>
               <Input 
                 id="password" 
@@ -146,20 +95,16 @@ const Login = () => {
               />
             </div>
             <Button type="submit" className="w-full purple-gradient text-white" disabled={isLoading}>
-              {isLoading ? "Processing..." : isSignUp ? "Sign Up" : "Log in"}
+              {isLoading ? "Processing..." : "Log in"}
             </Button>
           </form>
         </CardContent>
         <CardFooter className="flex justify-center">
           <p className="text-sm text-muted-foreground">
-            {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
-            <Button 
-              variant="link" 
-              className="p-0 h-auto text-purple-600"
-              onClick={() => setIsSignUp(!isSignUp)}
-            >
-              {isSignUp ? "Log in" : "Sign up"}
-            </Button>
+            Don't have an account?{" "}
+            <a href="https://tabtracker.ai/register/" target="_blank" rel="noopener noreferrer" className="text-purple-600 hover:underline">
+              Sign up
+            </a>
           </p>
         </CardFooter>
       </Card>
