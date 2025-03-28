@@ -29,7 +29,9 @@ export interface WeeklySummary {
 export interface ActivityItem {
   id: string;
   type: 'started' | 'paused' | 'completed' | 'updated';
-  description: string;
+  title: string;
+  projectName: string;
+  status: 'in_progress' | 'completed' | 'not_started';
   time: string;
   timestamp: Date;
 }
@@ -241,20 +243,27 @@ export const getRecentActivity = async (limit = 4): Promise<ActivityItem[]> => {
       return [];
     }
 
-    return recentTasks.map((task, index) => {
-      // Determine activity type based on task status
+    return recentTasks.map((task) => {
+      // Map task status to our component status
+      let status: 'in_progress' | 'completed' | 'not_started';
+      
+      if (task.status === 'completed') {
+        status = 'completed';
+      } else if (task.status === 'in_progress') {
+        status = 'in_progress';
+      } else {
+        status = 'not_started';
+      }
+      
+      // Determine activity type based on task status for backward compatibility
       let type: 'started' | 'paused' | 'completed' | 'updated';
-      let description = '';
       
       if (task.status === 'completed') {
         type = 'completed';
-        description = `${task.title} in ${task.projects?.name || 'Unknown Project'}`;
       } else if (task.status === 'in_progress') {
-        type = index % 2 === 0 ? 'started' : 'paused'; // Alternate for variety
-        description = `${task.title} - ${task.projects?.name || 'Unknown Project'}`;
+        type = 'started';
       } else {
         type = 'updated';
-        description = `${task.title} in ${task.projects?.name || 'Unknown Project'}`;
       }
 
       // Calculate relative time
@@ -277,7 +286,9 @@ export const getRecentActivity = async (limit = 4): Promise<ActivityItem[]> => {
       return {
         id: task.id,
         type,
-        description,
+        title: task.title,
+        projectName: task.projects?.name || 'Unknown Project',
+        status,
         time: timeAgo,
         timestamp: updatedAt
       };

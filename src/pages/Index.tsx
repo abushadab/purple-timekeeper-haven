@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/layout/Header";
@@ -13,7 +12,8 @@ import {
   Play,
   Pause,
   CheckCircle,
-  FileEdit
+  FileEdit,
+  Bell
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,7 +35,6 @@ const Dashboard = () => {
   const { toast } = useToast();
   const [user] = useState({ firstName: 'User' });
   
-  // State for all dashboard data
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats>({
     portfolios: "0",
@@ -54,13 +53,11 @@ const Dashboard = () => {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch all dashboard data
   const fetchDashboardData = async () => {
     setLoading(true);
     setError(null);
     
     try {
-      // Fetch all data in parallel
       const [statsData, projectsData, weeklyData, activitiesData] = await Promise.all([
         getDashboardStats(),
         getRecentProjects(),
@@ -89,7 +86,6 @@ const Dashboard = () => {
     fetchDashboardData();
   }, []);
 
-  // Helper function to get the appropriate icon for activity type
   const getActivityIcon = (type: ActivityItem['type']) => {
     switch (type) {
       case 'started':
@@ -102,22 +98,6 @@ const Dashboard = () => {
         return FileEdit;
       default:
         return FileEdit;
-    }
-  };
-  
-  // Helper function to get the appropriate icon background for activity type
-  const getActivityIconClass = (type: ActivityItem['type']) => {
-    switch (type) {
-      case 'started':
-        return "bg-green-100";
-      case 'paused':
-        return "bg-orange-100";
-      case 'completed':
-        return "bg-blue-100";
-      case 'updated':
-        return "bg-purple-100";
-      default:
-        return "bg-purple-100";
     }
   };
 
@@ -292,37 +272,36 @@ const Dashboard = () => {
             <div>
               <Card className="overflow-hidden card-glass h-full">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-lg font-semibold">Recent Activity</CardTitle>
+                  <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                    <span className="bg-blue-100 p-2 rounded-md">
+                      <Bell className="h-4 w-4 text-blue-600" />
+                    </span>
+                    Recent Activity
+                  </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-4">
                   {loading ? (
-                    <div className="space-y-6">
+                    <div className="space-y-4">
                       {[1, 2, 3, 4].map((i) => (
-                        <div key={i} className="flex gap-4">
-                          <div className="flex flex-col items-center">
-                            <Skeleton className="h-8 w-8 rounded-full" />
-                            {i < 4 && <Skeleton className="w-1 h-16 mt-2" />}
+                        <div key={i} className="space-y-2">
+                          <div className="flex justify-between">
+                            <Skeleton className="h-5 w-32" />
+                            <Skeleton className="h-5 w-20" />
                           </div>
-                          <div className="space-y-2 flex-1">
-                            <div className="flex justify-between">
-                              <Skeleton className="h-4 w-1/3" />
-                              <Skeleton className="h-3 w-16" />
-                            </div>
-                            <Skeleton className="h-3 w-full" />
-                          </div>
+                          <Skeleton className="h-5 w-full" />
+                          <Skeleton className="h-4 w-3/4" />
                         </div>
                       ))}
                     </div>
                   ) : activities.length > 0 ? (
-                    <div className="space-y-0">
+                    <div>
                       {activities.map((activity, index) => (
                         <TimelineItem
                           key={activity.id}
-                          icon={getActivityIcon(activity.type)}
-                          iconClassName={getActivityIconClass(activity.type)}
-                          title={activity.type.charAt(0).toUpperCase() + activity.type.slice(1)}
-                          description={activity.description}
+                          title={activity.title}
+                          projectName={activity.projectName}
                           time={activity.time}
+                          status={activity.status}
                           isLast={index === activities.length - 1}
                         />
                       ))}

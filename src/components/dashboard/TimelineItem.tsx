@@ -1,39 +1,78 @@
 
 import React from "react";
-import { LucideIcon } from "lucide-react";
+import { LucideIcon, Activity, CheckCircle, Circle } from "lucide-react";
 
 interface TimelineItemProps {
-  icon: LucideIcon;
-  iconClassName?: string;
+  icon?: LucideIcon;
   title: string;
-  description: string;
+  projectName: string;
   time: string;
   isLast?: boolean;
+  status: 'in_progress' | 'completed' | 'not_started';
 }
 
 const TimelineItem = ({
-  icon: Icon,
-  iconClassName,
+  icon,
   title,
-  description,
+  projectName,
   time,
   isLast = false,
+  status = 'not_started',
 }: TimelineItemProps) => {
+  // Get status-based styling
+  const getStatusStyles = () => {
+    switch (status) {
+      case 'in_progress':
+        return {
+          card: "bg-blue-50 border-blue-50",
+          icon: <Activity className="h-5 w-5 text-blue-500" />,
+          iconContainer: "text-blue-500",
+        };
+      case 'completed':
+        return {
+          card: "bg-green-50 border-green-50",
+          icon: <CheckCircle className="h-5 w-5 text-green-500" />,
+          iconContainer: "text-green-500",
+        };
+      case 'not_started':
+      default:
+        return {
+          card: "bg-slate-50 border-slate-50",
+          icon: <Circle className="h-5 w-5 text-slate-400" />,
+          iconContainer: "text-slate-400",
+        };
+    }
+  };
+
+  const styles = getStatusStyles();
+  
+  // Get status text
+  const getStatusText = () => {
+    switch (status) {
+      case 'in_progress':
+        return "In Progress";
+      case 'completed':
+        return "Completed";
+      case 'not_started':
+        return "Not Started";
+      default:
+        return "Not Started";
+    }
+  };
+
   return (
-    <div className="flex gap-4 animate-fade-in" style={{ animationDelay: "100ms" }}>
-      <div className="flex flex-col items-center">
-        <div className={`flex items-center justify-center w-8 h-8 rounded-full ${iconClassName || "bg-purple-100"}`}>
-          <Icon className="h-4 w-4 text-purple-600" />
+    <div className="mb-4 animate-fade-in" style={{ animationDelay: "100ms" }}>
+      <div className={`p-4 rounded-lg ${styles.card}`}>
+        <div className="flex items-center gap-3 mb-2">
+          {styles.icon}
+          <span className={`text-sm font-bold ${styles.iconContainer}`}>
+            {getStatusText()}
+          </span>
+          <span className="text-sm text-slate-500 ml-auto">{time}</span>
         </div>
-        {!isLast && <div className="w-px h-full bg-border mt-2" />}
-      </div>
-      
-      <div className="pb-6 pt-1 space-y-1.5">
-        <div className="flex items-start justify-between">
-          <h4 className="text-sm font-medium">{title}</h4>
-          <span className="text-xs text-muted-foreground">{time}</span>
-        </div>
-        <p className="text-sm text-muted-foreground">{description}</p>
+        
+        <h4 className="text-base font-bold text-slate-900 mb-1">{title}</h4>
+        <p className="text-sm font-medium text-slate-700">{projectName}</p>
       </div>
     </div>
   );
