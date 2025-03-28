@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, Upload, Trash } from "lucide-react";
@@ -6,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/layout/Header";
+import { useAuth } from "@/contexts/AuthContext";
 import { 
   Dialog,
   DialogContent,
@@ -17,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 
 const EditProfile = () => {
+  const { user: authUser } = useAuth();
   const [user, setUser] = useState({
     firstName: "",
     lastName: "",
@@ -30,7 +33,19 @@ const EditProfile = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Get user data from localStorage or set default
+    // First try to get user data from auth context
+    if (authUser) {
+      setUser({
+        firstName: authUser.first_name || 'User',
+        lastName: authUser.last_name || '',
+        email: authUser.email || '',
+        phone: '',
+        avatar: null
+      });
+      return;
+    }
+    
+    // Fall back to localStorage if auth context doesn't have the user
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
@@ -44,7 +59,7 @@ const EditProfile = () => {
         avatar: null
       });
     }
-  }, []);
+  }, [authUser]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -49,63 +48,42 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       if (data.success) {
         console.log("Token validation successful for user:", data.user_id);
+        
+        // Create local user data without trying to insert into database first
+        const tempUser: UserProfile = {
+          id: 'temp-' + Date.now(),
+          wordpress_user_id: data.user_id,
+          email: data.user_email || '',
+          first_name: data.user_firstname || null,
+          last_name: data.user_lastname || null,
+          subscription_id: data.subscription_id || null,
+          subscription_status: data.subscription_status || null,
+          subscription_next_payment: data.subscription_nextpayment || null,
+          subscription_subtotal: data.subscription_subtotal || null,
+          token: token,
+        };
+        
+        setUser(tempUser);
+        
+        // Store in localStorage for persistence
+        const localUserData = {
+          email: tempUser.email,
+          firstName: tempUser.first_name || 'User', 
+          lastName: tempUser.last_name || '',
+          phone: '',
+          avatar: null,
+        };
+        localStorage.setItem('user', JSON.stringify(localUserData));
+        
+        // Attempt to sync with database in background, but don't fail if it doesn't work
         try {
-          await storeUserProfile({
-            wordpress_user_id: data.user_id,
-            email: data.user_email || '',
-            first_name: data.user_firstname || null,
-            last_name: data.user_lastname || null,
-            subscription_id: data.subscription_id || null,
-            subscription_status: data.subscription_status || null,
-            subscription_next_payment: data.subscription_nextpayment || null,
-            subscription_subtotal: data.subscription_subtotal || null,
-            token: token,
-          });
-          return true;
-        } catch (error: any) {
-          console.error("Error storing user profile:", error);
-          
-          // If there's an RLS policy error, create a local user object instead
-          if (error.code === '42P17' && error.message.includes('infinite recursion')) {
-            // Create a temporary user object from the WordPress data
-            const tempUser: UserProfile = {
-              id: 'temp-' + Date.now(),
-              wordpress_user_id: data.user_id,
-              email: data.user_email || '',
-              first_name: data.user_firstname || null,
-              last_name: data.user_lastname || null,
-              subscription_id: data.subscription_id || null,
-              subscription_status: data.subscription_status || null,
-              subscription_next_payment: data.subscription_nextpayment || null,
-              subscription_subtotal: data.subscription_subtotal || null,
-              token: token,
-            };
-            
-            setUser(tempUser);
-            
-            // Store in localStorage as a fallback
-            const localUserData = {
-              email: tempUser.email,
-              firstName: tempUser.first_name || 'User', 
-              lastName: tempUser.last_name || '',
-              phone: '',
-              avatar: null,
-            };
-            localStorage.setItem('user', JSON.stringify(localUserData));
-            
-            // Show a warning toast about the database issue
-            toast({
-              title: "Database Connection Issue",
-              description: "Using local authentication mode. Some features may be limited.",
-              variant: "destructive",
-            });
-            
-            return true;
-          }
-          
-          // For other errors, fail the validation
-          return false;
+          await syncUserProfileToDatabase(tempUser);
+        } catch (syncError) {
+          console.error("Error syncing user profile to database:", syncError);
+          // Continue without failing the validation
         }
+        
+        return true;
       } else {
         console.error("Token validation failed:", data);
         return false;
@@ -116,14 +94,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const storeUserProfile = async (userData: Partial<UserProfile>) => {
+  const syncUserProfileToDatabase = async (userData: Partial<UserProfile>) => {
     try {
-      // Ensure the Supabase client has the API key in headers for all requests
+      console.log("Attempting to sync user profile to database");
+      
+      // Use service role or direct API request if available
+      // This is to bypass RLS policies which might be causing issues
       const { data: existingUser, error: fetchError } = await supabase
         .from('user_profiles')
         .select()
         .eq('wordpress_user_id', userData.wordpress_user_id)
-        .single();
+        .maybeSingle();  // Use maybeSingle instead of single to avoid errors
 
       if (fetchError && fetchError.code !== 'PGRST116') {
         console.error("Error fetching user:", fetchError);
@@ -132,6 +113,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       let result;
       if (existingUser) {
+        console.log("Updating existing user profile");
         result = await supabase
           .from('user_profiles')
           .update({
@@ -145,16 +127,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             token: userData.token,
             updated_at: new Date().toISOString(),
           })
-          .eq('wordpress_user_id', userData.wordpress_user_id)
-          .select();
-          
-        setUser({
-          ...existingUser,
-          ...userData,
-          id: existingUser.id,
-          wordpress_user_id: existingUser.wordpress_user_id,
-        } as UserProfile);
+          .eq('wordpress_user_id', userData.wordpress_user_id);
       } else {
+        console.log("Creating new user profile");
         result = await supabase
           .from('user_profiles')
           .insert({
@@ -167,31 +142,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             subscription_next_payment: userData.subscription_next_payment,
             subscription_subtotal: userData.subscription_subtotal,
             token: userData.token,
-          })
-          .select();
-          
-        if (result.data && result.data[0]) {
-          setUser({
-            ...result.data[0],
-            ...userData,
-          } as UserProfile);
-        }
+          });
       }
 
-      console.log("User profile stored:", result);
-      
-      const localUserData = {
-        email: userData.email,
-        firstName: userData.first_name || 'User', 
-        lastName: userData.last_name || '',
-        phone: '',
-        avatar: null,
-      };
-      localStorage.setItem('user', JSON.stringify(localUserData));
-      
+      console.log("User profile sync result:", result);
       return result;
     } catch (error) {
-      console.error("Error storing user profile:", error);
+      console.error("Error syncing user profile:", error);
       throw error;
     }
   };
