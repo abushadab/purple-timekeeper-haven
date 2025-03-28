@@ -12,11 +12,12 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
   DialogClose
 } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
 
 const EditProfile = () => {
   const { user: authUser } = useAuth();
@@ -66,23 +67,52 @@ const EditProfile = () => {
     setUser(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      // Save updated user info to localStorage
+    try {
+      // Save to localStorage for persistence
       localStorage.setItem('user', JSON.stringify(user));
+      
+      // If we're in auth mode, also update the user profile in Supabase
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData.session?.user?.id;
+      
+      if (userId) {
+        // Update the user_profile data
+        const { error } = await supabase
+          .from('user_profiles')
+          .update({
+            first_name: user.firstName,
+            last_name: user.lastName,
+            email: user.email,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', userId);
+          
+        if (error) {
+          console.error("Error updating profile:", error);
+          throw error;
+        }
+      }
       
       toast({
         title: "Profile updated",
         description: "Your profile information has been saved.",
       });
       
-      setIsLoading(false);
       navigate('/');
-    }, 1000);
+    } catch (error) {
+      console.error("Error saving profile:", error);
+      toast({
+        title: "Error saving profile",
+        description: "There was a problem saving your profile. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
