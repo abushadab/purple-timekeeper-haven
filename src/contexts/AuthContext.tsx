@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,8 +29,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Function to validate token with WordPress API
   const validateToken = async (token: string) => {
+    console.log("Attempting to validate token:", token ? token.substring(0, 10) + "..." : "no token");
     try {
       const response = await fetch('https://tabtracker.ai/wp-json/digits/v1/validate-token', {
         method: 'POST',
@@ -47,7 +46,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.log("Token validation response:", data);
       
       if (data.success) {
-        // Get or create user profile in our database
+        console.log("Token validation successful for user:", data.user_id);
         await storeUserProfile({
           wordpress_user_id: data.user_id,
           email: data.user_email || '',
@@ -70,10 +69,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Function to store user profile in our database
   const storeUserProfile = async (userData: Partial<UserProfile>) => {
     try {
-      // Check if the user already exists
       const { data: existingUser, error: fetchError } = await supabase
         .from('user_profiles')
         .select()
@@ -87,7 +84,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       let result;
       if (existingUser) {
-        // Update existing user
         result = await supabase
           .from('user_profiles')
           .update({
@@ -111,7 +107,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           wordpress_user_id: existingUser.wordpress_user_id,
         } as UserProfile);
       } else {
-        // Insert new user
         result = await supabase
           .from('user_profiles')
           .insert({
@@ -137,7 +132,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       console.log("User profile stored:", result);
       
-      // Also store user data in localStorage for backward compatibility
       const localUserData = {
         email: userData.email,
         firstName: userData.first_name || 'User', 
@@ -154,25 +148,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Check for token in cookies on mount
   useEffect(() => {
     console.log("AuthProvider initialized");
     
     const checkToken = async () => {
       try {
-        // Get token from cookies
         const token = getCookie('token');
-        console.log("Token from cookie:", !!token);
+        console.log("Token found in cookie:", token ? "Yes (length: " + token.length + ")" : "No");
         
         if (token) {
-          // Validate token with WordPress API
+          console.log("About to validate token");
           const isValid = await validateToken(token);
+          console.log("Token validation result:", isValid);
           
           if (!isValid) {
             console.log("Token is invalid, clearing");
-            // Clear cookie if token is invalid
             document.cookie = 'token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
           }
+        } else {
+          console.log("No token found in cookies");
         }
         
         setLoading(false);
@@ -185,19 +179,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     checkToken();
   }, []);
 
-  // Helper function to get a cookie value
   const getCookie = (name: string): string | null => {
+    console.log("Attempting to get cookie:", name);
+    console.log("All cookies:", document.cookie);
+    
     const nameEQ = name + "=";
     const ca = document.cookie.split(';');
     for (let i = 0; i < ca.length; i++) {
       let c = ca[i];
       while (c.charAt(0) === ' ') c = c.substring(1, c.length);
-      if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+      if (c.indexOf(nameEQ) === 0) {
+        const value = c.substring(nameEQ.length, c.length);
+        console.log(`Found cookie ${name}:`, value ? "Value present (length: " + value.length + ")" : "Empty value");
+        return value;
+      }
     }
+    console.log(`Cookie ${name} not found`);
     return null;
   };
 
-  // Helper function to set a cookie
   const setCookie = (name: string, value: string, days: number) => {
     let expires = "";
     if (days) {
@@ -228,10 +228,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.log("Login response:", data);
       
       if (data.success && data.data.access_token) {
-        // Store token in cookie
-        setCookie('token', data.data.access_token, 30); // 30 days expiry
-        
-        // Validate token to get user info and store in our db
+        setCookie('token', data.data.access_token, 30);
         await validateToken(data.data.access_token);
         
         setLoading(false);
@@ -253,18 +250,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     console.log("Signing out");
-    // Clear cookie
     document.cookie = 'token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-    // Clear local storage
     localStorage.removeItem('user');
-    // Clear user state
     setUser(null);
-    // Redirect to login
     navigate('/login');
   };
 
-  // Added debug output
   console.log("AuthProvider rendering, user:", !!user, "loading:", loading);
+  if (user) {
+    console.log("User details:", {
+      id: user.id,
+      wordpress_user_id: user.wordpress_user_id,
+      email: user.email,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      subscription_status: user.subscription_status
+    });
+  }
 
   return (
     <AuthContext.Provider value={{ user, loading, signIn, signOut }}>
