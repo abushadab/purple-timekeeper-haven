@@ -91,7 +91,10 @@ const SubscriptionDetails = ({
             subscription={subscription} 
             isActuallyExpired={isActuallyExpired} 
             isChangingPlan={isChangingPlan}
-            handleCheckout={(planId) => {}} // This will be passed from parent
+            handleCheckout={async (planId) => {
+              // Convert to async function to match the expected Promise<void> return type
+              await Promise.resolve();
+            }} 
           />
         }
         

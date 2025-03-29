@@ -5,6 +5,7 @@ import Header from "@/components/layout/Header";
 import { useSubscription } from "@/hooks/useSubscription";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Button } from "@/components/ui/button"; // Added missing Button import
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import SubscriptionDetails from "@/components/subscription/SubscriptionDetails";
