@@ -31,7 +31,17 @@ const App = () => {
             <Sonner />
             <Routes>
               <Route path="/login" element={<Login />} />
-              <Route path="/pricing" element={<Pricing />} />
+              
+              {/* Pricing page with normal Header */}
+              <Route 
+                path="/pricing" 
+                element={
+                  <ProtectedRoute>
+                    <Pricing />
+                  </ProtectedRoute>
+                } 
+              />
+              
               <Route path="/subscription-success" element={<SubscriptionSuccess />} />
               
               {/* Apply subscription protection to feature routes */}

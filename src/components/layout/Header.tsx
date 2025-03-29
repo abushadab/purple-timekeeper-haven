@@ -58,8 +58,8 @@ const Header = () => {
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const { subscription } = useSubscription();
   
-  // Determine if user should see Pricing menu - only if they never had a subscription
-  const showPricingMenu = !subscription;
+  // Check if current page is pricing
+  const isPricingPage = location.pathname === "/pricing";
   
   // Safely use the auth context with proper error handling
   let user = null;
@@ -115,34 +115,30 @@ const Header = () => {
           <span className="hidden sm:inline-block font-semibold text-lg">TimeTrack</span>
         </div>
         
-        <nav className="flex items-center gap-1 lg:gap-2">
-          <HeaderLink
-            href="/"
-            icon={LayoutDashboard}
-            label="Dashboard"
-            active={path === "/"}
-          />
-          <HeaderLink
-            href="/portfolios"
-            icon={Folder}
-            label="Portfolios"
-            active={path === "/portfolios"}
-          />
-          <HeaderLink
-            href="/reports"
-            icon={BarChart3}
-            label="Reports"
-            active={path === "/reports"}
-          />
-          {showPricingMenu && (
+        {/* Only show navigation if not on the pricing page */}
+        {!isPricingPage && (
+          <nav className="flex items-center gap-1 lg:gap-2">
             <HeaderLink
-              href="/pricing"
-              icon={CreditCard}
-              label="Pricing"
-              active={path === "/pricing"}
+              href="/"
+              icon={LayoutDashboard}
+              label="Dashboard"
+              active={path === "/"}
             />
-          )}
-        </nav>
+            <HeaderLink
+              href="/portfolios"
+              icon={Folder}
+              label="Portfolios"
+              active={path === "/portfolios"}
+            />
+            <HeaderLink
+              href="/reports"
+              icon={BarChart3}
+              label="Reports"
+              active={path === "/reports"}
+            />
+            {/* Pricing link completely removed */}
+          </nav>
+        )}
         
         <div className="ml-auto flex items-center gap-2">
           <Popover>
