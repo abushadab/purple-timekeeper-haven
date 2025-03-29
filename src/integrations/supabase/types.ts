@@ -198,11 +198,56 @@ export type Database = {
           },
         ]
       }
+      user_subscriptions: {
+        Row: {
+          auth_user_id: string
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string
+          price_id: string | null
+          status: string
+          stripe_subscription_id: string | null
+          subscription_type: string
+          updated_at: string
+        }
+        Insert: {
+          auth_user_id: string
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          price_id?: string | null
+          status: string
+          stripe_subscription_id?: string | null
+          subscription_type: string
+          updated_at?: string
+        }
+        Update: {
+          auth_user_id?: string
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          price_id?: string | null
+          status?: string
+          stripe_subscription_id?: string | null
+          subscription_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      has_active_subscription: {
+        Args: {
+          user_uuid: string
+        }
+        Returns: boolean
+      }
       is_own_profile: {
         Args: {
           profile_wordpress_id: string

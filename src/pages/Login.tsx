@@ -33,7 +33,7 @@ const Login = () => {
     try {
       if (isSignUp) {
         // Handle signup
-        const { error } = await signUp(email, password, { firstName, lastName });
+        const { error, needsSubscription } = await signUp(email, password, { firstName, lastName });
         if (error) {
           toast({
             title: "Registration failed",
@@ -45,7 +45,13 @@ const Login = () => {
             title: "Registration successful",
             description: "Please check your email to confirm your account.",
           });
-          setIsSignUp(false); // Switch back to login view
+          
+          if (needsSubscription) {
+            // Redirect new users to the pricing page after a brief delay
+            setTimeout(() => navigate('/pricing'), 500);
+          } else {
+            setIsSignUp(false); // Switch back to login view
+          }
         }
       } else {
         // Handle login
@@ -61,7 +67,7 @@ const Login = () => {
             title: "Logged in successfully",
             description: "Welcome to TimeTrack!",
           });
-          navigate('/');
+          // The redirect will be handled by the AuthContext
         }
       }
     } catch (error: any) {

@@ -9,7 +9,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any | null }>;
-  signUp: (email: string, password: string, userData?: any) => Promise<{ error: any | null }>;
+  signUp: (email: string, password: string, userData?: any) => Promise<{ error: any | null, needsSubscription?: boolean }>;
   signOut: () => Promise<void>;
 }
 
@@ -62,6 +62,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       console.log("Signing in with:", email);
       const { error } = await supabase.auth.signInWithPassword({ email, password });
+      
+      if (!error) {
+        // Check if user has a subscription after login
+        const { data: subscriptionData } = await supabase
+          .from('user_subscriptions')
+          .select('*')
+          .eq('auth_user_id', (await supabase.auth.getUser()).data.user?.id || '')
+          .maybeSingle();
+        
+        // If no subscription, redirect to pricing
+        if (!subscriptionData) {
+          setTimeout(() => navigate('/pricing'), 100);
+        }
+      }
+      
       return { error };
     } catch (error) {
       console.error("Sign in error:", error);
@@ -82,7 +97,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           }
         }
       });
-      return { error };
+      
+      // Mark that new users need to select a subscription
+      const needsSubscription = !error;
+      
+      return { error, needsSubscription };
     } catch (error) {
       console.error("Sign up error:", error);
       return { error };

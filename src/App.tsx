@@ -14,6 +14,7 @@ import NotFound from "./pages/NotFound";
 import EditProfile from "./pages/EditProfile";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import SubscriptionProtectedRoute from "./components/auth/SubscriptionProtectedRoute";
 import Team from "./pages/Team";
 import Pricing from "./pages/Pricing";
 import SubscriptionSuccess from "./pages/SubscriptionSuccess";
@@ -30,15 +31,81 @@ const App = () => {
             <Sonner />
             <Routes>
               <Route path="/login" element={<Login />} />
-              <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-              <Route path="/portfolios" element={<ProtectedRoute><Portfolios /></ProtectedRoute>} />
-              <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
-              <Route path="/projects/:projectId/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
-              <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
-              <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
-              <Route path="/team" element={<ProtectedRoute><Team /></ProtectedRoute>} />
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/subscription-success" element={<SubscriptionSuccess />} />
+              
+              {/* Apply subscription protection to feature routes */}
+              <Route 
+                path="/" 
+                element={
+                  <ProtectedRoute>
+                    <SubscriptionProtectedRoute>
+                      <Index />
+                    </SubscriptionProtectedRoute>
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/portfolios" 
+                element={
+                  <ProtectedRoute>
+                    <SubscriptionProtectedRoute>
+                      <Portfolios />
+                    </SubscriptionProtectedRoute>
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/projects" 
+                element={
+                  <ProtectedRoute>
+                    <SubscriptionProtectedRoute>
+                      <Projects />
+                    </SubscriptionProtectedRoute>
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/projects/:projectId/tasks" 
+                element={
+                  <ProtectedRoute>
+                    <SubscriptionProtectedRoute>
+                      <Tasks />
+                    </SubscriptionProtectedRoute>
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/reports" 
+                element={
+                  <ProtectedRoute>
+                    <SubscriptionProtectedRoute>
+                      <Reports />
+                    </SubscriptionProtectedRoute>
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/team" 
+                element={
+                  <ProtectedRoute>
+                    <SubscriptionProtectedRoute>
+                      <Team />
+                    </SubscriptionProtectedRoute>
+                  </ProtectedRoute>
+                } 
+              />
+              
+              {/* Profile editing doesn't require subscription */}
+              <Route 
+                path="/edit-profile" 
+                element={
+                  <ProtectedRoute>
+                    <EditProfile />
+                  </ProtectedRoute>
+                } 
+              />
+              
               <Route path="*" element={<NotFound />} />
             </Routes>
           </TooltipProvider>

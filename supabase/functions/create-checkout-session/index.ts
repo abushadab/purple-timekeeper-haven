@@ -49,23 +49,67 @@ serve(async (req) => {
 
     const userData = await userResponse.json();
     const userEmail = userData.email;
+    const userId = userData.id;
 
     if (!userEmail) {
       throw new Error('User email not found');
     }
 
-    // Map the price ID to the actual Stripe price ID
-    let stripePriceId;
-    switch (priceId) {
-      case "free_trial":
-        // Implement free trial logic here
-        // For now, just redirect back to app
+    // Check if user already has a subscription in our database
+    const checkSubscriptionResponse = await fetch(`${supabaseUrl}/rest/v1/user_subscriptions?auth_user_id=eq.${userId}`, {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "apikey": supabaseAnonKey,
+        "Content-Type": "application/json",
+        "Prefer": "return=representation"
+      },
+    });
+    
+    const existingSubscriptions = await checkSubscriptionResponse.json();
+    
+    // If it's a free trial, create a subscription record in our database without going to Stripe
+    if (priceId === "free_trial") {
+      // Only create a trial if the user doesn't already have a subscription
+      if (existingSubscriptions.length === 0) {
+        const currentDate = new Date();
+        const trialEndDate = new Date(currentDate);
+        trialEndDate.setDate(currentDate.getDate() + 7); // 7-day trial
+        
+        // Create a subscription record for the trial
+        await fetch(`${supabaseUrl}/rest/v1/user_subscriptions`, {
+          method: 'POST',
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "apikey": supabaseAnonKey,
+            "Content-Type": "application/json",
+            "Prefer": "return=representation"
+          },
+          body: JSON.stringify({
+            auth_user_id: userId,
+            status: 'trialing',
+            subscription_type: 'free_trial',
+            current_period_start: currentDate.toISOString(),
+            current_period_end: trialEndDate.toISOString()
+          })
+        });
+        
+        // Redirect back to app
         return new Response(
           JSON.stringify({ url: `${req.headers.get("origin")}/?trial=started` }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
+      } else {
+        throw new Error("You already have an active subscription");
+      }
+    }
+    
+    // Map the price ID to the actual Stripe price ID
+    let stripePriceId;
+    let subscriptionType;
+    
+    switch (priceId) {
       case "price_monthly":
-        // First, we need to list all prices for the monthly product to find the active price
+        // List all prices for the monthly product to find the active price
         const monthlyPrices = await stripe.prices.list({
           product: 'prod_S1uqDkwAwdTUij',
           active: true,
@@ -77,9 +121,10 @@ serve(async (req) => {
         }
         
         stripePriceId = monthlyPrices.data[0].id;
+        subscriptionType = 'monthly';
         break;
       case "price_yearly":
-        // First, we need to list all prices for the yearly product to find the active price
+        // List all prices for the yearly product to find the active price
         const yearlyPrices = await stripe.prices.list({
           product: 'prod_S1urWnWxmsyUxd',
           active: true,
@@ -91,6 +136,7 @@ serve(async (req) => {
         }
         
         stripePriceId = yearlyPrices.data[0].id;
+        subscriptionType = 'yearly';
         break;
       default:
         throw new Error("Invalid price ID");
@@ -126,8 +172,13 @@ serve(async (req) => {
         },
       ],
       mode: "subscription",
-      success_url: `${req.headers.get("origin")}/subscription-success?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${req.headers.get("origin")}/subscription-success?session_id={CHECKOUT_SESSION_ID}&type=${subscriptionType}`,
       cancel_url: `${req.headers.get("origin")}/pricing`,
+      metadata: {
+        userId: userId,
+        subscriptionType: subscriptionType,
+        priceId: stripePriceId
+      }
     });
 
     console.log("Checkout session created:", session.id);
