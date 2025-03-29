@@ -139,10 +139,7 @@ const MySubscription = () => {
       setIsChangingPlan(true);
       
       const { data, error } = await supabase.functions.invoke("create-checkout-session", {
-        body: { 
-          priceId: planType,
-          returnUrl: "/my-subscription"
-        }
+        body: { priceId: planType }
       });
 
       if (error) {
@@ -197,11 +194,7 @@ const MySubscription = () => {
       <div className="space-y-6 mt-4">
         <div className="border-t pt-4">
           <h3 className="font-medium mb-4">
-            {isTrialExpired 
-              ? "Upgrade to a Paid Plan" 
-              : isTrialActive 
-              ? "Upgrade Your Trial" 
-              : "Subscription Options"}
+            {isTrialExpired ? "Upgrade to a Paid Plan" : "Upgrade Your Trial"}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card className="border shadow-sm">
