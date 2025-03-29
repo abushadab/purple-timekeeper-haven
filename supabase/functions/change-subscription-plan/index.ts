@@ -41,6 +41,9 @@ serve(async (req) => {
       apiVersion: '2023-10-16',
     });
 
+    // Determine the subscription type based on the price ID
+    const subscriptionType = newPriceId === "price_monthly" ? "monthly" : "yearly";
+    
     // Get user's subscription from the database
     const { data: subscriptionData, error: subscriptionError } = await supabase
       .from('user_subscriptions')
@@ -52,18 +55,11 @@ serve(async (req) => {
       throw new Error(`Error fetching subscription: ${subscriptionError.message}`);
     }
 
-    if (!subscriptionData) {
-      throw new Error('No subscription found');
-    }
-    
-    // Determine the subscription type based on the price ID
-    const subscriptionType = newPriceId === "price_monthly" ? "monthly" : "yearly";
-
-    // If user is on a free trial, we need to create a new Stripe subscription
-    if (subscriptionData.status === 'trialing' && !subscriptionData.stripe_subscription_id) {
-      console.log("User is on free trial, creating a new Stripe subscription");
+    // Create a Stripe checkout session for new subscribers or users without a Stripe subscription ID
+    if (!subscriptionData || !subscriptionData.stripe_subscription_id) {
+      console.log("Creating new Stripe checkout session");
       
-      // Create a Stripe checkout session for the new paid plan
+      // Create a Stripe checkout session for the new plan
       const session = await stripe.checkout.sessions.create({
         customer_email: user.email,
         line_items: [
