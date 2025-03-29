@@ -34,7 +34,7 @@ serve(async (req) => {
     // Get user's subscription from the database
     const { data: subscriptionData, error: subscriptionError } = await supabase
       .from('user_subscriptions')
-  .select('*')
+      .select('stripe_subscription_id, status, current_period_end, subscription_type')
       .eq('auth_user_id', user.id)
       .maybeSingle();
 
@@ -47,7 +47,7 @@ serve(async (req) => {
       console.error('No subscription found for user:', user.id);
       return new Response(
         JSON.stringify({ 
-          error: 'No subscription found for this sssssuser',
+          error: 'No subscription found for this user',
           code: 'subscription_not_found'
         }),
         { 
