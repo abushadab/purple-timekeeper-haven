@@ -17,6 +17,7 @@ interface SubscriptionDetailsProps {
   setConfirmDialogOpen: (open: boolean) => void;
   handleChangePlan: (planId: string) => Promise<void>;
   isCancelling: boolean;
+  handleCheckout: (planId: string) => Promise<void>;
 }
 
 const SubscriptionDetails = ({
@@ -27,7 +28,8 @@ const SubscriptionDetails = ({
   isChangingPlan,
   setConfirmDialogOpen,
   handleChangePlan,
-  isCancelling
+  isCancelling,
+  handleCheckout
 }: SubscriptionDetailsProps) => {
   return (
     <Card className="w-full shadow">
@@ -91,10 +93,7 @@ const SubscriptionDetails = ({
             subscription={subscription} 
             isActuallyExpired={isActuallyExpired} 
             isChangingPlan={isChangingPlan}
-            handleCheckout={async (planId) => {
-              // Convert to async function to match the expected Promise<void> return type
-              await Promise.resolve();
-            }} 
+            handleCheckout={handleCheckout} 
           />
         }
         
