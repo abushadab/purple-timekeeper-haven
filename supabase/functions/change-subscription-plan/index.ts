@@ -41,7 +41,37 @@ serve(async (req) => {
       apiVersion: '2023-10-16',
     });
 
-    // Determine the subscription type based on the price ID
+    // Map internal price IDs to Stripe product IDs
+    const productIdMap = {
+      'price_monthly': 'prod_S1uqDkwAwdTUij',
+      'price_yearly': 'prod_S1urWnWxmsyUxd'
+    };
+    
+    // Get the product ID based on the internal price ID
+    const productId = productIdMap[newPriceId];
+    
+    if (!productId) {
+      throw new Error(`Unknown price ID: ${newPriceId}`);
+    }
+    
+    console.log(`Looking up price for product: ${productId}`);
+    
+    // Fetch the active price for the selected product
+    const prices = await stripe.prices.list({
+      product: productId,
+      active: true,
+      limit: 1
+    });
+    
+    if (prices.data.length === 0) {
+      throw new Error(`No active price found for product: ${productId}`);
+    }
+    
+    // Get the actual Stripe price ID
+    const stripePriceId = prices.data[0].id;
+    console.log(`Found price ID: ${stripePriceId} for product: ${productId}`);
+    
+    // Determine the subscription type based on the internal price ID
     const subscriptionType = newPriceId === "price_monthly" ? "monthly" : "yearly";
     
     // Get user's subscription from the database
@@ -64,7 +94,7 @@ serve(async (req) => {
         customer_email: user.email,
         line_items: [
           {
-            price: newPriceId,
+            price: stripePriceId,
             quantity: 1,
           },
         ],
@@ -103,6 +133,8 @@ serve(async (req) => {
       // Get the subscription from Stripe
       const subscription = await stripe.subscriptions.retrieve(subscriptionData.stripe_subscription_id);
       
+      console.log(`Updating subscription ${subscriptionData.stripe_subscription_id} to price ${stripePriceId}`);
+      
       // Update the subscription to the new price
       await stripe.subscriptions.update(
         subscriptionData.stripe_subscription_id,
@@ -110,7 +142,7 @@ serve(async (req) => {
           items: [
             {
               id: subscription.items.data[0].id,
-              price: newPriceId,
+              price: stripePriceId,
             },
           ],
           proration_behavior: 'create_prorations',
