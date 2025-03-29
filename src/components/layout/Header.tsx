@@ -56,7 +56,7 @@ const Header = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
-  const { subscription } = useSubscription();
+  const { subscription, hasActiveSubscription } = useSubscription();
   
   // Check if current page is pricing
   const isPricingPage = location.pathname === "/pricing";
@@ -158,22 +158,29 @@ const Header = () => {
                 <p className="text-xs text-muted-foreground truncate">{userData?.email}</p>
               </div>
               <div className="border-t my-1"></div>
+              
+              {/* Only show Edit Profile if user has an active subscription or we're not on pricing page */}
+              {(hasActiveSubscription || !isPricingPage) && (
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start text-sm px-2 py-1.5 h-auto"
+                  onClick={() => navigate('/edit-profile')}
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Profile
+                </Button>
+              )}
+              
+              {/* Always show My Subscription but change behavior based on subscription status */}
               <Button 
                 variant="ghost" 
                 className="w-full justify-start text-sm px-2 py-1.5 h-auto"
-                onClick={() => navigate('/edit-profile')}
-              >
-                <Edit className="h-4 w-4 mr-2" />
-                Edit Profile
-              </Button>
-              <Button 
-                variant="ghost" 
-                className="w-full justify-start text-sm px-2 py-1.5 h-auto"
-                onClick={() => navigate('/my-subscription')}
+                onClick={() => navigate(hasActiveSubscription ? '/my-subscription' : '/pricing')}
               >
                 <CreditCard className="h-4 w-4 mr-2" />
-                My Subscription
+                {hasActiveSubscription ? 'My Subscription' : 'Pricing Plans'}
               </Button>
+              
               <Button 
                 variant="ghost" 
                 className="w-full justify-start text-sm px-2 py-1.5 h-auto text-red-600 hover:text-red-700 hover:bg-red-50"
