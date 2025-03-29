@@ -1,10 +1,9 @@
-
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from './use-toast';
 
-export type SubscriptionStatus = 'active' | 'trialing' | 'canceled' | 'incomplete' | 'incomplete_expired' | 'past_due' | 'unpaid';
+export type SubscriptionStatus = 'active' | 'trialing' | 'canceled' | 'incomplete' | 'incomplete_expired' | 'past_due' | 'unpaid' | 'expired';
 
 export interface Subscription {
   id: string;
@@ -46,25 +45,24 @@ export const useSubscription = () => {
     
     const isExpired = new Date(sub.currentPeriodEnd) < new Date();
     
-    // If expired but status isn't 'canceled', update it in the database
-    // We use 'canceled' instead of 'expired' because 'expired' is not a valid Stripe status
-    if (isExpired && sub.status !== 'canceled') {
-      console.log("Subscription expired, updating status in database to 'canceled'...");
+    // If expired but status isn't 'expired', update it in the database
+    if (isExpired && sub.status !== 'expired') {
+      console.log("Subscription expired, updating status in database to 'expired'...");
       
       try {
         const { error } = await supabase
           .from('user_subscriptions')
-          .update({ status: 'canceled' })
+          .update({ status: 'expired' })
           .eq('id', sub.id);
           
         if (error) {
           console.error("Error updating subscription status:", error);
         } else {
-          console.log("Subscription status updated to 'canceled'");
+          console.log("Subscription status updated to 'expired'");
           // Update the local state
           setSubscription({
             ...sub,
-            status: 'canceled'
+            status: 'expired'
           });
         }
       } catch (error) {

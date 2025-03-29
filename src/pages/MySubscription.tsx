@@ -5,7 +5,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, CreditCard, Download, ShieldAlert } from "lucide-react";
+import { Calendar, CreditCard, Download, ShieldAlert, Package } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,6 +43,8 @@ const MySubscription = () => {
   const isTrialActive = subscription?.status === 'trialing' && 
     subscription?.currentPeriodEnd && 
     new Date(subscription.currentPeriodEnd) >= new Date();
+    
+  const isSubscriptionExpired = subscription?.status === 'expired';
 
   const fetchBillingHistory = async () => {
     try {
@@ -197,7 +199,9 @@ const MySubscription = () => {
       <div className="space-y-6 mt-4">
         <div className="border-t pt-4">
           <h3 className="font-medium mb-4">
-            {isTrialExpired 
+            {isSubscriptionExpired 
+              ? "Renew Your Subscription" 
+              : isTrialExpired 
               ? "Upgrade to a Paid Plan" 
               : isTrialActive 
               ? "Upgrade Your Trial" 
@@ -228,7 +232,7 @@ const MySubscription = () => {
                       Processing...
                     </span>
                   ) : (
-                    "Subscribe Now"
+                    subscription?.subscriptionType === "monthly" && !isSubscriptionExpired ? "Change to This Plan" : "Subscribe Now"
                   )}
                 </Button>
               </CardFooter>
@@ -264,7 +268,7 @@ const MySubscription = () => {
                       Processing...
                     </span>
                   ) : (
-                    "Subscribe Now"
+                    subscription?.subscriptionType === "yearly" && !isSubscriptionExpired ? "Change to This Plan" : "Subscribe Now"
                   )}
                 </Button>
               </CardFooter>
@@ -327,16 +331,21 @@ const MySubscription = () => {
                     <Badge className={
                       subscription?.status === 'active' ? 'bg-green-100 text-green-800' : 
                       (subscription?.status === 'trialing' && !isTrialExpired) ? 'bg-amber-100 text-amber-800' :
+                      subscription?.status === 'expired' ? 'bg-red-100 text-red-800' :
                       'bg-red-100 text-red-800'
                     }>
                       {isTrialExpired 
                         ? "Expired" 
+                        : subscription?.status === 'expired'
+                        ? "Expired"
                         : subscription?.status?.charAt(0).toUpperCase() + subscription?.status?.slice(1)}
                     </Badge>
                   </div>
                   <CardDescription>
                     {subscription?.status === 'canceled' 
                       ? "Your subscription has been cancelled but you still have access until the end of your current billing period."
+                      : subscription?.status === 'expired'
+                      ? "Your subscription has expired. Please renew to continue using premium features."
                       : isTrialExpired
                       ? "Your free trial has expired. Please upgrade to a paid plan to continue using premium features."
                       : isTrialActive
@@ -350,8 +359,8 @@ const MySubscription = () => {
                       <Calendar className="h-5 w-5 text-muted-foreground" />
                       <div>
                         <p className="text-sm font-medium">
-                          {isTrialExpired 
-                            ? "Trial ended on" 
+                          {isTrialExpired || subscription?.status === 'expired'
+                            ? "Expired on" 
                             : isTrialActive
                             ? "Trial ends on"
                             : "Current period ends"}
@@ -363,7 +372,7 @@ const MySubscription = () => {
                     </div>
                   )}
                   
-                  {subscription?.status !== 'canceled' && !isTrialExpired && !isTrialActive && (
+                  {subscription?.status !== 'canceled' && !isTrialExpired && !isTrialActive && !isSubscriptionExpired && (
                     <div className="space-y-4">
                       <div className="border-t pt-4">
                         <h3 className="font-medium mb-2">Change Plan</h3>
@@ -396,30 +405,28 @@ const MySubscription = () => {
                     </div>
                   )}
                   
-                  {(isTrialExpired || isTrialActive) && renderPricingOptions()}
+                  {(isTrialExpired || isTrialActive || isSubscriptionExpired) && renderPricingOptions()}
                   
                 </CardContent>
                 <CardFooter className="flex justify-between border-t pt-4">
-                  {!isTrialExpired && (
-                    <>
-                      <Button 
-                        variant="outline" 
-                        onClick={() => navigate('/pricing')}
-                      >
-                        View All Plans
-                      </Button>
-                      
-                      {subscription?.status !== 'canceled' && !isTrialActive && (
-                        <Button 
-                          variant="destructive"
-                          onClick={() => setConfirmDialogOpen(true)}
-                          disabled={isCancelling}
-                        >
-                          <ShieldAlert className="mr-2 h-4 w-4" />
-                          Cancel Subscription
-                        </Button>
-                      )}
-                    </>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => navigate('/pricing')}
+                    className="flex items-center gap-2"
+                  >
+                    <Package className="h-4 w-4" />
+                    View All Plans
+                  </Button>
+                  
+                  {subscription?.status !== 'canceled' && !isTrialActive && !isSubscriptionExpired && (
+                    <Button 
+                      variant="destructive"
+                      onClick={() => setConfirmDialogOpen(true)}
+                      disabled={isCancelling}
+                    >
+                      <ShieldAlert className="mr-2 h-4 w-4" />
+                      Cancel Subscription
+                    </Button>
                   )}
                 </CardFooter>
               </Card>
