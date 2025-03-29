@@ -66,7 +66,7 @@ serve(async (req) => {
         );
       case "price_monthly":
         // Use your actual test mode price ID for monthly subscription
-        stripePriceId = "prod_S1uqDkwAwdTUij"; // Replace this with your actual Stripe price ID
+        stripePriceId = prod_S1uqDkwAwdTUij; // Replace this with your actual Stripe price ID
         break;
       case "price_yearly":
         // Use your actual test mode price ID for yearly subscription
