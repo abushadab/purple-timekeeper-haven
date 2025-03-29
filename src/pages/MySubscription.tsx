@@ -39,6 +39,10 @@ const MySubscription = () => {
   const isTrialExpired = subscription?.status === 'trialing' && 
     subscription?.currentPeriodEnd && 
     new Date(subscription.currentPeriodEnd) < new Date();
+    
+  const isTrialActive = subscription?.status === 'trialing' && 
+    subscription?.currentPeriodEnd && 
+    new Date(subscription.currentPeriodEnd) >= new Date();
 
   const fetchBillingHistory = async () => {
     try {
@@ -185,6 +189,85 @@ const MySubscription = () => {
     }
   };
 
+  const renderPricingOptions = () => {
+    return (
+      <div className="space-y-6 mt-4">
+        <div className="border-t pt-4">
+          <h3 className="font-medium mb-4">
+            {isTrialExpired ? "Upgrade to a Paid Plan" : "Upgrade Your Trial"}
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card className="border shadow-sm">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Monthly Plan</CardTitle>
+                <CardDescription>$7/month</CardDescription>
+              </CardHeader>
+              <CardContent className="pb-2">
+                <ul className="text-sm space-y-1">
+                  <li>Unlimited time tracking</li>
+                  <li>Advanced reporting</li>
+                  <li>Team collaboration</li>
+                </ul>
+              </CardContent>
+              <CardFooter className="pt-0">
+                <Button 
+                  onClick={() => handleCheckout("price_monthly")} 
+                  className="w-full"
+                  disabled={isChangingPlan}
+                >
+                  {selectedPlan === "price_monthly" && isChangingPlan ? (
+                    <span className="flex items-center">
+                      <span className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+                      Processing...
+                    </span>
+                  ) : (
+                    "Subscribe Now"
+                  )}
+                </Button>
+              </CardFooter>
+            </Card>
+            
+            <Card className="border shadow-sm">
+              <CardHeader className="pb-2">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle className="text-lg">Yearly Plan</CardTitle>
+                    <CardDescription>$63/year</CardDescription>
+                  </div>
+                  <Badge className="bg-green-100 text-green-800">Save 25%</Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="pb-2">
+                <ul className="text-sm space-y-1">
+                  <li>Everything in Monthly</li>
+                  <li>Priority support</li>
+                  <li>Advanced features</li>
+                </ul>
+              </CardContent>
+              <CardFooter className="pt-0">
+                <Button 
+                  onClick={() => handleCheckout("price_yearly")} 
+                  className="w-full"
+                  disabled={isChangingPlan}
+                  variant="default"
+                >
+                  {selectedPlan === "price_yearly" && isChangingPlan ? (
+                    <span className="flex items-center">
+                      <span className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+                      Processing...
+                    </span>
+                  ) : (
+                    "Subscribe Now"
+                  )}
+                </Button>
+              </CardFooter>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
@@ -249,6 +332,8 @@ const MySubscription = () => {
                       ? "Your subscription has been cancelled but you still have access until the end of your current billing period."
                       : isTrialExpired
                       ? "Your free trial has expired. Please upgrade to a paid plan to continue using premium features."
+                      : isTrialActive
+                      ? "Your free trial is currently active. Consider upgrading to a paid plan to continue using premium features after your trial ends."
                       : "Your subscription is currently active."}
                   </CardDescription>
                 </CardHeader>
@@ -260,6 +345,8 @@ const MySubscription = () => {
                         <p className="text-sm font-medium">
                           {isTrialExpired 
                             ? "Trial ended on" 
+                            : isTrialActive
+                            ? "Trial ends on"
                             : "Current period ends"}
                         </p>
                         <p className="text-sm text-muted-foreground">
@@ -269,7 +356,7 @@ const MySubscription = () => {
                     </div>
                   )}
                   
-                  {subscription?.status !== 'canceled' && !isTrialExpired && (
+                  {subscription?.status !== 'canceled' && !isTrialExpired && !isTrialActive && (
                     <div className="space-y-4">
                       <div className="border-t pt-4">
                         <h3 className="font-medium mb-2">Change Plan</h3>
@@ -302,80 +389,8 @@ const MySubscription = () => {
                     </div>
                   )}
                   
-                  {isTrialExpired && (
-                    <div className="space-y-6 mt-4">
-                      <div className="border-t pt-4">
-                        <h3 className="font-medium mb-4">Upgrade to a Paid Plan</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <Card className="border shadow-sm">
-                            <CardHeader className="pb-2">
-                              <CardTitle className="text-lg">Monthly Plan</CardTitle>
-                              <CardDescription>$7/month</CardDescription>
-                            </CardHeader>
-                            <CardContent className="pb-2">
-                              <ul className="text-sm space-y-1">
-                                <li>Unlimited time tracking</li>
-                                <li>Advanced reporting</li>
-                                <li>Team collaboration</li>
-                              </ul>
-                            </CardContent>
-                            <CardFooter className="pt-0">
-                              <Button 
-                                onClick={() => handleCheckout("price_monthly")} 
-                                className="w-full"
-                                disabled={isChangingPlan}
-                              >
-                                {selectedPlan === "price_monthly" && isChangingPlan ? (
-                                  <span className="flex items-center">
-                                    <span className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
-                                    Processing...
-                                  </span>
-                                ) : (
-                                  "Subscribe Now"
-                                )}
-                              </Button>
-                            </CardFooter>
-                          </Card>
-                          
-                          <Card className="border shadow-sm">
-                            <CardHeader className="pb-2">
-                              <div className="flex justify-between items-start">
-                                <div>
-                                  <CardTitle className="text-lg">Yearly Plan</CardTitle>
-                                  <CardDescription>$63/year</CardDescription>
-                                </div>
-                                <Badge className="bg-green-100 text-green-800">Save 25%</Badge>
-                              </div>
-                            </CardHeader>
-                            <CardContent className="pb-2">
-                              <ul className="text-sm space-y-1">
-                                <li>Everything in Monthly</li>
-                                <li>Priority support</li>
-                                <li>Advanced features</li>
-                              </ul>
-                            </CardContent>
-                            <CardFooter className="pt-0">
-                              <Button 
-                                onClick={() => handleCheckout("price_yearly")} 
-                                className="w-full"
-                                disabled={isChangingPlan}
-                                variant="default"
-                              >
-                                {selectedPlan === "price_yearly" && isChangingPlan ? (
-                                  <span className="flex items-center">
-                                    <span className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
-                                    Processing...
-                                  </span>
-                                ) : (
-                                  "Subscribe Now"
-                                )}
-                              </Button>
-                            </CardFooter>
-                          </Card>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                  {(isTrialExpired || isTrialActive) && renderPricingOptions()}
+                  
                 </CardContent>
                 <CardFooter className="flex justify-between border-t pt-4">
                   {!isTrialExpired && (
@@ -387,7 +402,7 @@ const MySubscription = () => {
                         View All Plans
                       </Button>
                       
-                      {subscription?.status !== 'canceled' && (
+                      {subscription?.status !== 'canceled' && !isTrialActive && (
                         <Button 
                           variant="destructive"
                           onClick={() => setConfirmDialogOpen(true)}
