@@ -70,6 +70,8 @@ const Dashboard = () => {
       setRecentProjects(projectsData);
       setWeeklyData(weeklyData);
       setActivities(activitiesData);
+      
+      console.log("Weekly data fetched:", weeklyData);
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
       setError("Failed to load dashboard data. Please try again later.");
