@@ -29,7 +29,8 @@ serve(async (req) => {
     const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") as string;
     
     // Fetch the request body
-    const { priceId } = await req.json();
+    const requestData = await req.json();
+    const { priceId, returnUrl = '/pricing' } = requestData; // Default to pricing if no returnUrl
     
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") as string, {
@@ -188,7 +189,7 @@ serve(async (req) => {
       ],
       mode: "subscription",
       success_url: `${req.headers.get("origin")}/subscription-success?session_id={CHECKOUT_SESSION_ID}&type=${subscriptionType}`,
-      cancel_url: `${req.headers.get("origin")}/pricing`,
+      cancel_url: `${req.headers.get("origin")}${returnUrl}`, // Use the returnUrl parameter
       metadata: {
         userId: userId,
         subscriptionType: subscriptionType,

@@ -15,7 +15,6 @@ import EditProfile from "./pages/EditProfile";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import SubscriptionProtectedRoute from "./components/auth/SubscriptionProtectedRoute";
-import Team from "./pages/Team";
 import Pricing from "./pages/Pricing";
 import SubscriptionSuccess from "./pages/SubscriptionSuccess";
 import MySubscription from "./pages/MySubscription";
@@ -82,16 +81,6 @@ const App = () => {
                   <ProtectedRoute>
                     <SubscriptionProtectedRoute>
                       <Reports />
-                    </SubscriptionProtectedRoute>
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/team" 
-                element={
-                  <ProtectedRoute>
-                    <SubscriptionProtectedRoute>
-                      <Team />
                     </SubscriptionProtectedRoute>
                   </ProtectedRoute>
                 } 
