@@ -19,53 +19,89 @@ const SubscriptionSuccess = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const createSubscriptionRecord = async () => {
+    const updateSubscriptionRecord = async () => {
       if (!user || !sessionId || !subscriptionType) {
         setIsLoading(false);
         return;
       }
 
       try {
+        console.log("Processing subscription update with session ID:", sessionId);
+        console.log("Subscription type:", subscriptionType);
+        
+        // Get session data from Stripe through our edge function
+        const { data: sessionData, error: sessionError } = await supabase.functions.invoke("verify-checkout-session", {
+          body: { sessionId }
+        });
+        
+        if (sessionError) {
+          throw new Error(`Error verifying checkout session: ${sessionError.message}`);
+        }
+        
+        if (!sessionData) {
+          throw new Error("Failed to retrieve session data from Stripe");
+        }
+        
+        console.log("Retrieved session data:", sessionData);
+        
         // Check if the user already has a subscription
-        const { data: existingSubscription } = await supabase
+        const { data: existingSubscription, error: fetchError } = await supabase
           .from('user_subscriptions')
           .select('*')
           .eq('auth_user_id', user.id)
           .maybeSingle();
 
-        // Create a new subscription record or update existing one
+        if (fetchError) {
+          throw new Error(`Error fetching existing subscription: ${fetchError.message}`);
+        }
+
+        // Create or update the subscription record with data from the session
         const subscriptionData = {
           auth_user_id: user.id,
-          status: 'active',
+          status: 'active', // New subscription is always active
           subscription_type: subscriptionType,
-          stripe_subscription_id: sessionId, // We'll use this for now, it will be updated by the webhook
+          stripe_subscription_id: sessionData.subscription || sessionId, // Prefer actual subscription ID if available
           price_id: subscriptionType === 'monthly' ? 'price_monthly' : 'price_yearly',
-          current_period_start: new Date().toISOString(),
-          current_period_end: new Date(Date.now() + (subscriptionType === 'monthly' ? 30 : 365) * 24 * 60 * 60 * 1000).toISOString(),
+          current_period_start: sessionData.current_period_start || new Date().toISOString(),
+          current_period_end: sessionData.current_period_end || new Date(Date.now() + (subscriptionType === 'monthly' ? 30 : 365) * 24 * 60 * 60 * 1000).toISOString(),
         };
 
+        let updateResult;
+        
         if (existingSubscription) {
+          console.log("Updating existing subscription:", existingSubscription.id);
           // Update existing subscription
-          await supabase
+          const { data, error } = await supabase
             .from('user_subscriptions')
             .update(subscriptionData)
-            .eq('id', existingSubscription.id);
+            .eq('id', existingSubscription.id)
+            .select();
+            
+          if (error) throw new Error(`Error updating subscription: ${error.message}`);
+          updateResult = data;
         } else {
+          console.log("Creating new subscription record");
           // Create new subscription
-          await supabase
+          const { data, error } = await supabase
             .from('user_subscriptions')
-            .insert([subscriptionData]);
+            .insert([subscriptionData])
+            .select();
+            
+          if (error) throw new Error(`Error creating subscription: ${error.message}`);
+          updateResult = data;
         }
+        
+        console.log("Subscription updated successfully:", updateResult);
 
         toast({
           title: "Subscription activated",
           description: "Your subscription has been successfully activated.",
         });
       } catch (error) {
-        console.error("Error creating subscription record:", error);
+        console.error("Error processing subscription:", error);
         toast({
-          title: "Error",
-          description: "There was an error activating your subscription. Please contact support.",
+          title: "Subscription update issue",
+          description: "There was an error activating your subscription. Our team has been notified.",
           variant: "destructive",
         });
       } finally {
@@ -73,7 +109,7 @@ const SubscriptionSuccess = () => {
       }
     };
 
-    createSubscriptionRecord();
+    updateSubscriptionRecord();
   }, [user, sessionId, subscriptionType, toast]);
 
   return (

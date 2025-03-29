@@ -34,6 +34,45 @@ export const useSubscription = () => {
       try {
         console.log("Fetching subscription for user:", user.id);
         
+        // Check for cached subscription data first (but only use if it's recent - within last minute)
+        const cachedData = localStorage.getItem('subscription_data');
+        const cachedTime = localStorage.getItem('subscription_data_time');
+        const now = Date.now();
+        const cacheAge = cachedTime ? now - parseInt(cachedTime) : Infinity;
+        const cacheValid = cacheAge < 60000; // 1 minute
+        
+        // If we have fresh cached data and we're not on the subscription success page, use it
+        const isSubscriptionSuccess = window.location.pathname.includes('subscription-success');
+        if (cachedData && cacheValid && !isSubscriptionSuccess) {
+          console.log("Using cached subscription data");
+          const data = JSON.parse(cachedData);
+          
+          const subscriptionData = {
+            id: data.id,
+            status: data.status as SubscriptionStatus,
+            subscriptionType: data.subscription_type,
+            currentPeriodEnd: data.current_period_end,
+            currentPeriodStart: data.current_period_start,
+            priceId: data.price_id,
+          };
+          
+          setSubscription(subscriptionData);
+          
+          // Calculate active status
+          const isActive = 
+            subscriptionData.status === 'active' || 
+            subscriptionData.status === 'trialing' || 
+            (subscriptionData.status === 'canceled' && 
+             subscriptionData.currentPeriodEnd && 
+             new Date(subscriptionData.currentPeriodEnd) > new Date());
+          
+          setHasActiveSubscription(isActive);
+          console.log("Calculated hasActiveSubscription from cache:", isActive);
+          
+          // Still fetch fresh data in the background
+        }
+        
+        // Always fetch fresh data
         const { data, error } = await supabase
           .from('user_subscriptions')
           .select('*')
@@ -47,10 +86,19 @@ export const useSubscription = () => {
             description: 'Failed to fetch subscription status.',
             variant: 'destructive',
           });
-          setSubscription(null);
-          setHasActiveSubscription(false);
+          
+          // Only set to null if we don't have cached data
+          if (!cachedData || !cacheValid) {
+            setSubscription(null);
+            setHasActiveSubscription(false);
+          }
         } else if (data) {
           console.log("Subscription data:", data);
+          
+          // Cache the subscription data
+          localStorage.setItem('subscription_data', JSON.stringify(data));
+          localStorage.setItem('subscription_data_time', now.toString());
+          
           const subscriptionData = {
             id: data.id,
             status: data.status as SubscriptionStatus,
@@ -74,24 +122,61 @@ export const useSubscription = () => {
           console.log("Calculated hasActiveSubscription:", isActive);
         } else {
           console.log("No subscription found for user");
+          
+          // Clear cached data if no subscription found
+          localStorage.removeItem('subscription_data');
+          localStorage.removeItem('subscription_data_time');
+          
           setSubscription(null);
           setHasActiveSubscription(false);
         }
       } catch (error) {
         console.error('Unexpected error:', error);
-        setSubscription(null);
-        setHasActiveSubscription(false);
+        
+        // Only set to null if we don't have cached data
+        const cachedData = localStorage.getItem('subscription_data');
+        const cachedTime = localStorage.getItem('subscription_data_time');
+        const cacheValid = cachedTime && (Date.now() - parseInt(cachedTime)) < 300000; // 5 minutes
+        
+        if (!cachedData || !cacheValid) {
+          setSubscription(null);
+          setHasActiveSubscription(false);
+        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchSubscription();
+    
+    // Set up a subscription listener to refresh data when the table changes
+    const channel = supabase
+      .channel('subscription-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'user_subscriptions',
+        filter: `auth_user_id=eq.${user?.id}`,
+      }, (payload) => {
+        console.log('Subscription data changed:', payload);
+        fetchSubscription();
+      })
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user, toast]);
 
   return {
     subscription,
     loading,
-    hasActiveSubscription
+    hasActiveSubscription,
+    refreshSubscription: () => {
+      // Force clear the cache
+      localStorage.removeItem('subscription_data');
+      localStorage.removeItem('subscription_data_time');
+      setLoading(true);
+    }
   };
 };
