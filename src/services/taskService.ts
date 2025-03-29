@@ -22,7 +22,7 @@ export interface Screenshot {
   url: string;
   thumbnail_url?: string;
   timestamp: string;
-  user_id?: string;
+  auth_user_id?: string;
   created_at?: string;
 }
 

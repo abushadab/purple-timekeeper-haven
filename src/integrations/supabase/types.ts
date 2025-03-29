@@ -21,7 +21,6 @@ export type Database = {
           name: string
           project_count: number
           total_hours: number
-          user_id: string | null
         }
         Insert: {
           archived?: boolean
@@ -34,7 +33,6 @@ export type Database = {
           name: string
           project_count?: number
           total_hours?: number
-          user_id?: string | null
         }
         Update: {
           archived?: boolean
@@ -47,7 +45,6 @@ export type Database = {
           name?: string
           project_count?: number
           total_hours?: number
-          user_id?: string | null
         }
         Relationships: []
       }
@@ -66,7 +63,6 @@ export type Database = {
           tasks_count: number | null
           total_hours: number | null
           updated_at: string | null
-          user_id: string | null
         }
         Insert: {
           auth_user_id?: string | null
@@ -82,7 +78,6 @@ export type Database = {
           tasks_count?: number | null
           total_hours?: number | null
           updated_at?: string | null
-          user_id?: string | null
         }
         Update: {
           auth_user_id?: string | null
@@ -98,7 +93,6 @@ export type Database = {
           tasks_count?: number | null
           total_hours?: number | null
           updated_at?: string | null
-          user_id?: string | null
         }
         Relationships: [
           {
@@ -119,7 +113,6 @@ export type Database = {
           thumbnail_url: string | null
           timestamp: string | null
           url: string
-          user_id: string | null
         }
         Insert: {
           auth_user_id?: string | null
@@ -129,7 +122,6 @@ export type Database = {
           thumbnail_url?: string | null
           timestamp?: string | null
           url: string
-          user_id?: string | null
         }
         Update: {
           auth_user_id?: string | null
@@ -139,7 +131,6 @@ export type Database = {
           thumbnail_url?: string | null
           timestamp?: string | null
           url?: string
-          user_id?: string | null
         }
         Relationships: [
           {
@@ -166,7 +157,6 @@ export type Database = {
           title: string
           updated_at: string | null
           url_mapping: string | null
-          user_id: string | null
         }
         Insert: {
           auth_user_id?: string | null
@@ -182,7 +172,6 @@ export type Database = {
           title: string
           updated_at?: string | null
           url_mapping?: string | null
-          user_id?: string | null
         }
         Update: {
           auth_user_id?: string | null
@@ -198,7 +187,6 @@ export type Database = {
           title?: string
           updated_at?: string | null
           url_mapping?: string | null
-          user_id?: string | null
         }
         Relationships: [
           {
