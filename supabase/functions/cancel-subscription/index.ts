@@ -47,7 +47,7 @@ serve(async (req) => {
       console.error('No subscription found for user:', user.id);
       return new Response(
         JSON.stringify({ 
-          error: 'No subscription found for this user',
+          error: ${user.id},
           code: 'subscription_not_found'
         }),
         { 
