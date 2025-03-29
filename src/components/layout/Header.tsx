@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -11,8 +10,10 @@ import {
   Folder,
   Edit,
   LogOut,
-  CreditCard
+  CreditCard,
+  Package
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -51,18 +52,15 @@ const HeaderLink = ({ href, icon: Icon, label, active = false }) => {
 const Header = () => {
   console.log("Rendering Header component");
   
-  // Call all hooks at the top level, unconditionally
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const { subscription, hasActiveSubscription, isSubscriptionExpired } = useSubscription();
   
-  // Check if current page is pricing
   const isPricingPage = location.pathname === "/pricing";
   const isSubscriptionPage = location.pathname === "/my-subscription";
   
-  // Safely use the auth context with proper error handling
   let user = null;
   let signOut = async () => {};
   
@@ -77,7 +75,6 @@ const Header = () => {
   
   const path = location.pathname;
   
-  // Get cached user data from localStorage for backward compatibility
   const storedUserData = localStorage.getItem('user');
   const userData = storedUserData ? JSON.parse(storedUserData) : { 
     firstName: 'John', 
@@ -86,7 +83,6 @@ const Header = () => {
     avatar: null
   };
 
-  // Handle logout
   const handleLogout = async () => {
     try {
       if (signOut) {
@@ -108,7 +104,6 @@ const Header = () => {
     }
   };
 
-  // Determine if subscription is expired for UI purposes
   const showSubscriptionExpired = subscription && isSubscriptionExpired(subscription);
 
   return (
@@ -119,7 +114,6 @@ const Header = () => {
           <span className="hidden sm:inline-block font-semibold text-lg">TimeTrack</span>
         </div>
         
-        {/* Only show navigation if not on the pricing page */}
         {!isPricingPage && (
           <nav className="flex items-center gap-1 lg:gap-2">
             <HeaderLink
@@ -162,7 +156,6 @@ const Header = () => {
               </div>
               <div className="border-t my-1"></div>
               
-              {/* Only show Edit Profile if user has an active subscription or we're not on pricing page */}
               {(hasActiveSubscription || !isPricingPage) && (
                 <Button 
                   variant="ghost" 
@@ -174,7 +167,6 @@ const Header = () => {
                 </Button>
               )}
               
-              {/* Always show My Subscription */}
               <Button 
                 variant="ghost" 
                 className="w-full justify-start text-sm px-2 py-1.5 h-auto"
@@ -187,7 +179,6 @@ const Header = () => {
                 )}
               </Button>
               
-              {/* Show Pricing option if no active subscription and not on pricing or subscription page */}
               {!hasActiveSubscription && !isPricingPage && !isSubscriptionPage && (
                 <Button 
                   variant="ghost" 

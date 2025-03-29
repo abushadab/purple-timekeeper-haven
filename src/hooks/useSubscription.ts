@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -83,12 +84,7 @@ export const useSubscription = () => {
           priceId: data.price_id,
         };
         
-        // Check if subscription is expired and update status if needed
-        if (isSubscriptionExpired(subscriptionData) && subscriptionData.status !== 'canceled') {
-          updateExpiredStatus(subscriptionData);
-        } else {
-          setSubscription(subscriptionData);
-        }
+        setSubscription(subscriptionData);
         
         // Use the helper function to determine active status
         setHasActiveSubscription(isSubscriptionActive(subscriptionData));
@@ -128,9 +124,6 @@ export const useSubscription = () => {
             currentPeriodStart: data.current_period_start,
             priceId: data.price_id,
           };
-          
-          // Don't try to update expired status in the database anymore
-          // Just handle it in the UI
           
           // Cache the subscription data
           localStorage.setItem('subscription_data', JSON.stringify(data));
