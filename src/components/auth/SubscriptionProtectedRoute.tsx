@@ -85,7 +85,7 @@ const SubscriptionProtectedRoute: React.FC<SubscriptionProtectedRouteProps> = ({
     // Check if subscription exists but has expired
     const hasExpiredSubscription = subscription && isSubscriptionExpired(subscription);
       
-    // If subscription has expired, redirect to my-subscription page
+    // If subscription has expired, always redirect to my-subscription page
     if (hasExpiredSubscription) {
       // Avoid infinite redirect if already on my-subscription
       if (location.pathname === '/my-subscription') {
@@ -94,7 +94,7 @@ const SubscriptionProtectedRoute: React.FC<SubscriptionProtectedRouteProps> = ({
       return <Navigate to="/my-subscription" replace />;
     }
     
-    // For other subscription issues, redirect to pricing (if not already there)
+    // For users with no subscription, redirect to pricing
     if (location.pathname === '/pricing') {
       return <>{children}</>;
     }

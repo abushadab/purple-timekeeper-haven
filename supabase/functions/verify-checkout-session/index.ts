@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from 'https://esm.sh/stripe@14.21.0';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
@@ -93,12 +92,20 @@ serve(async (req) => {
         ? new Date(subscription.current_period_end * 1000).toISOString()
         : new Date(Date.now() + (subscriptionType === 'yearly' ? 365 : 30) * 24 * 60 * 60 * 1000).toISOString();
       
-      // Determine the correct status
-      // If end date is in the past, set status to 'expired'
+      // Determine the correct status - only use valid status values from Stripe
+      // Valid statuses according to Stripe: 'active', 'trialing', 'canceled', 'incomplete', 'incomplete_expired', 'past_due', 'unpaid'
       let status = subscription.status;
+      
+      // Make sure we're using a valid status value
+      if (!['active', 'trialing', 'canceled', 'incomplete', 'incomplete_expired', 'past_due', 'unpaid'].includes(status)) {
+        status = 'active'; // Default to active if we get an unexpected status
+      }
+      
+      // If end date is in the past, set status to 'expired' only if we've validated this is allowed in our schema
+      // Otherwise mark as 'canceled' which is a valid Stripe status
       if (new Date(currentPeriodEnd) < new Date()) {
-        status = 'expired';
-        console.log("Setting status to 'expired' because end date is in the past");
+        status = 'canceled';
+        console.log("Setting status to 'canceled' because end date is in the past");
       }
       
       subscriptionData = {
