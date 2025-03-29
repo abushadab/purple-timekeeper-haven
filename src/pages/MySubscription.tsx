@@ -20,6 +20,7 @@ const MySubscription = () => {
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [billingHistory, setBillingHistory] = useState([]);
   const [billingHistoryLoading, setBillingHistoryLoading] = useState(true);
+  const [selectedPlan, setSelectedPlan] = useState(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -34,6 +35,10 @@ const MySubscription = () => {
       setBillingHistoryLoading(false);
     }
   }, [subscription]);
+
+  const isTrialExpired = subscription?.status === 'trialing' && 
+    subscription?.currentPeriodEnd && 
+    new Date(subscription.currentPeriodEnd) < new Date();
 
   const fetchBillingHistory = async () => {
     try {
@@ -124,6 +129,37 @@ const MySubscription = () => {
     }
   };
 
+  const handleCheckout = async (planType) => {
+    try {
+      setSelectedPlan(planType);
+      setIsChangingPlan(true);
+      
+      const { data, error } = await supabase.functions.invoke("create-checkout-session", {
+        body: { priceId: planType }
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error("Failed to create checkout session");
+      }
+    } catch (error) {
+      console.error("Error creating checkout session:", error);
+      toast({
+        title: "Subscription failed",
+        description: error.message || "Failed to create subscription. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsChangingPlan(false);
+      setSelectedPlan(null);
+    }
+  };
+
   const handleDownloadInvoice = async (invoiceId) => {
     try {
       const { data, error } = await supabase.functions.invoke("get-invoice-pdf", {
@@ -200,10 +236,10 @@ const MySubscription = () => {
                     </CardTitle>
                     <Badge className={
                       subscription?.status === 'active' ? 'bg-green-100 text-green-800' : 
-                      (subscription?.status === 'trialing' && new Date(subscription.currentPeriodEnd) > new Date()) ? 'bg-amber-100 text-amber-800' :
+                      (subscription?.status === 'trialing' && !isTrialExpired) ? 'bg-amber-100 text-amber-800' :
                       'bg-red-100 text-red-800'
                     }>
-                      {subscription?.status === 'trialing' && new Date(subscription.currentPeriodEnd) < new Date() 
+                      {isTrialExpired 
                         ? "Expired" 
                         : subscription?.status?.charAt(0).toUpperCase() + subscription?.status?.slice(1)}
                     </Badge>
@@ -211,7 +247,7 @@ const MySubscription = () => {
                   <CardDescription>
                     {subscription?.status === 'canceled' 
                       ? "Your subscription has been cancelled but you still have access until the end of your current billing period."
-                      : subscription?.status === 'trialing' && new Date(subscription.currentPeriodEnd) < new Date()
+                      : isTrialExpired
                       ? "Your free trial has expired. Please upgrade to a paid plan to continue using premium features."
                       : "Your subscription is currently active."}
                   </CardDescription>
@@ -222,7 +258,7 @@ const MySubscription = () => {
                       <Calendar className="h-5 w-5 text-muted-foreground" />
                       <div>
                         <p className="text-sm font-medium">
-                          {new Date(subscription.currentPeriodEnd) < new Date() 
+                          {isTrialExpired 
                             ? "Trial ended on" 
                             : "Current period ends"}
                         </p>
@@ -233,7 +269,7 @@ const MySubscription = () => {
                     </div>
                   )}
                   
-                  {subscription?.status !== 'canceled' && new Date(subscription.currentPeriodEnd) > new Date() && (
+                  {subscription?.status !== 'canceled' && !isTrialExpired && (
                     <div className="space-y-4">
                       <div className="border-t pt-4">
                         <h3 className="font-medium mb-2">Change Plan</h3>
@@ -266,35 +302,102 @@ const MySubscription = () => {
                     </div>
                   )}
                   
-                  {subscription?.status === 'trialing' && new Date(subscription.currentPeriodEnd) < new Date() && (
-                    <div className="mt-6">
-                      <Button 
-                        className="w-full" 
-                        onClick={() => navigate('/pricing')}
-                      >
-                        <CreditCard className="mr-2 h-4 w-4" />
-                        Upgrade Now
-                      </Button>
+                  {isTrialExpired && (
+                    <div className="space-y-6 mt-4">
+                      <div className="border-t pt-4">
+                        <h3 className="font-medium mb-4">Upgrade to a Paid Plan</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <Card className="border shadow-sm">
+                            <CardHeader className="pb-2">
+                              <CardTitle className="text-lg">Monthly Plan</CardTitle>
+                              <CardDescription>$7/month</CardDescription>
+                            </CardHeader>
+                            <CardContent className="pb-2">
+                              <ul className="text-sm space-y-1">
+                                <li>Unlimited time tracking</li>
+                                <li>Advanced reporting</li>
+                                <li>Team collaboration</li>
+                              </ul>
+                            </CardContent>
+                            <CardFooter className="pt-0">
+                              <Button 
+                                onClick={() => handleCheckout("price_monthly")} 
+                                className="w-full"
+                                disabled={isChangingPlan}
+                              >
+                                {selectedPlan === "price_monthly" && isChangingPlan ? (
+                                  <span className="flex items-center">
+                                    <span className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+                                    Processing...
+                                  </span>
+                                ) : (
+                                  "Subscribe Now"
+                                )}
+                              </Button>
+                            </CardFooter>
+                          </Card>
+                          
+                          <Card className="border shadow-sm">
+                            <CardHeader className="pb-2">
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <CardTitle className="text-lg">Yearly Plan</CardTitle>
+                                  <CardDescription>$63/year</CardDescription>
+                                </div>
+                                <Badge className="bg-green-100 text-green-800">Save 25%</Badge>
+                              </div>
+                            </CardHeader>
+                            <CardContent className="pb-2">
+                              <ul className="text-sm space-y-1">
+                                <li>Everything in Monthly</li>
+                                <li>Priority support</li>
+                                <li>Advanced features</li>
+                              </ul>
+                            </CardContent>
+                            <CardFooter className="pt-0">
+                              <Button 
+                                onClick={() => handleCheckout("price_yearly")} 
+                                className="w-full"
+                                disabled={isChangingPlan}
+                                variant="default"
+                              >
+                                {selectedPlan === "price_yearly" && isChangingPlan ? (
+                                  <span className="flex items-center">
+                                    <span className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+                                    Processing...
+                                  </span>
+                                ) : (
+                                  "Subscribe Now"
+                                )}
+                              </Button>
+                            </CardFooter>
+                          </Card>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </CardContent>
                 <CardFooter className="flex justify-between border-t pt-4">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => navigate('/pricing')}
-                  >
-                    View All Plans
-                  </Button>
-                  
-                  {subscription?.status !== 'canceled' && new Date(subscription.currentPeriodEnd) > new Date() && (
-                    <Button 
-                      variant="destructive"
-                      onClick={() => setConfirmDialogOpen(true)}
-                      disabled={isCancelling}
-                    >
-                      <ShieldAlert className="mr-2 h-4 w-4" />
-                      Cancel Subscription
-                    </Button>
+                  {!isTrialExpired && (
+                    <>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => navigate('/pricing')}
+                      >
+                        View All Plans
+                      </Button>
+                      
+                      {subscription?.status !== 'canceled' && (
+                        <Button 
+                          variant="destructive"
+                          onClick={() => setConfirmDialogOpen(true)}
+                          disabled={isCancelling}
+                        >
+                          <ShieldAlert className="mr-2 h-4 w-4" />
+                          Cancel Subscription
+                        </Button>
+                      )}
+                    </>
                   )}
                 </CardFooter>
               </Card>

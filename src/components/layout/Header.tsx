@@ -59,8 +59,8 @@ const Header = () => {
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const { subscription } = useSubscription();
   
-  // Determine if user has or had a subscription to hide Pricing menu
-  const hasPricingAccess = !subscription;
+  // Determine if user should see Pricing menu - only if they never had a subscription
+  const showPricingMenu = !subscription;
   
   // Safely use the auth context with proper error handling
   let user = null;
@@ -141,7 +141,7 @@ const Header = () => {
             label="Team"
             active={path === "/team"}
           />
-          {hasPricingAccess && (
+          {showPricingMenu && (
             <HeaderLink
               href="/pricing"
               icon={CreditCard}
