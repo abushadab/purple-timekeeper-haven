@@ -44,7 +44,7 @@ serve(async (req) => {
     // Get user's subscription from the database
     const { data: subscriptionData, error: subscriptionError } = await supabase
       .from('user_subscriptions')
-      .select('stripe_subscription_id, price_id')
+      .select('*')
       .eq('auth_user_id', user.id)
       .maybeSingle();
 
@@ -52,8 +52,40 @@ serve(async (req) => {
       throw new Error(`Error fetching subscription: ${subscriptionError.message}`);
     }
 
-    if (!subscriptionData?.stripe_subscription_id) {
-      throw new Error('No active subscription found');
+    if (!subscriptionData) {
+      throw new Error('No subscription found');
+    }
+    
+    // Determine the subscription type based on the price ID
+    const subscriptionType = newPriceId === "price_monthly" ? "monthly" : "yearly";
+
+    // If user is on a free trial, we need to create a new Stripe subscription
+    if (subscriptionData.status === 'trialing' && !subscriptionData.stripe_subscription_id) {
+      console.log("User is on free trial, creating a new Stripe subscription");
+      
+      // Create a Stripe checkout session for the new paid plan
+      const session = await stripe.checkout.sessions.create({
+        customer_email: user.email,
+        line_items: [
+          {
+            price: newPriceId,
+            quantity: 1,
+          },
+        ],
+        mode: 'subscription',
+        success_url: `${req.headers.get('origin')}/subscription-success?type=${subscriptionType}&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${req.headers.get('origin')}/my-subscription`,
+      });
+      
+      console.log("Checkout session created:", session.id);
+      
+      return new Response(
+        JSON.stringify({ url: session.url }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        }
+      );
     }
     
     // If trying to change to the same price, just return success
@@ -70,50 +102,53 @@ serve(async (req) => {
       );
     }
 
-    // Get the subscription from Stripe
-    const subscription = await stripe.subscriptions.retrieve(subscriptionData.stripe_subscription_id);
-    
-    // Determine subscription type
-    const subscriptionType = newPriceId === "price_monthly" ? "monthly" : "yearly";
-    
-    // Update the subscription to the new price
-    await stripe.subscriptions.update(
-      subscriptionData.stripe_subscription_id,
-      {
-        items: [
-          {
-            id: subscription.items.data[0].id,
-            price: newPriceId,
-          },
-        ],
-        proration_behavior: 'create_prorations',
+    // For regular subscriptions with a Stripe subscription ID
+    if (subscriptionData.stripe_subscription_id) {
+      // Get the subscription from Stripe
+      const subscription = await stripe.subscriptions.retrieve(subscriptionData.stripe_subscription_id);
+      
+      // Update the subscription to the new price
+      await stripe.subscriptions.update(
+        subscriptionData.stripe_subscription_id,
+        {
+          items: [
+            {
+              id: subscription.items.data[0].id,
+              price: newPriceId,
+            },
+          ],
+          proration_behavior: 'create_prorations',
+        }
+      );
+
+      // Update the subscription in the database
+      const { error: updateError } = await supabase
+        .from('user_subscriptions')
+        .update({
+          price_id: newPriceId,
+          subscription_type: subscriptionType,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('auth_user_id', user.id);
+
+      if (updateError) {
+        throw new Error(`Error updating subscription: ${updateError.message}`);
       }
-    );
 
-    // Update the subscription in the database
-    const { error: updateError } = await supabase
-      .from('user_subscriptions')
-      .update({
-        price_id: newPriceId,
-        subscription_type: subscriptionType,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('auth_user_id', user.id);
-
-    if (updateError) {
-      throw new Error(`Error updating subscription: ${updateError.message}`);
+      return new Response(
+        JSON.stringify({ 
+          success: true,
+          message: 'Subscription plan has been updated successfully',
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        }
+      );
+    } else {
+      // If we have a subscription record but no Stripe ID (could happen with trials)
+      throw new Error('No active Stripe subscription found');
     }
-
-    return new Response(
-      JSON.stringify({ 
-        success: true,
-        message: 'Subscription plan has been updated successfully',
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    );
   } catch (error) {
     console.error('Error changing subscription plan:', error);
     return new Response(

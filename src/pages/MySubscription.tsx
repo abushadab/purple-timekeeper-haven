@@ -1,12 +1,12 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import { useSubscription } from "@/hooks/useSubscription";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, CreditCard, Download, RotateCcw, ShieldAlert } from "lucide-react";
+import { Calendar, CreditCard, Download, ShieldAlert } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,7 +24,12 @@ const MySubscription = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  React.useEffect(() => {
+  // Debug log
+  useEffect(() => {
+    console.log("MySubscription - Subscription data:", subscription);
+  }, [subscription]);
+
+  useEffect(() => {
     // Fetch billing history when subscription is loaded
     if (subscription?.id) {
       fetchBillingHistory();
@@ -103,8 +108,8 @@ const MySubscription = () => {
         throw new Error(error.message);
       }
       
+      // If we got a URL back, redirect to Stripe checkout for plan change
       if (data?.url) {
-        // Redirect to Stripe checkout for plan change
         window.location.href = data.url;
         return;
       }
