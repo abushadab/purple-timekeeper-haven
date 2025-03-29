@@ -11,7 +11,8 @@ import {
   Folder,
   Edit,
   LogOut,
-  Users
+  Users,
+  CreditCard
 } from "lucide-react";
 import {
   Dialog,
@@ -134,6 +135,12 @@ const Header = () => {
             icon={Users}
             label="Team"
             active={path === "/team"}
+          />
+          <HeaderLink
+            href="/pricing"
+            icon={CreditCard}
+            label="Pricing"
+            active={path === "/pricing"}
           />
         </nav>
         
