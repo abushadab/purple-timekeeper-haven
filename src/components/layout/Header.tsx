@@ -1,3 +1,4 @@
+
 import { useNavigate } from "react-router-dom";
 
 export const useSubscriptionNavigation = () => {
@@ -9,3 +10,18 @@ export const useSubscriptionNavigation = () => {
   
   return { goToSubscriptionPage };
 };
+
+// Creating a Header component with a default export
+const Header = () => {
+  return (
+    <header className="bg-background border-b border-border/40 py-4">
+      <div className="container px-4 sm:px-6 flex justify-between items-center">
+        <div className="flex items-center gap-2">
+          <h1 className="font-bold text-xl">TimeTrack</h1>
+        </div>
+      </div>
+    </header>
+  );
+};
+
+export default Header;
