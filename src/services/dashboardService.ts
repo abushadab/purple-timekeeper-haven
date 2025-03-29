@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfWeek, endOfWeek } from "date-fns";
 
@@ -150,22 +149,8 @@ export const getWeeklySummary = async (userTargetHours?: number): Promise<Weekly
   }
 
   try {
-    // Get user's weekly target hours from user_settings table if available
-    let hoursTarget = userTargetHours || 40.0; // Default to 40 hours if not specified
-    
-    try {
-      const { data: userSettings } = await supabase
-        .from("user_settings")
-        .select("weekly_hours_target")
-        .eq("auth_user_id", userId)
-        .single();
-      
-      if (userSettings?.weekly_hours_target) {
-        hoursTarget = parseFloat(String(userSettings.weekly_hours_target));
-      }
-    } catch (error) {
-      console.log("No user settings found, using default weekly target hours");
-    }
+    // Use the provided target hours or default to 40 hours if not specified
+    const hoursTarget = userTargetHours || 40.0;
     
     // Get start and end of current week
     const now = new Date();
