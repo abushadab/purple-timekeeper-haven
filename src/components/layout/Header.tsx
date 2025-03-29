@@ -32,8 +32,18 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/hooks/useSubscription";
 
 const HeaderLink = ({ href, icon: Icon, label, active = false }) => {
+  // Prevent navigation if already on the same page
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  const handleClick = (e) => {
+    if (location.pathname === href) {
+      e.preventDefault();
+    }
+  };
+  
   return (
-    <Link to={href}>
+    <Link to={href} onClick={handleClick}>
       <Button
         variant="ghost"
         className={cn(
@@ -104,6 +114,14 @@ const Header = () => {
         description: "An error occurred while logging out.",
         variant: "destructive"
       });
+    }
+  };
+
+  // Create a memoized navigation handler to prevent unnecessary re-renders
+  const handleNavigation = (targetPath) => (e) => {
+    if (path === targetPath) {
+      e.preventDefault();
+      return;
     }
   };
 

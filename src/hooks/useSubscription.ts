@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from './use-toast';
@@ -15,6 +15,13 @@ export interface Subscription {
   priceId?: string;
 }
 
+// Cache for subscription data to prevent flashing during navigation
+const subscriptionCache = {
+  data: null,
+  userId: null,
+  timestamp: 0
+};
+
 export const useSubscription = () => {
   const { user } = useAuth();
   const [subscription, setSubscription] = useState<Subscription | null>(null);
@@ -22,11 +29,37 @@ export const useSubscription = () => {
   const { toast } = useToast();
   const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
 
+  // Function to check if subscription is active
+  const calculateIsActive = useCallback((subscriptionData) => {
+    if (!subscriptionData) return false;
+    
+    return subscriptionData.status === 'active' || 
+      subscriptionData.status === 'trialing' || 
+      (subscriptionData.status === 'canceled' && 
+       subscriptionData.currentPeriodEnd && 
+       new Date(subscriptionData.currentPeriodEnd) > new Date());
+  }, []);
+
   useEffect(() => {
     const fetchSubscription = async () => {
       if (!user) {
         setSubscription(null);
         setHasActiveSubscription(false);
+        setLoading(false);
+        return;
+      }
+
+      // Check cache first to prevent flashing during navigation
+      const now = Date.now();
+      const isCacheValid = 
+        subscriptionCache.data && 
+        subscriptionCache.userId === user.id && 
+        (now - subscriptionCache.timestamp) < 30000; // 30 seconds cache
+      
+      if (isCacheValid) {
+        console.log("Using cached subscription data");
+        setSubscription(subscriptionCache.data);
+        setHasActiveSubscription(calculateIsActive(subscriptionCache.data));
         setLoading(false);
         return;
       }
@@ -60,15 +93,15 @@ export const useSubscription = () => {
             priceId: data.price_id,
           };
           
+          // Update cache
+          subscriptionCache.data = subscriptionData;
+          subscriptionCache.userId = user.id;
+          subscriptionCache.timestamp = now;
+          
           setSubscription(subscriptionData);
           
           // Calculate active status
-          const isActive = 
-            subscriptionData.status === 'active' || 
-            subscriptionData.status === 'trialing' || 
-            (subscriptionData.status === 'canceled' && 
-             subscriptionData.currentPeriodEnd && 
-             new Date(subscriptionData.currentPeriodEnd) > new Date());
+          const isActive = calculateIsActive(subscriptionData);
           
           setHasActiveSubscription(isActive);
           console.log("Calculated hasActiveSubscription:", isActive);
@@ -87,7 +120,7 @@ export const useSubscription = () => {
     };
 
     fetchSubscription();
-  }, [user, toast]);
+  }, [user, toast, calculateIsActive]);
 
   return {
     subscription,
