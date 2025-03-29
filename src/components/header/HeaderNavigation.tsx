@@ -1,7 +1,7 @@
 
 import React from "react";
 import HeaderLink from "./HeaderLink";
-import { LayoutDashboard, Folder, BarChart3 } from "lucide-react";
+import { LayoutDashboard, Folder, BarChart3, CreditCard } from "lucide-react";
 
 interface HeaderNavigationProps {
   currentPath: string;
@@ -32,6 +32,12 @@ const HeaderNavigation = ({ currentPath, isPricingPage }: HeaderNavigationProps)
         icon={BarChart3}
         label="Reports"
         active={currentPath === "/reports"}
+      />
+      <HeaderLink
+        href="/my-subscription"
+        icon={CreditCard}
+        label="Subscription"
+        active={currentPath === "/my-subscription"}
       />
     </nav>
   );

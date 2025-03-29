@@ -3,16 +3,13 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import { useSubscription } from "@/hooks/useSubscription";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Calendar, CreditCard, Download, ShieldAlert, Package } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { format } from "date-fns";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import SubscriptionDetails from "@/components/subscription/SubscriptionDetails";
+import BillingHistory from "@/components/subscription/BillingHistory";
+import PricingOptions from "@/components/subscription/PricingOptions";
 
 const MySubscription = () => {
   const { 
@@ -209,91 +206,6 @@ const MySubscription = () => {
     }
   };
 
-  const renderPricingOptions = () => {
-    return (
-      <div className="space-y-6 mt-4">
-        <div className="border-t pt-4">
-          <h3 className="font-medium mb-4">
-            {isActuallyExpired 
-              ? "Renew Your Subscription" 
-              : isTrialExpired 
-              ? "Upgrade to a Paid Plan" 
-              : isTrialActive 
-              ? "Upgrade Your Trial" 
-              : "Subscription Options"}
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card className="border shadow-sm">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Monthly Plan</CardTitle>
-                <CardDescription>$7/month</CardDescription>
-              </CardHeader>
-              <CardContent className="pb-2">
-                <ul className="text-sm space-y-1">
-                  <li>Unlimited time tracking</li>
-                  <li>Advanced reporting</li>
-                  <li>Team collaboration</li>
-                </ul>
-              </CardContent>
-              <CardFooter className="pt-0">
-                <Button 
-                  onClick={() => handleCheckout("price_monthly")} 
-                  className="w-full"
-                  disabled={isChangingPlan}
-                >
-                  {selectedPlan === "price_monthly" && isChangingPlan ? (
-                    <span className="flex items-center">
-                      <span className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
-                      Processing...
-                    </span>
-                  ) : (
-                    subscription?.subscriptionType === "monthly" && !isActuallyExpired ? "Change to This Plan" : "Subscribe Now"
-                  )}
-                </Button>
-              </CardFooter>
-            </Card>
-            
-            <Card className="border shadow-sm">
-              <CardHeader className="pb-2">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="text-lg">Yearly Plan</CardTitle>
-                    <CardDescription>$63/year</CardDescription>
-                  </div>
-                  <Badge className="bg-green-100 text-green-800">Save 25%</Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="pb-2">
-                <ul className="text-sm space-y-1">
-                  <li>Everything in Monthly</li>
-                  <li>Priority support</li>
-                  <li>Advanced features</li>
-                </ul>
-              </CardContent>
-              <CardFooter className="pt-0">
-                <Button 
-                  onClick={() => handleCheckout("price_yearly")} 
-                  className="w-full"
-                  disabled={isChangingPlan}
-                  variant="default"
-                >
-                  {selectedPlan === "price_yearly" && isChangingPlan ? (
-                    <span className="flex items-center">
-                      <span className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
-                      Processing...
-                    </span>
-                  ) : (
-                    subscription?.subscriptionType === "yearly" && !isActuallyExpired ? "Change to This Plan" : "Subscribe Now"
-                  )}
-                </Button>
-              </CardFooter>
-            </Card>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
@@ -322,172 +234,24 @@ const MySubscription = () => {
             </TabsList>
             
             <TabsContent value="details" className="mt-4">
-              <Card className="w-full shadow">
-                <CardHeader className="space-y-1">
-                  <div className="flex justify-between items-center">
-                    <CardTitle className="text-xl">
-                      {subscription ? 
-                        `${subscription.subscriptionType?.charAt(0).toUpperCase() + subscription.subscriptionType?.slice(1)} Plan`
-                        : "No Active Subscription"}
-                    </CardTitle>
-                    <Badge className={
-                      subscription?.status === 'active' && !isActuallyExpired ? 'bg-green-100 text-green-800' : 
-                      isTrialActive ? 'bg-amber-100 text-amber-800' :
-                      isActuallyExpired ? 'bg-red-100 text-red-800' :
-                      'bg-red-100 text-red-800'
-                    }>
-                      {isActuallyExpired 
-                        ? "Expired" 
-                        : subscription?.status === 'canceled' && !isActuallyExpired
-                        ? "Canceled"
-                        : subscription?.status?.charAt(0).toUpperCase() + subscription?.status?.slice(1)}
-                    </Badge>
-                  </div>
-                  <CardDescription>
-                    {subscription?.status === 'canceled' && !isActuallyExpired
-                      ? "Your subscription has been cancelled but you still have access until the end of your current billing period."
-                      : isActuallyExpired
-                      ? "Your subscription has expired. Please renew to continue using premium features."
-                      : isTrialExpired
-                      ? "Your free trial has expired. Please upgrade to a paid plan to continue using premium features."
-                      : isTrialActive
-                      ? "Your free trial is currently active. Consider upgrading to a paid plan to continue using premium features after your trial ends."
-                      : subscription?.status === 'active'
-                      ? "Your subscription is currently active."
-                      : "You don't currently have an active subscription."}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {subscription?.currentPeriodEnd && (
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-5 w-5 text-muted-foreground" />
-                      <div>
-                        <p className="text-sm font-medium">
-                          {isActuallyExpired
-                            ? "Expired on" 
-                            : isTrialActive
-                            ? "Trial ends on"
-                            : subscription?.status === 'canceled'
-                            ? "Access until"
-                            : "Current period ends"}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {format(new Date(subscription.currentPeriodEnd), 'PPP')}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {(isActuallyExpired || isTrialExpired || isTrialActive || !subscription) && renderPricingOptions()}
-                  
-                  {subscription?.status === 'active' && !isActuallyExpired && (
-                    <div className="space-y-4">
-                      <div className="border-t pt-4">
-                        <h3 className="font-medium mb-2">Change Plan</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <Button 
-                            variant={subscription?.subscriptionType === 'monthly' ? "secondary" : "outline"} 
-                            onClick={() => handleChangePlan("price_monthly")}
-                            disabled={subscription?.subscriptionType === 'monthly' || isChangingPlan}
-                            className="justify-start"
-                          >
-                            <div className="text-left">
-                              <div className="font-medium">Monthly Plan</div>
-                              <div className="text-sm text-muted-foreground">$7/month</div>
-                            </div>
-                          </Button>
-                          
-                          <Button 
-                            variant={subscription?.subscriptionType === 'yearly' ? "secondary" : "outline"} 
-                            onClick={() => handleChangePlan("price_yearly")}
-                            disabled={subscription?.subscriptionType === 'yearly' || isChangingPlan}
-                            className="justify-start"
-                          >
-                            <div className="text-left">
-                              <div className="font-medium">Yearly Plan</div>
-                              <div className="text-sm text-muted-foreground">$63/year (save 25%)</div>
-                            </div>
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-                <CardFooter className="flex justify-between border-t pt-4">
-                  {subscription?.status === 'active' && !isActuallyExpired && (
-                    <Button 
-                      variant="destructive"
-                      onClick={() => setConfirmDialogOpen(true)}
-                      disabled={isCancelling}
-                    >
-                      <ShieldAlert className="mr-2 h-4 w-4" />
-                      Cancel Subscription
-                    </Button>
-                  )}
-                </CardFooter>
-              </Card>
+              <SubscriptionDetails 
+                subscription={subscription}
+                isActuallyExpired={isActuallyExpired}
+                isTrialActive={isTrialActive}
+                isTrialExpired={isTrialExpired}
+                isChangingPlan={isChangingPlan}
+                setConfirmDialogOpen={setConfirmDialogOpen}
+                handleChangePlan={handleChangePlan}
+                isCancelling={isCancelling}
+              />
             </TabsContent>
             
             <TabsContent value="history" className="mt-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Billing History</CardTitle>
-                  <CardDescription>View and download your past invoices</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {billingHistoryLoading ? (
-                    <div className="flex justify-center py-8">
-                      <div className="h-8 w-8 animate-spin rounded-full border-2 border-purple-600 border-t-transparent"></div>
-                    </div>
-                  ) : billingHistory.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <p>No billing history available</p>
-                    </div>
-                  ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Description</TableHead>
-                          <TableHead>Amount</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {billingHistory.map((invoice) => (
-                          <TableRow key={invoice.id}>
-                            <TableCell>{format(new Date(invoice.created * 1000), 'PP')}</TableCell>
-                            <TableCell>{invoice.description || invoice.lines.data[0]?.description}</TableCell>
-                            <TableCell>
-                              {new Intl.NumberFormat('en-US', {
-                                style: 'currency',
-                                currency: invoice.currency.toUpperCase(),
-                              }).format(invoice.amount_paid / 100)}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={invoice.status === 'paid' ? 'default' : 'outline'}>
-                                {invoice.status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDownloadInvoice(invoice.id)}
-                                disabled={invoice.status !== 'paid'}
-                              >
-                                <Download className="h-4 w-4" />
-                                <span className="sr-only">Download</span>
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                </CardContent>
-              </Card>
+              <BillingHistory 
+                billingHistory={billingHistory}
+                billingHistoryLoading={billingHistoryLoading}
+                handleDownloadInvoice={handleDownloadInvoice}
+              />
             </TabsContent>
           </Tabs>
           
