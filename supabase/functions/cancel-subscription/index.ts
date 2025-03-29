@@ -34,24 +34,28 @@ serve(async (req) => {
     // Get user's subscription from the database
     const { data: subscriptionData, error: subscriptionError } = await supabase
       .from('user_subscriptions')
-      .select('stripe_subscription_id, status')
+      .select('stripe_subscription_id, status, current_period_end')
       .eq('auth_user_id', user.id)
       .maybeSingle();
 
     if (subscriptionError) {
+      console.error('Error fetching subscription:', subscriptionError);
       throw new Error(`Error fetching subscription: ${subscriptionError.message}`);
     }
 
     if (!subscriptionData) {
+      console.error('No subscription found for user:', user.id);
       throw new Error('No subscription found for this user');
     }
 
     if (!subscriptionData.stripe_subscription_id) {
+      console.error('No Stripe subscription ID found for subscription');
       throw new Error('No Stripe subscription ID found for this subscription');
     }
 
     // Check if the subscription is already canceled
     if (subscriptionData.status === 'canceled') {
+      console.log('Subscription is already canceled');
       return new Response(
         JSON.stringify({ 
           success: true,
@@ -93,6 +97,7 @@ serve(async (req) => {
       .eq('auth_user_id', user.id);
 
     if (updateError) {
+      console.error('Error updating subscription status:', updateError);
       throw new Error(`Error updating subscription status: ${updateError.message}`);
     }
 

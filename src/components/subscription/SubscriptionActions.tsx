@@ -16,15 +16,21 @@ export function useSubscriptionActions() {
       const { data, error } = await supabase.functions.invoke("cancel-subscription");
       
       if (error) {
-        throw new Error(error.message);
+        console.error("Error from cancel-subscription function:", error);
+        throw new Error(error.message || "An error occurred while cancelling subscription");
       }
       
-      toast({
-        title: "Subscription cancelled",
-        description: "Your subscription has been cancelled. You will still have access until the end of your current billing period.",
-      });
-      
-      window.location.reload();
+      if (data?.success) {
+        toast({
+          title: "Subscription cancelled",
+          description: "Your subscription has been cancelled. You will still have access until the end of your current billing period.",
+        });
+        
+        // Reload the page to reflect changes
+        window.location.reload();
+      } else {
+        throw new Error(data?.message || "Failed to cancel subscription");
+      }
     } catch (error) {
       console.error("Error cancelling subscription:", error);
       toast({
