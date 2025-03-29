@@ -1,5 +1,4 @@
 import { supabase } from "@/integrations/supabase/client";
-import { getWordpressUserId } from "@/utils/authUtils";
 
 export interface Project {
   id: string;
@@ -26,7 +25,8 @@ export interface ProjectFormData {
 }
 
 export const getProjects = async (): Promise<Project[]> => {
-  const userId = await getWordpressUserId();
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData.session?.user?.id;
 
   const { data, error } = await supabase
     .from("projects")
@@ -38,17 +38,21 @@ export const getProjects = async (): Promise<Project[]> => {
     throw error;
   }
 
+  // Transform the data to match our frontend model
   return data.map((item) => {
+    // Calculate task statistics if tasks are available
     const tasks = item.tasks || [];
     const tasksCount = tasks.length;
     const tasksCompleted = tasks.filter(task => task.status === 'completed').length;
     const totalHours = tasks.reduce((total, task) => total + (parseFloat(String(task.hours_logged)) || 0), 0);
     const totalEstimatedHours = tasks.reduce((total, task) => total + (parseFloat(String(task.estimated_hours)) || 0), 0);
     
+    // Calculate progress based on hours tracked vs estimated hours
     let progress = 0;
     if (totalEstimatedHours > 0) {
-      progress = Math.min(Math.round((totalHours / totalEstimatedHours) * 100), 100);
+      progress = Math.min(Math.round((totalHours / totalEstimatedHours) * 100), 100); // Cap at 100%
     } else if (tasksCount > 0) {
+      // Fallback to task completion if no estimated hours
       progress = Math.round((tasksCompleted / tasksCount) * 100);
     }
 
@@ -71,8 +75,9 @@ export const getProjects = async (): Promise<Project[]> => {
 };
 
 export const createProject = async (project: ProjectFormData): Promise<Project> => {
-  const userId = await getWordpressUserId();
-  
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData.session?.user?.id;
+
   if (!userId) {
     throw new Error("User not authenticated");
   }
@@ -99,6 +104,7 @@ export const createProject = async (project: ProjectFormData): Promise<Project> 
     throw error;
   }
 
+  // Update the portfolio statistics after creating a project
   await updatePortfolioStatistics(project.portfolioId);
 
   return {
@@ -123,6 +129,7 @@ export const updateProject = async (project: ProjectFormData): Promise<Project> 
     throw new Error("Project ID is required for updates");
   }
 
+  // Get the current project to check if portfolio has changed
   const { data: currentProject } = await supabase
     .from("projects")
     .select("portfolio_id")
@@ -149,12 +156,14 @@ export const updateProject = async (project: ProjectFormData): Promise<Project> 
     throw error;
   }
 
+  // If portfolio has changed, update statistics for both old and new portfolios
   if (oldPortfolioId !== project.portfolioId) {
     if (oldPortfolioId) {
       await updatePortfolioStatistics(oldPortfolioId);
     }
     await updatePortfolioStatistics(project.portfolioId);
   } else {
+    // Otherwise just update the current portfolio
     await updatePortfolioStatistics(project.portfolioId);
   }
 
@@ -176,6 +185,7 @@ export const updateProject = async (project: ProjectFormData): Promise<Project> 
 };
 
 export const deleteProject = async (id: string): Promise<void> => {
+  // Get the portfolio ID before deleting the project
   const { data: project } = await supabase
     .from("projects")
     .select("portfolio_id")
@@ -194,13 +204,16 @@ export const deleteProject = async (id: string): Promise<void> => {
     throw error;
   }
 
+  // Update portfolio statistics after deleting a project
   if (portfolioId) {
     await updatePortfolioStatistics(portfolioId);
   }
 };
 
+// Helper function to update portfolio statistics
 async function updatePortfolioStatistics(portfolioId: string) {
   try {
+    // Get all projects for this portfolio
     const { data: projects, error: projectsError } = await supabase
       .from("projects")
       .select("id")
@@ -213,6 +226,7 @@ async function updatePortfolioStatistics(portfolioId: string) {
 
     const projectCount = projects?.length || 0;
 
+    // Get total hours across all tasks in all projects for this portfolio
     const { data: hours, error: hoursError } = await supabase
       .from("tasks")
       .select("hours_logged")
@@ -225,6 +239,7 @@ async function updatePortfolioStatistics(portfolioId: string) {
 
     const totalHours = hours?.reduce((sum, task) => sum + (parseFloat(String(task.hours_logged)) || 0), 0) || 0;
 
+    // Update the portfolio with the new statistics
     const { error: updateError } = await supabase
       .from("portfolios")
       .update({
@@ -242,6 +257,7 @@ async function updatePortfolioStatistics(portfolioId: string) {
   }
 }
 
+// Helper function to format the due date in a user-friendly way
 const formatDueDate = (date: string | null): string => {
   if (!date) return "";
   

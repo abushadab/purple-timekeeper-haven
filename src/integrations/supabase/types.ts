@@ -198,62 +198,12 @@ export type Database = {
           },
         ]
       }
-      user_profiles: {
-        Row: {
-          created_at: string | null
-          email: string
-          first_name: string | null
-          id: string
-          last_name: string | null
-          subscription_id: number | null
-          subscription_next_payment: string | null
-          subscription_status: string | null
-          subscription_subtotal: string | null
-          token: string | null
-          updated_at: string | null
-          wordpress_user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          email: string
-          first_name?: string | null
-          id?: string
-          last_name?: string | null
-          subscription_id?: number | null
-          subscription_next_payment?: string | null
-          subscription_status?: string | null
-          subscription_subtotal?: string | null
-          token?: string | null
-          updated_at?: string | null
-          wordpress_user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          email?: string
-          first_name?: string | null
-          id?: string
-          last_name?: string | null
-          subscription_id?: number | null
-          subscription_next_payment?: string | null
-          subscription_status?: string | null
-          subscription_subtotal?: string | null
-          token?: string | null
-          updated_at?: string | null
-          wordpress_user_id?: string
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      is_own_profile: {
-        Args: {
-          profile_wordpress_id: string
-        }
-        Returns: boolean
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never

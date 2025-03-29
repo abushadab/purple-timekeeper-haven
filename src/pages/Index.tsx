@@ -111,7 +111,7 @@ const Dashboard = () => {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 space-y-4 sm:space-y-0">
             <div>
               <div className="text-sm text-muted-foreground mb-1">Welcome back,</div>
-              <h1 className="text-3xl font-bold tracking-tight">{user?.first_name || 'User'}</h1>
+              <h1 className="text-3xl font-bold tracking-tight">{user?.user_metadata?.first_name || 'User'}</h1>
             </div>
             {error && (
               <div className="bg-red-100 text-red-800 p-3 rounded-md">
