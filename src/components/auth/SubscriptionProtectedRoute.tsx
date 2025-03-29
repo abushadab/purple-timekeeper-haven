@@ -1,8 +1,9 @@
 
-import React from 'react';
-import { Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 interface SubscriptionProtectedRouteProps {
   children: React.ReactNode;
@@ -10,7 +11,15 @@ interface SubscriptionProtectedRouteProps {
 
 const SubscriptionProtectedRoute: React.FC<SubscriptionProtectedRouteProps> = ({ children }) => {
   const { user, loading: authLoading } = useAuth();
-  const { hasActiveSubscription, loading: subscriptionLoading } = useSubscription();
+  const { hasActiveSubscription, loading: subscriptionLoading, subscription } = useSubscription();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  
+  // Debug log
+  useEffect(() => {
+    console.log("SubscriptionProtectedRoute - Auth:", !!user, "Loading:", authLoading);
+    console.log("SubscriptionProtectedRoute - Subscription:", subscription, "HasActive:", hasActiveSubscription, "Loading:", subscriptionLoading);
+  }, [user, authLoading, subscription, hasActiveSubscription, subscriptionLoading]);
   
   // Show loading state while checking authentication and subscription
   if (authLoading || subscriptionLoading) {
@@ -23,11 +32,19 @@ const SubscriptionProtectedRoute: React.FC<SubscriptionProtectedRouteProps> = ({
   
   // Redirect to login if not authenticated
   if (!user) {
+    toast({
+      title: "Login Required",
+      description: "Please log in to access this page",
+    });
     return <Navigate to="/login" replace />;
   }
   
   // Redirect to pricing page if no active subscription
   if (!hasActiveSubscription) {
+    toast({
+      title: "Subscription Required",
+      description: "You need an active subscription to access this feature",
+    });
     return <Navigate to="/pricing" replace />;
   }
   

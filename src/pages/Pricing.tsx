@@ -1,14 +1,15 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Header from "@/components/layout/Header";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Check, Clock, Crown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useSubscription } from "@/hooks/useSubscription";
 
 const PricingTier = ({
   name,
@@ -67,6 +68,31 @@ const Pricing = () => {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
+  const [searchParams] = useSearchParams();
+  const trialStarted = searchParams.get("trial") === "started";
+  const { hasActiveSubscription, loading: subscriptionLoading, subscription } = useSubscription();
+
+  // Display a success message if redirected from trial start
+  useEffect(() => {
+    if (trialStarted) {
+      toast({
+        title: "Free trial activated",
+        description: "Your 7-day free trial has been successfully activated.",
+      });
+      
+      // Navigate to the home page after showing toast
+      setTimeout(() => {
+        navigate('/', { replace: true });
+      }, 1500);
+    }
+  }, [trialStarted, toast, navigate]);
+
+  // Redirect if user already has a subscription
+  useEffect(() => {
+    if (!subscriptionLoading && hasActiveSubscription) {
+      navigate('/');
+    }
+  }, [hasActiveSubscription, subscriptionLoading, navigate]);
 
   const handleSubscription = async (planType) => {
     if (!user) {
@@ -110,6 +136,68 @@ const Pricing = () => {
       setSelectedPlan(null);
     }
   };
+
+  // Show loading state while checking subscription
+  if (subscriptionLoading) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <Header />
+        <div className="flex-1 container py-12 flex items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-purple-600 border-t-transparent"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Display subscription details if user has one
+  if (subscription && !trialStarted) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <Header />
+        <div className="flex-1 container py-8 px-4">
+          <div className="max-w-3xl mx-auto space-y-8">
+            <div className="text-center space-y-4">
+              <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Your Current Subscription</h1>
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                You're currently subscribed to the {subscription.subscriptionType} plan.
+              </p>
+            </div>
+            
+            <Card className="w-full shadow-lg border-purple-200">
+              <CardHeader className="space-y-1">
+                <CardTitle className="text-xl font-bold">
+                  {subscription.subscriptionType.charAt(0).toUpperCase() + subscription.subscriptionType.slice(1)} Plan
+                </CardTitle>
+                <CardDescription>
+                  Status: <span className="font-medium text-green-600">{subscription.status}</span>
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {subscription.currentPeriodEnd && (
+                  <div className="text-sm">
+                    <span className="font-medium">Current period ends:</span>{" "}
+                    {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
+                  </div>
+                )}
+                <div className="flex justify-center mt-4">
+                  <Button onClick={() => navigate('/')}>
+                    Go to Dashboard
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="text-center mt-8 text-muted-foreground">
+              <p>Need to change your plan or have questions about your subscription?</p>
+              <Button variant="link" onClick={() => navigate('/contact')}>
+                Contact Support
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -220,4 +308,3 @@ const Pricing = () => {
 };
 
 export default Pricing;
-

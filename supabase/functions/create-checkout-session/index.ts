@@ -55,6 +55,8 @@ serve(async (req) => {
       throw new Error('User email not found');
     }
 
+    console.log(`Processing subscription for user: ${userId}, plan: ${priceId}`);
+
     // Check if user already has a subscription in our database
     const checkSubscriptionResponse = await fetch(`${supabaseUrl}/rest/v1/user_subscriptions?auth_user_id=eq.${userId}`, {
       headers: {
@@ -66,6 +68,7 @@ serve(async (req) => {
     });
     
     const existingSubscriptions = await checkSubscriptionResponse.json();
+    console.log("Existing subscriptions:", existingSubscriptions.length > 0 ? "Yes" : "No");
     
     // If it's a free trial, create a subscription record in our database without going to Stripe
     if (priceId === "free_trial") {
@@ -75,8 +78,10 @@ serve(async (req) => {
         const trialEndDate = new Date(currentDate);
         trialEndDate.setDate(currentDate.getDate() + 7); // 7-day trial
         
+        console.log("Creating free trial subscription record");
+        
         // Create a subscription record for the trial
-        await fetch(`${supabaseUrl}/rest/v1/user_subscriptions`, {
+        const createSubscriptionResponse = await fetch(`${supabaseUrl}/rest/v1/user_subscriptions`, {
           method: 'POST',
           headers: {
             "Authorization": `Bearer ${token}`,
@@ -92,6 +97,9 @@ serve(async (req) => {
             current_period_end: trialEndDate.toISOString()
           })
         });
+        
+        const result = await createSubscriptionResponse.json();
+        console.log("Trial subscription created:", result);
         
         // Redirect back to app
         return new Response(
@@ -113,7 +121,7 @@ serve(async (req) => {
         const monthlyPrices = await stripe.prices.list({
           product: 'prod_S1uqDkwAwdTUij',
           active: true,
-          limit: 1
+          limit: C
         });
         
         if (monthlyPrices.data.length === 0) {

@@ -30,6 +30,8 @@ export const useSubscription = () => {
       }
 
       try {
+        console.log("Fetching subscription for user:", user.id);
+        
         const { data, error } = await supabase
           .from('user_subscriptions')
           .select('*')
@@ -45,6 +47,7 @@ export const useSubscription = () => {
           });
           setSubscription(null);
         } else if (data) {
+          console.log("Subscription data:", data);
           setSubscription({
             id: data.id,
             status: data.status as SubscriptionStatus,
@@ -54,6 +57,7 @@ export const useSubscription = () => {
             priceId: data.price_id,
           });
         } else {
+          console.log("No subscription found for user");
           setSubscription(null);
         }
       } catch (error) {
@@ -67,10 +71,13 @@ export const useSubscription = () => {
     fetchSubscription();
   }, [user, toast]);
 
-  const hasActiveSubscription = subscription && 
+  // Check if user has an active subscription
+  const hasActiveSubscription = !!subscription && 
     (subscription.status === 'active' || 
      subscription.status === 'trialing' || 
      (subscription.status === 'canceled' && subscription.currentPeriodEnd && new Date(subscription.currentPeriodEnd) > new Date()));
+
+  console.log("Calculated hasActiveSubscription:", hasActiveSubscription);
 
   return {
     subscription,
