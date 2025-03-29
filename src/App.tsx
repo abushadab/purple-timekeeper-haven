@@ -18,6 +18,7 @@ import SubscriptionProtectedRoute from "./components/auth/SubscriptionProtectedR
 import Team from "./pages/Team";
 import Pricing from "./pages/Pricing";
 import SubscriptionSuccess from "./pages/SubscriptionSuccess";
+import MySubscription from "./pages/MySubscription";
 
 const queryClient = new QueryClient();
 
@@ -96,12 +97,20 @@ const App = () => {
                 } 
               />
               
-              {/* Profile editing doesn't require subscription */}
+              {/* Profile and subscription management don't require subscription */}
               <Route 
                 path="/edit-profile" 
                 element={
                   <ProtectedRoute>
                     <EditProfile />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/my-subscription" 
+                element={
+                  <ProtectedRoute>
+                    <MySubscription />
                   </ProtectedRoute>
                 } 
               />

@@ -172,6 +172,14 @@ const Header = () => {
               </Button>
               <Button 
                 variant="ghost" 
+                className="w-full justify-start text-sm px-2 py-1.5 h-auto"
+                onClick={() => navigate('/my-subscription')}
+              >
+                <CreditCard className="h-4 w-4 mr-2" />
+                My Subscription
+              </Button>
+              <Button 
+                variant="ghost" 
                 className="w-full justify-start text-sm px-2 py-1.5 h-auto text-red-600 hover:text-red-700 hover:bg-red-50"
                 onClick={() => setLogoutDialogOpen(true)}
               >
