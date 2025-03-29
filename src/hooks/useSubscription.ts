@@ -22,6 +22,17 @@ export const useSubscription = () => {
   const { toast } = useToast();
   const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
 
+  // Helper function to determine if a subscription is active
+  const isSubscriptionActive = (sub: Subscription | null): boolean => {
+    if (!sub) return false;
+    
+    // Check both status and expiration date
+    const validStatus = ['active', 'trialing', 'canceled'].includes(sub.status);
+    const notExpired = sub.currentPeriodEnd ? new Date(sub.currentPeriodEnd) > new Date() : false;
+    
+    return validStatus && notExpired;
+  };
+
   const fetchSubscription = async (skipCache = false) => {
     if (!user) {
       setSubscription(null);
@@ -57,16 +68,9 @@ export const useSubscription = () => {
         
         setSubscription(subscriptionData);
         
-        // Calculate active status
-        const isActive = 
-          subscriptionData.status === 'active' || 
-          subscriptionData.status === 'trialing' || 
-          (subscriptionData.status === 'canceled' && 
-           subscriptionData.currentPeriodEnd && 
-           new Date(subscriptionData.currentPeriodEnd) > new Date());
-        
-        setHasActiveSubscription(isActive);
-        console.log("Calculated hasActiveSubscription from cache:", isActive);
+        // Use the helper function to determine active status
+        setHasActiveSubscription(isSubscriptionActive(subscriptionData));
+        console.log("Calculated hasActiveSubscription from cache:", isSubscriptionActive(subscriptionData));
       }
       
       // Always fetch fresh data if we're skipping cache, on subscription pages, or cache is invalid
@@ -108,16 +112,10 @@ export const useSubscription = () => {
           
           setSubscription(subscriptionData);
           
-          // Calculate active status
-          const isActive = 
-            subscriptionData.status === 'active' || 
-            subscriptionData.status === 'trialing' || 
-            (subscriptionData.status === 'canceled' && 
-             subscriptionData.currentPeriodEnd && 
-             new Date(subscriptionData.currentPeriodEnd) > new Date());
-          
+          // Use the helper function to determine active status
+          const isActive = isSubscriptionActive(subscriptionData);
           setHasActiveSubscription(isActive);
-          console.log("Calculated hasActiveSubscription:", isActive);
+          console.log("Calculated hasActiveSubscription:", isActive, "Period end:", data.current_period_end, "Current date:", new Date().toISOString());
         } else {
           console.log("No subscription found for user");
           
@@ -178,6 +176,7 @@ export const useSubscription = () => {
       localStorage.removeItem('subscription_data_time');
       setLoading(true);
       fetchSubscription(true); // Skip cache when manually refreshing
-    }
+    },
+    isSubscriptionActive  // Export the helper function for use in other components
   };
 };

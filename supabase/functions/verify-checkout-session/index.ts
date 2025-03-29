@@ -31,7 +31,7 @@ serve(async (req) => {
 
     // Retrieve the checkout session from Stripe with expanded subscription data
     const session = await stripe.checkout.sessions.retrieve(sessionId, {
-      expand: ['subscription', 'subscription.items.data.price', 'line_items']
+      expand: ['subscription', 'subscription.items.data.price.product', 'line_items']
     });
     
     if (!session) {
@@ -51,7 +51,7 @@ serve(async (req) => {
     if (session.subscription) {
       const subscription = typeof session.subscription === 'string' 
         ? await stripe.subscriptions.retrieve(session.subscription, {
-            expand: ['items.data.price']
+            expand: ['items.data.price.product']
           })
         : session.subscription;
       
@@ -60,7 +60,7 @@ serve(async (req) => {
       // Determine subscription type from metadata or product
       if (session.metadata?.type) {
         subscriptionType = session.metadata.type;
-      } else if (subscription.items?.data[0]?.price.product) {
+      } else if (subscription.items?.data[0]?.price) {
         // Get product details to determine subscription type
         const priceId = subscription.items.data[0].price.id;
         console.log(`Price ID: ${priceId}`);
@@ -84,15 +84,26 @@ serve(async (req) => {
       
       console.log(`Subscription type: ${subscriptionType}`);
       
+      // Ensure we have the current period dates
+      const currentPeriodStart = subscription.current_period_start 
+        ? new Date(subscription.current_period_start * 1000).toISOString()
+        : new Date().toISOString();
+        
+      const currentPeriodEnd = subscription.current_period_end
+        ? new Date(subscription.current_period_end * 1000).toISOString()
+        : new Date(Date.now() + (subscriptionType === 'yearly' ? 365 : 30) * 24 * 60 * 60 * 1000).toISOString();
+      
       subscriptionData = {
         subscription: subscription.id,
         status: subscription.status,
         subscription_type: subscriptionType,
         price_id: subscription.items?.data[0]?.price?.id || '',
-        current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-        current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+        current_period_start: currentPeriodStart,
+        current_period_end: currentPeriodEnd,
         customer: subscription.customer,
       };
+      
+      console.log("Subscription period:", currentPeriodStart, "to", currentPeriodEnd);
     }
     
     // Return the session and subscription data
@@ -100,7 +111,9 @@ serve(async (req) => {
       JSON.stringify(subscriptionData || { 
         subscription: session.id,
         status: 'active',
-        subscription_type: session.metadata?.type || subscriptionType
+        subscription_type: session.metadata?.type || subscriptionType,
+        current_period_start: new Date().toISOString(),
+        current_period_end: new Date(Date.now() + (subscriptionType === 'yearly' ? 365 : 30) * 24 * 60 * 60 * 1000).toISOString()
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
