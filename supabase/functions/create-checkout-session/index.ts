@@ -26,6 +26,7 @@ serve(async (req) => {
     // Create a Supabase client
     const supabaseUrl = Deno.env.get("SUPABASE_URL") as string;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") as string;
+    const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") as string;
     
     // Fetch the request body
     const { priceId } = await req.json();
@@ -80,12 +81,12 @@ serve(async (req) => {
         
         console.log("Creating free trial subscription record");
         
-        // Create a subscription record for the trial
+        // Create a subscription record for the trial - use service role token to bypass RLS
         const createSubscriptionResponse = await fetch(`${supabaseUrl}/rest/v1/user_subscriptions`, {
           method: 'POST',
           headers: {
-            "Authorization": `Bearer ${token}`,
-            "apikey": supabaseAnonKey,
+            "Authorization": `Bearer ${supabaseServiceRoleKey}`,
+            "apikey": supabaseServiceRoleKey,
             "Content-Type": "application/json",
             "Prefer": "return=representation"
           },
@@ -97,6 +98,12 @@ serve(async (req) => {
             current_period_end: trialEndDate.toISOString()
           })
         });
+        
+        if (!createSubscriptionResponse.ok) {
+          const error = await createSubscriptionResponse.json();
+          console.error("Error creating trial subscription:", error);
+          throw new Error(`Failed to create trial subscription: ${JSON.stringify(error)}`);
+        }
         
         const result = await createSubscriptionResponse.json();
         console.log("Trial subscription created:", result);
@@ -121,7 +128,7 @@ serve(async (req) => {
         const monthlyPrices = await stripe.prices.list({
           product: 'prod_S1uqDkwAwdTUij',
           active: true,
-          limit: C
+          limit: 1
         });
         
         if (monthlyPrices.data.length === 0) {

@@ -77,67 +77,17 @@ const Pricing = () => {
   useEffect(() => {
     if (trialStarted && !trialActivated) {
       setTrialActivated(true);
+      toast({
+        title: "Free trial activated",
+        description: "Your 7-day free trial has been successfully activated.",
+      });
       
-      // Create a trial subscription record
-      const createTrialSubscription = async () => {
-        if (!user) return;
-        
-        try {
-          // Check if the user already has a subscription
-          const { data: existingSubscription } = await supabase
-            .from('user_subscriptions')
-            .select('*')
-            .eq('auth_user_id', user.id)
-            .maybeSingle();
-            
-          if (existingSubscription) {
-            // Update existing subscription to trial if needed
-            if (existingSubscription.status !== 'trialing') {
-              await supabase
-                .from('user_subscriptions')
-                .update({
-                  status: 'trialing',
-                  subscription_type: 'free_trial',
-                  current_period_start: new Date().toISOString(),
-                  current_period_end: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-                })
-                .eq('id', existingSubscription.id);
-            }
-          } else {
-            // Create new trial subscription
-            await supabase
-              .from('user_subscriptions')
-              .insert([{
-                auth_user_id: user.id,
-                status: 'trialing',
-                subscription_type: 'free_trial',
-                current_period_start: new Date().toISOString(),
-                current_period_end: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-              }]);
-          }
-          
-          toast({
-            title: "Free trial activated",
-            description: "Your 7-day free trial has been successfully activated.",
-          });
-          
-          // Navigate to the home page after showing toast
-          setTimeout(() => {
-            navigate('/', { replace: true });
-          }, 1500);
-        } catch (error) {
-          console.error("Error creating trial subscription:", error);
-          toast({
-            title: "Error activating trial",
-            description: "There was a problem activating your free trial.",
-            variant: "destructive",
-          });
-        }
-      };
-      
-      createTrialSubscription();
+      // Navigate to the home page after showing toast
+      setTimeout(() => {
+        navigate('/', { replace: true });
+      }, 1500);
     }
-  }, [trialStarted, user, toast, navigate, trialActivated]);
+  }, [trialStarted, toast, navigate, trialActivated]);
 
   // Redirect if user already has a subscription
   useEffect(() => {
@@ -161,12 +111,6 @@ const Pricing = () => {
     setSelectedPlan(planType);
 
     try {
-      if (planType === "free_trial") {
-        // Handle free trial activation through URL parameter
-        navigate("?trial=started");
-        return;
-      }
-      
       // Call the Supabase Edge Function to create a Stripe checkout session
       const { data, error } = await supabase.functions.invoke("create-checkout-session", {
         body: { priceId: planType }

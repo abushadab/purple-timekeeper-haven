@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -13,7 +13,6 @@ const SubscriptionProtectedRoute: React.FC<SubscriptionProtectedRouteProps> = ({
   const { user, loading: authLoading } = useAuth();
   const { hasActiveSubscription, loading: subscriptionLoading, subscription } = useSubscription();
   const { toast } = useToast();
-  const navigate = useNavigate();
   const toastShownRef = useRef<boolean>(false);
   
   // Debug log
