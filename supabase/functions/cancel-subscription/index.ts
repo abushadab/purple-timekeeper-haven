@@ -29,15 +29,12 @@ serve(async (req) => {
       throw new Error('User not authenticated');
     }
 
-    // Initialize Stripe
-    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
-      apiVersion: '2023-10-16',
-    });
+    console.log(`Processing cancellation request for user: ${user.id}`);
 
     // Get user's subscription from the database
     const { data: subscriptionData, error: subscriptionError } = await supabase
       .from('user_subscriptions')
-      .select('stripe_subscription_id')
+      .select('stripe_subscription_id, status')
       .eq('auth_user_id', user.id)
       .maybeSingle();
 
@@ -45,17 +42,46 @@ serve(async (req) => {
       throw new Error(`Error fetching subscription: ${subscriptionError.message}`);
     }
 
-    if (!subscriptionData?.stripe_subscription_id) {
-      throw new Error('No active subscription found');
+    if (!subscriptionData) {
+      throw new Error('No subscription found for this user');
     }
 
+    if (!subscriptionData.stripe_subscription_id) {
+      throw new Error('No Stripe subscription ID found for this subscription');
+    }
+
+    // Check if the subscription is already canceled
+    if (subscriptionData.status === 'canceled') {
+      return new Response(
+        JSON.stringify({ 
+          success: true,
+          message: 'Subscription is already canceled',
+          data: {
+            status: 'canceled'
+          }
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        }
+      );
+    }
+
+    // Initialize Stripe
+    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
+      apiVersion: '2023-10-16',
+    });
+
     // Cancel the subscription at period end in Stripe
+    console.log(`Canceling Stripe subscription: ${subscriptionData.stripe_subscription_id}`);
     const canceledSubscription = await stripe.subscriptions.update(
       subscriptionData.stripe_subscription_id,
       {
         cancel_at_period_end: true,
       }
     );
+
+    console.log(`Stripe subscription updated. New status: ${canceledSubscription.status}`);
 
     // Update the subscription status in the database
     const { error: updateError } = await supabase
@@ -90,7 +116,7 @@ serve(async (req) => {
       JSON.stringify({ error: error.message }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
+        status: 400,
       }
     );
   }
