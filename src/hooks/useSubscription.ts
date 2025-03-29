@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from './use-toast';
 
-export type SubscriptionStatus = 'active' | 'trialing' | 'canceled' | 'incomplete' | 'incomplete_expired' | 'past_due' | 'unpaid' | 'expired';
+export type SubscriptionStatus = 'active' | 'trialing' | 'canceled' | 'incomplete' | 'incomplete_expired' | 'past_due' | 'unpaid';
 
 export interface Subscription {
   id: string;
@@ -38,37 +38,16 @@ export const useSubscription = () => {
     return sub.currentPeriodEnd ? new Date(sub.currentPeriodEnd) < new Date() : false;
   };
 
-  // Function to update the status in the database if needed
-  const updateExpiredStatus = async (sub: Subscription) => {
-    // Only proceed if the subscription exists, has an end date, and is expired
-    if (!sub || !sub.currentPeriodEnd) return;
+  // Function to handle expired subscriptions in the UI without changing database status
+  const getUISubscriptionStatus = (sub: Subscription | null): SubscriptionStatus | 'expired' => {
+    if (!sub) return 'canceled';
     
-    const isExpired = new Date(sub.currentPeriodEnd) < new Date();
-    
-    // If expired but status isn't 'expired', update it in the database
-    if (isExpired && sub.status !== 'expired') {
-      console.log("Subscription expired, updating status in database to 'expired'...");
-      
-      try {
-        const { error } = await supabase
-          .from('user_subscriptions')
-          .update({ status: 'expired' })
-          .eq('id', sub.id);
-          
-        if (error) {
-          console.error("Error updating subscription status:", error);
-        } else {
-          console.log("Subscription status updated to 'expired'");
-          // Update the local state
-          setSubscription({
-            ...sub,
-            status: 'expired'
-          });
-        }
-      } catch (error) {
-        console.error("Unexpected error updating status:", error);
-      }
+    // If the period end date is in the past, treat as expired in the UI regardless of status
+    if (isSubscriptionExpired(sub)) {
+      return 'canceled'; // Use 'canceled' in the UI when expired
     }
+    
+    return sub.status;
   };
 
   const fetchSubscription = async (skipCache = false) => {
@@ -150,16 +129,14 @@ export const useSubscription = () => {
             priceId: data.price_id,
           };
           
-          // Check if subscription is expired and update status if needed
-          if (isSubscriptionExpired(subscriptionData) && subscriptionData.status !== 'canceled') {
-            updateExpiredStatus(subscriptionData);
-          } else {
-            // Cache the subscription data
-            localStorage.setItem('subscription_data', JSON.stringify(data));
-            localStorage.setItem('subscription_data_time', now.toString());
-            
-            setSubscription(subscriptionData);
-          }
+          // Don't try to update expired status in the database anymore
+          // Just handle it in the UI
+          
+          // Cache the subscription data
+          localStorage.setItem('subscription_data', JSON.stringify(data));
+          localStorage.setItem('subscription_data_time', now.toString());
+          
+          setSubscription(subscriptionData);
           
           // Use the helper function to determine active status
           const isActive = isSubscriptionActive(subscriptionData);
@@ -227,6 +204,7 @@ export const useSubscription = () => {
       fetchSubscription(true); // Skip cache when manually refreshing
     },
     isSubscriptionActive, // Export the helper function for use in other components
-    isSubscriptionExpired // Export helper to check if subscription is expired
+    isSubscriptionExpired, // Export helper to check if subscription is expired
+    getUISubscriptionStatus // Export the function to get UI-friendly status
   };
 };

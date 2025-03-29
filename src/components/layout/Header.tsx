@@ -56,10 +56,11 @@ const Header = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
-  const { subscription, hasActiveSubscription } = useSubscription();
+  const { subscription, hasActiveSubscription, isSubscriptionExpired } = useSubscription();
   
   // Check if current page is pricing
   const isPricingPage = location.pathname === "/pricing";
+  const isSubscriptionPage = location.pathname === "/my-subscription";
   
   // Safely use the auth context with proper error handling
   let user = null;
@@ -107,6 +108,9 @@ const Header = () => {
     }
   };
 
+  // Determine if subscription is expired for UI purposes
+  const showSubscriptionExpired = subscription && isSubscriptionExpired(subscription);
+
   return (
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center px-4 sm:px-6">
@@ -136,7 +140,6 @@ const Header = () => {
               label="Reports"
               active={path === "/reports"}
             />
-            {/* Pricing link completely removed */}
           </nav>
         )}
         
@@ -171,7 +174,7 @@ const Header = () => {
                 </Button>
               )}
               
-              {/* Always show My Subscription, even if expired or cancelled */}
+              {/* Always show My Subscription */}
               <Button 
                 variant="ghost" 
                 className="w-full justify-start text-sm px-2 py-1.5 h-auto"
@@ -179,7 +182,22 @@ const Header = () => {
               >
                 <CreditCard className="h-4 w-4 mr-2" />
                 My Subscription
+                {showSubscriptionExpired && (
+                  <Badge className="ml-2 bg-red-100 text-red-800 text-xs px-1">Expired</Badge>
+                )}
               </Button>
+              
+              {/* Show Pricing option if no active subscription and not on pricing or subscription page */}
+              {!hasActiveSubscription && !isPricingPage && !isSubscriptionPage && (
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start text-sm px-2 py-1.5 h-auto"
+                  onClick={() => navigate('/pricing')}
+                >
+                  <Package className="h-4 w-4 mr-2" />
+                  View Plans
+                </Button>
+              )}
               
               <Button 
                 variant="ghost" 

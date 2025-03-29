@@ -47,7 +47,7 @@ const SubscriptionProtectedRoute: React.FC<SubscriptionProtectedRouteProps> = ({
         toastShownRef.current = true;
       } else if (!hasActiveSubscription) {
         // Check if subscription exists but has expired
-        const hasExpiredSubscription = subscription && (subscription.status === 'expired' || isSubscriptionExpired(subscription));
+        const hasExpiredSubscription = subscription && isSubscriptionExpired(subscription);
           
         if (hasExpiredSubscription) {
           toast({
@@ -83,7 +83,7 @@ const SubscriptionProtectedRoute: React.FC<SubscriptionProtectedRouteProps> = ({
   // If subscription is inactive, redirect appropriately
   if (!hasActiveSubscription) {
     // Check if subscription exists but has expired
-    const hasExpiredSubscription = subscription && (subscription.status === 'expired' || isSubscriptionExpired(subscription));
+    const hasExpiredSubscription = subscription && isSubscriptionExpired(subscription);
       
     // If subscription has expired, always redirect to my-subscription page
     if (hasExpiredSubscription) {

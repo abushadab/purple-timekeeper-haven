@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/layout/Header";
@@ -14,7 +15,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const MySubscription = () => {
-  const { subscription, loading, hasActiveSubscription } = useSubscription();
+  const { 
+    subscription, 
+    loading, 
+    hasActiveSubscription, 
+    isSubscriptionExpired,
+    getUISubscriptionStatus 
+  } = useSubscription();
   const [isCancelling, setIsCancelling] = useState(false);
   const [isChangingPlan, setIsChangingPlan] = useState(false);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
@@ -26,7 +33,11 @@ const MySubscription = () => {
 
   useEffect(() => {
     console.log("MySubscription - Subscription data:", subscription);
-  }, [subscription]);
+    if (subscription) {
+      console.log("Subscription expired?", isSubscriptionExpired(subscription));
+      console.log("UI Status:", getUISubscriptionStatus(subscription));
+    }
+  }, [subscription, isSubscriptionExpired, getUISubscriptionStatus]);
 
   useEffect(() => {
     if (subscription?.id) {
@@ -36,16 +47,19 @@ const MySubscription = () => {
     }
   }, [subscription]);
 
-  const isTrialExpired = subscription?.status === 'trialing' && 
-    subscription?.currentPeriodEnd && 
-    new Date(subscription.currentPeriodEnd) < new Date();
-    
+  // Get the UI-friendly status for display
+  const uiStatus = subscription ? getUISubscriptionStatus(subscription) : null;
+  
+  // Determine subscription state for UI display
+  const isActuallyExpired = subscription ? isSubscriptionExpired(subscription) : false;
+  
   const isTrialActive = subscription?.status === 'trialing' && 
     subscription?.currentPeriodEnd && 
     new Date(subscription.currentPeriodEnd) >= new Date();
     
-  const isSubscriptionExpired = subscription?.status === 'expired' || 
-    (subscription?.currentPeriodEnd && new Date(subscription.currentPeriodEnd) < new Date());
+  const isTrialExpired = subscription?.status === 'trialing' && 
+    subscription?.currentPeriodEnd && 
+    new Date(subscription.currentPeriodEnd) < new Date();
 
   const fetchBillingHistory = async () => {
     try {
@@ -200,7 +214,7 @@ const MySubscription = () => {
       <div className="space-y-6 mt-4">
         <div className="border-t pt-4">
           <h3 className="font-medium mb-4">
-            {isSubscriptionExpired 
+            {isActuallyExpired 
               ? "Renew Your Subscription" 
               : isTrialExpired 
               ? "Upgrade to a Paid Plan" 
@@ -233,7 +247,7 @@ const MySubscription = () => {
                       Processing...
                     </span>
                   ) : (
-                    subscription?.subscriptionType === "monthly" && !isSubscriptionExpired ? "Change to This Plan" : "Subscribe Now"
+                    subscription?.subscriptionType === "monthly" && !isActuallyExpired ? "Change to This Plan" : "Subscribe Now"
                   )}
                 </Button>
               </CardFooter>
@@ -269,7 +283,7 @@ const MySubscription = () => {
                       Processing...
                     </span>
                   ) : (
-                    subscription?.subscriptionType === "yearly" && !isSubscriptionExpired ? "Change to This Plan" : "Subscribe Now"
+                    subscription?.subscriptionType === "yearly" && !isActuallyExpired ? "Change to This Plan" : "Subscribe Now"
                   )}
                 </Button>
               </CardFooter>
@@ -317,22 +331,22 @@ const MySubscription = () => {
                         : "No Active Subscription"}
                     </CardTitle>
                     <Badge className={
-                      subscription?.status === 'active' ? 'bg-green-100 text-green-800' : 
-                      (subscription?.status === 'trialing' && !isTrialExpired) ? 'bg-amber-100 text-amber-800' :
-                      isSubscriptionExpired ? 'bg-red-100 text-red-800' :
+                      subscription?.status === 'active' && !isActuallyExpired ? 'bg-green-100 text-green-800' : 
+                      isTrialActive ? 'bg-amber-100 text-amber-800' :
+                      isActuallyExpired ? 'bg-red-100 text-red-800' :
                       'bg-red-100 text-red-800'
                     }>
-                      {isSubscriptionExpired 
+                      {isActuallyExpired 
                         ? "Expired" 
-                        : subscription?.status === 'expired'
-                        ? "Expired"
+                        : subscription?.status === 'canceled' && !isActuallyExpired
+                        ? "Canceled"
                         : subscription?.status?.charAt(0).toUpperCase() + subscription?.status?.slice(1)}
                     </Badge>
                   </div>
                   <CardDescription>
-                    {subscription?.status === 'canceled' && !isSubscriptionExpired
+                    {subscription?.status === 'canceled' && !isActuallyExpired
                       ? "Your subscription has been cancelled but you still have access until the end of your current billing period."
-                      : isSubscriptionExpired
+                      : isActuallyExpired
                       ? "Your subscription has expired. Please renew to continue using premium features."
                       : isTrialExpired
                       ? "Your free trial has expired. Please upgrade to a paid plan to continue using premium features."
@@ -349,10 +363,12 @@ const MySubscription = () => {
                       <Calendar className="h-5 w-5 text-muted-foreground" />
                       <div>
                         <p className="text-sm font-medium">
-                          {isSubscriptionExpired
+                          {isActuallyExpired
                             ? "Expired on" 
                             : isTrialActive
                             ? "Trial ends on"
+                            : subscription?.status === 'canceled'
+                            ? "Access until"
                             : "Current period ends"}
                         </p>
                         <p className="text-sm text-muted-foreground">
@@ -362,10 +378,9 @@ const MySubscription = () => {
                     </div>
                   )}
                   
-                  {(isSubscriptionExpired || isTrialExpired || isTrialActive || !subscription) && renderPricingOptions()}
+                  {(isActuallyExpired || isTrialExpired || isTrialActive || !subscription) && renderPricingOptions()}
                   
-                  {subscription?.status !== 'canceled' && !isTrialExpired && !isTrialActive && 
-                    !isSubscriptionExpired && subscription && (
+                  {subscription?.status === 'active' && !isActuallyExpired && (
                     <div className="space-y-4">
                       <div className="border-t pt-4">
                         <h3 className="font-medium mb-2">Change Plan</h3>
@@ -399,7 +414,7 @@ const MySubscription = () => {
                   )}
                 </CardContent>
                 <CardFooter className="flex justify-between border-t pt-4">
-                  {subscription?.status === 'active' && (
+                  {subscription?.status === 'active' && !isActuallyExpired && (
                     <Button 
                       variant="destructive"
                       onClick={() => setConfirmDialogOpen(true)}
