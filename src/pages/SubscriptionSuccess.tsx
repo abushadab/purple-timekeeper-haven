@@ -20,14 +20,14 @@ const SubscriptionSuccess = () => {
 
   useEffect(() => {
     const updateSubscriptionRecord = async () => {
-      if (!user || !sessionId || !subscriptionType) {
+      if (!user || !sessionId) {
         setIsLoading(false);
         return;
       }
 
       try {
         console.log("Processing subscription update with session ID:", sessionId);
-        console.log("Subscription type:", subscriptionType);
+        console.log("Subscription type from URL:", subscriptionType);
         
         // Get session data from Stripe through our edge function
         const { data: sessionData, error: sessionError } = await supabase.functions.invoke("verify-checkout-session", {
@@ -44,6 +44,9 @@ const SubscriptionSuccess = () => {
         
         console.log("Retrieved session data:", sessionData);
         
+        // Determine the subscription type from the session data or URL parameter
+        const finalSubscriptionType = sessionData.subscription_type || subscriptionType || 'monthly';
+        
         // Check if the user already has a subscription
         const { data: existingSubscription, error: fetchError } = await supabase
           .from('user_subscriptions')
@@ -58,12 +61,12 @@ const SubscriptionSuccess = () => {
         // Create or update the subscription record with data from the session
         const subscriptionData = {
           auth_user_id: user.id,
-          status: 'active', // New subscription is always active
-          subscription_type: subscriptionType,
-          stripe_subscription_id: sessionData.subscription || sessionId, // Prefer actual subscription ID if available
-          price_id: subscriptionType === 'monthly' ? 'price_monthly' : 'price_yearly',
+          status: sessionData.status || 'active',
+          subscription_type: finalSubscriptionType,
+          stripe_subscription_id: sessionData.subscription || sessionId,
+          price_id: sessionData.price_id || (finalSubscriptionType === 'monthly' ? 'price_monthly' : 'price_yearly'),
           current_period_start: sessionData.current_period_start || new Date().toISOString(),
-          current_period_end: sessionData.current_period_end || new Date(Date.now() + (subscriptionType === 'monthly' ? 30 : 365) * 24 * 60 * 60 * 1000).toISOString(),
+          current_period_end: sessionData.current_period_end || new Date(Date.now() + (finalSubscriptionType === 'monthly' ? 30 : 365) * 24 * 60 * 60 * 1000).toISOString(),
         };
 
         let updateResult;
@@ -92,6 +95,10 @@ const SubscriptionSuccess = () => {
         }
         
         console.log("Subscription updated successfully:", updateResult);
+        
+        // Clear subscription cache to force a refresh
+        localStorage.removeItem('subscription_data');
+        localStorage.removeItem('subscription_data_time');
 
         toast({
           title: "Subscription activated",

@@ -29,9 +29,9 @@ serve(async (req) => {
       apiVersion: '2023-10-16',
     });
 
-    // Retrieve the checkout session from Stripe
+    // Retrieve the checkout session from Stripe with expanded subscription data
     const session = await stripe.checkout.sessions.retrieve(sessionId, {
-      expand: ['subscription']
+      expand: ['subscription', 'subscription.items.data.price']
     });
     
     if (!session) {
@@ -46,27 +46,45 @@ serve(async (req) => {
     
     // Get subscription details if available
     let subscriptionData = null;
+    
     if (session.subscription) {
       const subscription = typeof session.subscription === 'string' 
-        ? await stripe.subscriptions.retrieve(session.subscription)
+        ? await stripe.subscriptions.retrieve(session.subscription, {
+            expand: ['items.data.price']
+          })
         : session.subscription;
+      
+      // Determine subscription type based on price ID
+      let subscriptionType = 'unknown';
+      const priceId = subscription.items?.data[0]?.price?.id || '';
+      
+      if (priceId.includes('monthly')) {
+        subscriptionType = 'monthly';
+      } else if (priceId.includes('yearly')) {
+        subscriptionType = 'yearly';
+      }
         
       subscriptionData = {
         subscription: subscription.id,
         status: subscription.status,
+        subscription_type: subscriptionType,
+        price_id: priceId,
         current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
         current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
         customer: subscription.customer,
       };
       
       console.log(`Subscription retrieved: ${subscription.id}`);
+      console.log(`Subscription type: ${subscriptionType}`);
+      console.log(`Price ID: ${priceId}`);
     }
     
     // Return the session and subscription data
     return new Response(
       JSON.stringify(subscriptionData || { 
         subscription: session.id,
-        status: 'active'
+        status: 'active',
+        subscription_type: session.metadata?.type || 'unknown'
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
