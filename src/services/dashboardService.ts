@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfWeek, endOfWeek } from "date-fns";
 
@@ -140,7 +141,7 @@ export const getRecentProjects = async (limit = 3): Promise<RecentProject[]> => 
 };
 
 // Get weekly summary
-export const getWeeklySummary = async (): Promise<WeeklySummary> => {
+export const getWeeklySummary = async (userTargetHours?: number): Promise<WeeklySummary> => {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData.session?.user?.id;
 
@@ -149,8 +150,22 @@ export const getWeeklySummary = async (): Promise<WeeklySummary> => {
   }
 
   try {
-    // Set target hours (40 hours per week)
-    const hoursTarget = 40.0;
+    // Get user's weekly target hours from user_settings table if available
+    let hoursTarget = userTargetHours || 40.0; // Default to 40 hours if not specified
+    
+    try {
+      const { data: userSettings } = await supabase
+        .from("user_settings")
+        .select("weekly_hours_target")
+        .eq("auth_user_id", userId)
+        .single();
+      
+      if (userSettings?.weekly_hours_target) {
+        hoursTarget = parseFloat(String(userSettings.weekly_hours_target));
+      }
+    } catch (error) {
+      console.log("No user settings found, using default weekly target hours");
+    }
     
     // Get start and end of current week
     const now = new Date();
@@ -201,6 +216,14 @@ export const getWeeklySummary = async (): Promise<WeeklySummary> => {
         }
       });
     }
+    
+    console.log("Weekly summary data:", {
+      hoursTarget,
+      hoursLogged,
+      completion,
+      mostActiveProject,
+      mostActiveHours
+    });
     
     return {
       hoursTarget,
