@@ -10,9 +10,9 @@ export const getPortfolios = async (): Promise<Portfolio[]> => {
     .select("*, projects(id, total_hours)")
     .order("name");
   
-  // If user is authenticated, filter portfolios by user_id
+  // If user is authenticated, filter portfolios by auth_user_id
   if (userId) {
-    query.eq("user_id", userId);
+    query.eq("auth_user_id", userId);
   }
 
   const { data, error } = await query;
@@ -38,7 +38,7 @@ export const getPortfolios = async (): Promise<Portfolio[]> => {
       totalHours: totalHours,
       lastUpdated: formatLastUpdated(item.last_updated),
       archived: item.archived,
-      userId: item.user_id,
+      userId: item.auth_user_id,
       createdAt: item.created_at,
     };
   });
@@ -54,7 +54,7 @@ export const createPortfolio = async (portfolio: PortfolioFormData): Promise<Por
       name: portfolio.name,
       description: portfolio.description,
       color: portfolio.color,
-      user_id: userId, // Associate portfolio with current user
+      auth_user_id: userId, // Associate portfolio with current user
       project_count: 0,
       total_hours: 0,
     })
@@ -76,7 +76,7 @@ export const createPortfolio = async (portfolio: PortfolioFormData): Promise<Por
     totalHours: data.total_hours,
     lastUpdated: formatLastUpdated(data.last_updated),
     archived: data.archived,
-    userId: data.user_id,
+    userId: data.auth_user_id,
     createdAt: data.created_at,
   };
 };
@@ -113,7 +113,7 @@ export const updatePortfolio = async (portfolio: PortfolioFormData): Promise<Por
     totalHours: data.total_hours,
     lastUpdated: formatLastUpdated(data.last_updated),
     archived: data.archived,
-    userId: data.user_id,
+    userId: data.auth_user_id,
     createdAt: data.created_at,
   };
 };

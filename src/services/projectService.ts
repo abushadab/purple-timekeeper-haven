@@ -67,7 +67,7 @@ export const getProjects = async (): Promise<Project[]> => {
       due_date: item.due_date,
       status: item.status || "active",
       portfolio_id: item.portfolio_id,
-      user_id: item.user_id,
+      user_id: item.auth_user_id,
       created_at: item.created_at,
       updated_at: item.updated_at
     };
@@ -89,7 +89,7 @@ export const createProject = async (project: ProjectFormData): Promise<Project> 
       description: project.description,
       portfolio_id: project.portfolioId,
       due_date: project.dueDate,
-      user_id: userId,
+      auth_user_id: userId,
       progress: 0,
       total_hours: 0,
       tasks_count: 0,
@@ -118,7 +118,7 @@ export const createProject = async (project: ProjectFormData): Promise<Project> 
     due_date: data.due_date,
     status: data.status,
     portfolio_id: data.portfolio_id,
-    user_id: data.user_id,
+    user_id: data.auth_user_id,
     created_at: data.created_at,
     updated_at: data.updated_at
   };
@@ -178,7 +178,7 @@ export const updateProject = async (project: ProjectFormData): Promise<Project> 
     due_date: data.due_date,
     status: data.status,
     portfolio_id: data.portfolio_id,
-    user_id: data.user_id,
+    user_id: data.auth_user_id,
     created_at: data.created_at,
     updated_at: data.updated_at
   };

@@ -51,7 +51,7 @@ export const getTasksByProject = async (projectId: string): Promise<Task[]> => {
     .from("tasks")
     .select("*")
     .eq("project_id", projectId)
-    .eq("user_id", userId)
+    .eq("auth_user_id", userId)
     .order("due_date", { ascending: true });
   
   if (error) {
@@ -69,7 +69,7 @@ export const getTasksByProject = async (projectId: string): Promise<Task[]> => {
     hours_logged: Number(item.hours_logged) || 0,
     estimated_hours: Number(item.estimated_hours) || 0,
     project_id: item.project_id,
-    user_id: item.user_id,
+    user_id: item.auth_user_id,
     created_at: item.created_at,
     updated_at: item.updated_at,
     url_mapping: item.url_mapping
@@ -96,7 +96,7 @@ export const createTask = async (task: TaskFormData): Promise<Task> => {
       estimated_hours: task.estimated_hours,
       url_mapping: task.url_mapping,
       project_id: task.project_id,
-      user_id: userId,
+      auth_user_id: userId,
       hours_logged: 0
     })
     .select()
@@ -120,7 +120,7 @@ export const createTask = async (task: TaskFormData): Promise<Task> => {
     hours_logged: Number(data.hours_logged) || 0,
     estimated_hours: Number(data.estimated_hours) || 0,
     project_id: data.project_id,
-    user_id: data.user_id,
+    user_id: data.auth_user_id,
     created_at: data.created_at,
     updated_at: data.updated_at,
     url_mapping: data.url_mapping
@@ -205,7 +205,7 @@ export const updateTask = async (task: TaskFormData): Promise<Task> => {
     hours_logged: Number(data.hours_logged) || 0,
     estimated_hours: Number(data.estimated_hours) || 0,
     project_id: data.project_id,
-    user_id: data.user_id,
+    user_id: data.auth_user_id,
     created_at: data.created_at,
     updated_at: data.updated_at,
     url_mapping: data.url_mapping
@@ -320,7 +320,7 @@ export const addTaskScreenshot = async (
       task_id: taskId,
       url: url,
       thumbnail_url: thumbnailUrl || url,
-      user_id: userId,
+      auth_user_id: userId,
       timestamp: new Date().toISOString()
     })
     .select()

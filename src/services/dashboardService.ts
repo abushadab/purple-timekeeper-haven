@@ -49,20 +49,20 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
     const { count: portfolioCount } = await supabase
       .from("portfolios")
       .select("*", { count: 'exact', head: true })
-      .eq("user_id", userId)
+      .eq("auth_user_id", userId)
       .eq("archived", false);
 
     // Get project count
     const { count: projectCount } = await supabase
       .from("projects")
       .select("*", { count: 'exact', head: true })
-      .eq("user_id", userId);
+      .eq("auth_user_id", userId);
 
     // Get total hours from all tasks
     const { data: hoursData } = await supabase
       .from("tasks")
       .select("hours_logged")
-      .eq("user_id", userId);
+      .eq("auth_user_id", userId);
 
     const totalHours = hoursData?.reduce((sum, task) => sum + (parseFloat(String(task.hours_logged)) || 0), 0) || 0;
 
@@ -74,7 +74,7 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
     const { count: tasksDueCount } = await supabase
       .from("tasks")
       .select("*", { count: 'exact', head: true })
-      .eq("user_id", userId)
+      .eq("auth_user_id", userId)
       .neq("status", "completed")
       .lte("due_date", nextWeek.toISOString().split('T')[0])
       .gte("due_date", today.toISOString().split('T')[0]);
@@ -109,7 +109,7 @@ export const getRecentProjects = async (limit = 3): Promise<RecentProject[]> => 
     const { data: projects } = await supabase
       .from("projects")
       .select("*, tasks(id, status, hours_logged, estimated_hours)")
-      .eq("user_id", userId)
+      .eq("auth_user_id", userId)
       .order("updated_at", { ascending: false })
       .limit(limit);
 
@@ -160,7 +160,7 @@ export const getWeeklySummary = async (): Promise<WeeklySummary> => {
     const { data: weeklyTasks } = await supabase
       .from("tasks")
       .select("hours_logged, project_id, projects(name)")
-      .eq("user_id", userId)
+      .eq("auth_user_id", userId)
       .gte("updated_at", weekStart.toISOString())
       .lte("updated_at", weekEnd.toISOString());
     
@@ -234,7 +234,7 @@ export const getRecentActivity = async (limit = 4): Promise<ActivityItem[]> => {
     const { data: recentTasks } = await supabase
       .from("tasks")
       .select("id, title, status, updated_at, projects(name)")
-      .eq("user_id", userId)
+      .eq("auth_user_id", userId)
       .order("updated_at", { ascending: false })
       .limit(limit);
 
