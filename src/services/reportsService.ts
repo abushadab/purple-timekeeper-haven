@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, eachDayOfInterval, eachMonthOfInterval, isSameDay, isSameMonth } from "date-fns";
 import { jsPDF } from "jspdf";
@@ -89,7 +90,7 @@ export const getTimeData = async (period: string): Promise<TimeDataPoint[]> => {
     const { data: tasksData } = await supabase
       .from("tasks")
       .select("hours_logged, updated_at")
-      .eq("user_id", userId)
+      .eq("auth_user_id", userId)
       .gte("updated_at", startDate.toISOString())
       .lte("updated_at", endDate.toISOString());
     
@@ -160,7 +161,7 @@ export const getProjectData = async (): Promise<ProjectDataPoint[]> => {
         name, 
         total_hours
       `)
-      .eq("user_id", userId);
+      .eq("auth_user_id", userId);
     
     if (!projects || projects.length === 0) {
       return [];
@@ -197,7 +198,7 @@ export const getPortfolioData = async (): Promise<PortfolioDataPoint[]> => {
         total_hours,
         color
       `)
-      .eq("user_id", userId);
+      .eq("auth_user_id", userId);
     
     if (!portfolios || portfolios.length === 0) {
       return [];
@@ -231,21 +232,21 @@ export const getTaskStatusData = async (): Promise<TaskStatusData[]> => {
     const { count: completedCount } = await supabase
       .from("tasks")
       .select("*", { count: 'exact', head: true })
-      .eq("user_id", userId)
+      .eq("auth_user_id", userId)
       .eq("status", "completed");
     
     // Then get count of in-progress tasks
     const { count: inProgressCount } = await supabase
       .from("tasks")
       .select("*", { count: 'exact', head: true })
-      .eq("user_id", userId)
+      .eq("auth_user_id", userId)
       .eq("status", "in_progress");
     
     // Then get count of not-started tasks
     const { count: notStartedCount } = await supabase
       .from("tasks")
       .select("*", { count: 'exact', head: true })
-      .eq("user_id", userId)
+      .eq("auth_user_id", userId)
       .eq("status", "not_started");
     
     const total = (completedCount || 0) + (inProgressCount || 0) + (notStartedCount || 0);
@@ -301,7 +302,7 @@ export const getTaskEfficiencyData = async (): Promise<TaskEfficiencyData[]> => 
         name,
         tasks!inner(estimated_hours, hours_logged)
       `)
-      .eq("user_id", userId)
+      .eq("auth_user_id", userId)
       .limit(5);  // Limit to 5 projects for readability
     
     if (!projects || projects.length === 0) {
@@ -350,7 +351,7 @@ export const getProductivityData = async (): Promise<ProductivityData[]> => {
     const { data: tasksData } = await supabase
       .from("tasks")
       .select("hours_logged, updated_at")
-      .eq("user_id", userId)
+      .eq("auth_user_id", userId)
       .gte("updated_at", lastWeek.toISOString())
       .lte("updated_at", now.toISOString());
     
