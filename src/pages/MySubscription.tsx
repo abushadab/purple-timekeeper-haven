@@ -44,7 +44,8 @@ const MySubscription = () => {
     subscription?.currentPeriodEnd && 
     new Date(subscription.currentPeriodEnd) >= new Date();
     
-  const isSubscriptionExpired = subscription?.status === 'expired';
+  const isSubscriptionExpired = subscription?.status === 'expired' || 
+    (subscription?.currentPeriodEnd && new Date(subscription.currentPeriodEnd) < new Date());
 
   const fetchBillingHistory = async () => {
     try {
@@ -290,21 +291,6 @@ const MySubscription = () => {
     );
   }
 
-  if (!hasActiveSubscription && !subscription) {
-    return (
-      <div className="min-h-screen bg-background flex flex-col">
-        <Header />
-        <div className="flex-1 container py-12">
-          <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-3xl font-bold mb-4">No Active Subscription</h1>
-            <p className="mb-6 text-muted-foreground">You don't currently have an active subscription.</p>
-            <Button onClick={() => navigate('/pricing')}>View Plans</Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
@@ -326,15 +312,17 @@ const MySubscription = () => {
                 <CardHeader className="space-y-1">
                   <div className="flex justify-between items-center">
                     <CardTitle className="text-xl">
-                      {subscription?.subscriptionType?.charAt(0).toUpperCase() + subscription?.subscriptionType?.slice(1)} Plan
+                      {subscription ? 
+                        `${subscription.subscriptionType?.charAt(0).toUpperCase() + subscription.subscriptionType?.slice(1)} Plan`
+                        : "No Active Subscription"}
                     </CardTitle>
                     <Badge className={
                       subscription?.status === 'active' ? 'bg-green-100 text-green-800' : 
                       (subscription?.status === 'trialing' && !isTrialExpired) ? 'bg-amber-100 text-amber-800' :
-                      subscription?.status === 'expired' ? 'bg-red-100 text-red-800' :
+                      isSubscriptionExpired ? 'bg-red-100 text-red-800' :
                       'bg-red-100 text-red-800'
                     }>
-                      {isTrialExpired 
+                      {isSubscriptionExpired 
                         ? "Expired" 
                         : subscription?.status === 'expired'
                         ? "Expired"
@@ -342,15 +330,17 @@ const MySubscription = () => {
                     </Badge>
                   </div>
                   <CardDescription>
-                    {subscription?.status === 'canceled' 
+                    {subscription?.status === 'canceled' && !isSubscriptionExpired
                       ? "Your subscription has been cancelled but you still have access until the end of your current billing period."
-                      : subscription?.status === 'expired'
+                      : isSubscriptionExpired
                       ? "Your subscription has expired. Please renew to continue using premium features."
                       : isTrialExpired
                       ? "Your free trial has expired. Please upgrade to a paid plan to continue using premium features."
                       : isTrialActive
                       ? "Your free trial is currently active. Consider upgrading to a paid plan to continue using premium features after your trial ends."
-                      : "Your subscription is currently active."}
+                      : subscription?.status === 'active'
+                      ? "Your subscription is currently active."
+                      : "You don't currently have an active subscription."}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -359,7 +349,7 @@ const MySubscription = () => {
                       <Calendar className="h-5 w-5 text-muted-foreground" />
                       <div>
                         <p className="text-sm font-medium">
-                          {isTrialExpired || subscription?.status === 'expired'
+                          {isSubscriptionExpired
                             ? "Expired on" 
                             : isTrialActive
                             ? "Trial ends on"
@@ -372,7 +362,10 @@ const MySubscription = () => {
                     </div>
                   )}
                   
-                  {subscription?.status !== 'canceled' && !isTrialExpired && !isTrialActive && !isSubscriptionExpired && (
+                  {(isSubscriptionExpired || isTrialExpired || isTrialActive || !subscription) && renderPricingOptions()}
+                  
+                  {subscription?.status !== 'canceled' && !isTrialExpired && !isTrialActive && 
+                    !isSubscriptionExpired && subscription && (
                     <div className="space-y-4">
                       <div className="border-t pt-4">
                         <h3 className="font-medium mb-2">Change Plan</h3>
@@ -404,21 +397,9 @@ const MySubscription = () => {
                       </div>
                     </div>
                   )}
-                  
-                  {(isTrialExpired || isTrialActive || isSubscriptionExpired) && renderPricingOptions()}
-                  
                 </CardContent>
                 <CardFooter className="flex justify-between border-t pt-4">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => navigate('/pricing')}
-                    className="flex items-center gap-2"
-                  >
-                    <Package className="h-4 w-4" />
-                    View All Plans
-                  </Button>
-                  
-                  {subscription?.status !== 'canceled' && !isTrialActive && !isSubscriptionExpired && (
+                  {subscription?.status === 'active' && (
                     <Button 
                       variant="destructive"
                       onClick={() => setConfirmDialogOpen(true)}

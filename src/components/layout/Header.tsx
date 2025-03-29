@@ -171,14 +171,14 @@ const Header = () => {
                 </Button>
               )}
               
-              {/* Always show My Subscription but change behavior based on subscription status */}
+              {/* Always show My Subscription, even if expired or cancelled */}
               <Button 
                 variant="ghost" 
                 className="w-full justify-start text-sm px-2 py-1.5 h-auto"
-                onClick={() => navigate(hasActiveSubscription ? '/my-subscription' : '/pricing')}
+                onClick={() => navigate('/my-subscription')}
               >
                 <CreditCard className="h-4 w-4 mr-2" />
-                {hasActiveSubscription ? 'My Subscription' : 'Pricing Plans'}
+                My Subscription
               </Button>
               
               <Button 
