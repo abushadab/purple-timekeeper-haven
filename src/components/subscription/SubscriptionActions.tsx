@@ -28,8 +28,18 @@ export function useSubscriptionActions() {
         
         // Reload the page to reflect changes
         window.location.reload();
+      } else if (data?.error) {
+        if (data.code === 'subscription_not_found') {
+          toast({
+            title: "No active subscription",
+            description: "You don't currently have an active subscription to cancel.",
+            variant: "destructive",
+          });
+        } else {
+          throw new Error(data.error);
+        }
       } else {
-        throw new Error(data?.message || "Failed to cancel subscription");
+        throw new Error("Failed to cancel subscription");
       }
     } catch (error) {
       console.error("Error cancelling subscription:", error);

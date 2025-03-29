@@ -34,7 +34,7 @@ serve(async (req) => {
     // Get user's subscription from the database
     const { data: subscriptionData, error: subscriptionError } = await supabase
       .from('user_subscriptions')
-      .select('stripe_subscription_id, status, current_period_end')
+      .select('stripe_subscription_id, status, current_period_end, subscription_type')
       .eq('auth_user_id', user.id)
       .maybeSingle();
 
@@ -45,12 +45,30 @@ serve(async (req) => {
 
     if (!subscriptionData) {
       console.error('No subscription found for user:', user.id);
-      throw new Error('No subscription found for this user');
+      return new Response(
+        JSON.stringify({ 
+          error: 'No subscription found for this user',
+          code: 'subscription_not_found'
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 404,
+        }
+      );
     }
 
     if (!subscriptionData.stripe_subscription_id) {
       console.error('No Stripe subscription ID found for subscription');
-      throw new Error('No Stripe subscription ID found for this subscription');
+      return new Response(
+        JSON.stringify({ 
+          error: 'No Stripe subscription ID found for this subscription',
+          code: 'missing_stripe_id'
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        }
+      );
     }
 
     // Check if the subscription is already canceled
@@ -61,7 +79,8 @@ serve(async (req) => {
           success: true,
           message: 'Subscription is already canceled',
           data: {
-            status: 'canceled'
+            status: 'canceled',
+            current_period_end: subscriptionData.current_period_end
           }
         }),
         { 
@@ -76,45 +95,85 @@ serve(async (req) => {
       apiVersion: '2023-10-16',
     });
 
-    // Cancel the subscription at period end in Stripe
-    console.log(`Canceling Stripe subscription: ${subscriptionData.stripe_subscription_id}`);
-    const canceledSubscription = await stripe.subscriptions.update(
-      subscriptionData.stripe_subscription_id,
-      {
-        cancel_at_period_end: true,
-      }
-    );
-
-    console.log(`Stripe subscription updated. New status: ${canceledSubscription.status}`);
-
-    // Update the subscription status in the database
-    const { error: updateError } = await supabase
-      .from('user_subscriptions')
-      .update({
-        status: 'canceled',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('auth_user_id', user.id);
-
-    if (updateError) {
-      console.error('Error updating subscription status:', updateError);
-      throw new Error(`Error updating subscription status: ${updateError.message}`);
-    }
-
-    return new Response(
-      JSON.stringify({ 
-        success: true,
-        message: 'Subscription has been canceled successfully',
-        data: {
-          status: 'canceled',
-          current_period_end: new Date(canceledSubscription.current_period_end * 1000).toISOString(),
+    try {
+      // Cancel the subscription at period end in Stripe
+      console.log(`Canceling Stripe subscription: ${subscriptionData.stripe_subscription_id}`);
+      const canceledSubscription = await stripe.subscriptions.update(
+        subscriptionData.stripe_subscription_id,
+        {
+          cancel_at_period_end: true,
         }
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
+      );
+
+      console.log(`Stripe subscription updated. New status: ${canceledSubscription.status}`);
+
+      // Update the subscription status in the database
+      const { error: updateError } = await supabase
+        .from('user_subscriptions')
+        .update({
+          status: 'canceled',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('auth_user_id', user.id);
+
+      if (updateError) {
+        console.error('Error updating subscription status:', updateError);
+        throw new Error(`Error updating subscription status: ${updateError.message}`);
       }
-    );
+
+      return new Response(
+        JSON.stringify({ 
+          success: true,
+          message: 'Subscription has been canceled successfully',
+          data: {
+            status: 'canceled',
+            current_period_end: new Date(canceledSubscription.current_period_end * 1000).toISOString(),
+          }
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        }
+      );
+    } catch (stripeError) {
+      console.error('Stripe API error:', stripeError);
+      
+      // Special handling for free trials which might not have a valid Stripe subscription
+      if (subscriptionData.subscription_type === 'free_trial') {
+        console.log('Handling free trial cancellation');
+        
+        // Directly update the database for free trials without calling Stripe
+        const { error: updateError } = await supabase
+          .from('user_subscriptions')
+          .update({
+            status: 'canceled',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('auth_user_id', user.id);
+
+        if (updateError) {
+          console.error('Error updating trial subscription status:', updateError);
+          throw new Error(`Error updating trial subscription status: ${updateError.message}`);
+        }
+
+        return new Response(
+          JSON.stringify({ 
+            success: true,
+            message: 'Free trial has been canceled successfully',
+            data: {
+              status: 'canceled',
+              current_period_end: subscriptionData.current_period_end,
+            }
+          }),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200,
+          }
+        );
+      }
+      
+      throw stripeError;
+    }
   } catch (error) {
     console.error('Error canceling subscription:', error);
     return new Response(
