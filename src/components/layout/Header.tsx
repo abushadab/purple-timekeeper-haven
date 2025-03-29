@@ -11,6 +11,7 @@ import {
   Folder,
   Edit,
   LogOut,
+  Users,
   CreditCard
 } from "lucide-react";
 import {
@@ -133,6 +134,12 @@ const Header = () => {
             icon={BarChart3}
             label="Reports"
             active={path === "/reports"}
+          />
+          <HeaderLink
+            href="/team"
+            icon={Users}
+            label="Team"
+            active={path === "/team"}
           />
           {showPricingMenu && (
             <HeaderLink

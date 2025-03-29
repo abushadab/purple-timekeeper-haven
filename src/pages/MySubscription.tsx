@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import { useSubscription } from "@/hooks/useSubscription";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,7 +23,6 @@ const MySubscription = () => {
   const [selectedPlan, setSelectedPlan] = useState(null);
   const { toast } = useToast();
   const navigate = useNavigate();
-  const location = useLocation();
 
   useEffect(() => {
     console.log("MySubscription - Subscription data:", subscription);
@@ -139,13 +138,8 @@ const MySubscription = () => {
       setSelectedPlan(planType);
       setIsChangingPlan(true);
       
-      const currentUrl = window.location.origin + location.pathname;
-      
       const { data, error } = await supabase.functions.invoke("create-checkout-session", {
-        body: { 
-          priceId: planType,
-          cancelUrl: currentUrl
-        }
+        body: { priceId: planType }
       });
 
       if (error) {
