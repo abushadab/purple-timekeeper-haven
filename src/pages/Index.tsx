@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/layout/Header";
@@ -231,7 +232,7 @@ const Dashboard = () => {
                     <div className="space-y-4">
                       <div className="flex justify-between items-center">
                         <div>
-                          <p className="text-sm text-muted-foreground">Hours Target</p>
+                          <p className="text-sm text-muted-foreground">Hours Estimated</p>
                           <p className="text-lg font-semibold">{weeklyData.hoursTarget.toFixed(1)} hrs</p>
                         </div>
                         <div>
@@ -276,7 +277,6 @@ const Dashboard = () => {
               <Card className="overflow-hidden card-glass h-full">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                 
                     Recent Activity
                   </CardTitle>
                 </CardHeader>

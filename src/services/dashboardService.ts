@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfWeek, endOfWeek } from "date-fns";
 
@@ -149,9 +150,6 @@ export const getWeeklySummary = async (userTargetHours?: number): Promise<Weekly
   }
 
   try {
-    // Use the provided target hours or default to 40 hours if not specified
-    const hoursTarget = userTargetHours || 40.0;
-    
     // Get start and end of current week
     const now = new Date();
     const weekStart = startOfWeek(now, { weekStartsOn: 1 }); // Monday
@@ -160,17 +158,25 @@ export const getWeeklySummary = async (userTargetHours?: number): Promise<Weekly
     // Get all tasks with time logged this week
     const { data: weeklyTasks } = await supabase
       .from("tasks")
-      .select("hours_logged, project_id, projects(name)")
+      .select("hours_logged, estimated_hours, project_id, projects(name)")
       .eq("auth_user_id", userId)
       .gte("updated_at", weekStart.toISOString())
       .lte("updated_at", weekEnd.toISOString());
     
-    // Calculate total hours logged this week
+    // Calculate total hours logged and estimated this week
     const hoursLogged = weeklyTasks?.reduce((sum, task) => 
       sum + (parseFloat(String(task.hours_logged)) || 0), 0) || 0;
     
+    const totalEstimatedHours = weeklyTasks?.reduce((sum, task) => 
+      sum + (parseFloat(String(task.estimated_hours)) || 0), 0) || 0;
+    
+    // Use the sum of estimated hours for tasks this week, or fall back to user provided target
+    const hoursTarget = totalEstimatedHours > 0 ? totalEstimatedHours : (userTargetHours || 0);
+    
     // Calculate completion percentage
-    const completion = Math.min(Math.round((hoursLogged / hoursTarget) * 100), 100);
+    const completion = hoursTarget > 0 
+      ? Math.min(Math.round((hoursLogged / hoursTarget) * 100), 100)
+      : 0;
     
     // Find most active project
     const projectHours = weeklyTasks?.reduce((acc, task) => {
@@ -220,7 +226,7 @@ export const getWeeklySummary = async (userTargetHours?: number): Promise<Weekly
   } catch (error) {
     console.error("Error fetching weekly summary:", error);
     return {
-      hoursTarget: 40.0,
+      hoursTarget: 0,
       hoursLogged: 0,
       completion: 0,
       mostActiveProject: 'None',
