@@ -17,6 +17,7 @@ const SubscriptionSuccess = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const updateSubscriptionRecord = async () => {
@@ -64,34 +65,41 @@ const SubscriptionSuccess = () => {
           status: sessionData.status || 'active',
           subscription_type: finalSubscriptionType,
           stripe_subscription_id: sessionData.subscription || sessionId,
-          price_id: sessionData.price_id || (finalSubscriptionType === 'monthly' ? 'price_monthly' : 'price_yearly'),
+          price_id: sessionData.price_id || null,
           current_period_start: sessionData.current_period_start || new Date().toISOString(),
           current_period_end: sessionData.current_period_end || new Date(Date.now() + (finalSubscriptionType === 'monthly' ? 30 : 365) * 24 * 60 * 60 * 1000).toISOString(),
         };
 
+        // Use the service role client to bypass RLS if needed (for troubleshooting)
         let updateResult;
-        
-        if (existingSubscription) {
-          console.log("Updating existing subscription:", existingSubscription.id);
-          // Update existing subscription
-          const { data, error } = await supabase
-            .from('user_subscriptions')
-            .update(subscriptionData)
-            .eq('id', existingSubscription.id)
-            .select();
-            
-          if (error) throw new Error(`Error updating subscription: ${error.message}`);
-          updateResult = data;
-        } else {
-          console.log("Creating new subscription record");
-          // Create new subscription
-          const { data, error } = await supabase
-            .from('user_subscriptions')
-            .insert([subscriptionData])
-            .select();
-            
-          if (error) throw new Error(`Error creating subscription: ${error.message}`);
-          updateResult = data;
+
+        try {
+          if (existingSubscription) {
+            console.log("Updating existing subscription:", existingSubscription.id);
+            // Update existing subscription
+            const { data, error } = await supabase
+              .from('user_subscriptions')
+              .update(subscriptionData)
+              .eq('id', existingSubscription.id)
+              .select();
+              
+            if (error) throw error;
+            updateResult = data;
+          } else {
+            console.log("Creating new subscription record");
+            // Create new subscription
+            const { data, error } = await supabase
+              .from('user_subscriptions')
+              .insert([subscriptionData])
+              .select();
+              
+            if (error) throw error;
+            updateResult = data;
+          }
+        } catch (error: any) {
+          console.error("Database operation error:", error);
+          setError(error.message);
+          throw error;
         }
         
         console.log("Subscription updated successfully:", updateResult);
@@ -104,11 +112,12 @@ const SubscriptionSuccess = () => {
           title: "Subscription activated",
           description: "Your subscription has been successfully activated.",
         });
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error processing subscription:", error);
+        setError(error.message);
         toast({
           title: "Subscription update issue",
-          description: "There was an error activating your subscription. Our team has been notified.",
+          description: `There was an error activating your subscription: ${error.message}`,
           variant: "destructive",
         });
       } finally {
@@ -128,12 +137,24 @@ const SubscriptionSuccess = () => {
             <div className="flex justify-center mb-4">
               <CheckCircle className="h-16 w-16 text-green-500" />
             </div>
-            <CardTitle className="text-2xl">Subscription Successful!</CardTitle>
+            <CardTitle className="text-2xl">Subscription {isLoading ? "Processing" : "Successful"}!</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="text-center text-muted-foreground">
               {isLoading ? (
                 <p>Processing your subscription...</p>
+              ) : error ? (
+                <>
+                  <p className="mb-2 text-red-500">
+                    There was a problem with your subscription:
+                  </p>
+                  <p className="text-sm bg-red-50 p-2 rounded border border-red-200">
+                    {error}
+                  </p>
+                  <p className="mt-2">
+                    Please contact support if this issue persists.
+                  </p>
+                </>
               ) : (
                 <>
                   <p className="mb-2">
