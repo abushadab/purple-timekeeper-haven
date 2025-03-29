@@ -32,14 +32,27 @@ const SubscriptionProtectedRoute: React.FC<SubscriptionProtectedRouteProps> = ({
         });
         toastShownRef.current = true;
       } else if (!hasActiveSubscription) {
-        toast({
-          title: "Subscription Required",
-          description: "You need an active subscription to access this feature",
-        });
+        // Check if trial has expired
+        const hasExpiredTrial = subscription?.status === 'trialing' && 
+          subscription?.currentPeriodEnd && 
+          new Date(subscription.currentPeriodEnd) < new Date();
+        
+        if (hasExpiredTrial) {
+          toast({
+            title: "Trial Expired",
+            description: "Your free trial has expired. Please upgrade to continue using this feature.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Subscription Required",
+            description: "You need an active subscription to access this feature",
+          });
+        }
         toastShownRef.current = true;
       }
     }
-  }, [user, authLoading, hasActiveSubscription, subscriptionLoading, toast]);
+  }, [user, authLoading, hasActiveSubscription, subscriptionLoading, toast, subscription]);
   
   // Show loading state while checking authentication and subscription
   if (authLoading || subscriptionLoading) {
@@ -55,8 +68,13 @@ const SubscriptionProtectedRoute: React.FC<SubscriptionProtectedRouteProps> = ({
     return <Navigate to="/login" replace />;
   }
   
-  // Redirect to pricing page if no active subscription
-  if (!hasActiveSubscription) {
+  // Check if subscription exists but is expired (specifically for trials)
+  const hasExpiredTrial = subscription?.status === 'trialing' && 
+    subscription?.currentPeriodEnd && 
+    new Date(subscription.currentPeriodEnd) < new Date();
+  
+  // Redirect to pricing page if no active subscription or trial has expired
+  if (!hasActiveSubscription || hasExpiredTrial) {
     return <Navigate to="/pricing" replace />;
   }
   
