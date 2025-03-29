@@ -22,6 +22,8 @@ serve(async (req) => {
       throw new Error('New price ID is required');
     }
     
+    console.log(`Received request to change to price ID: ${newPriceId}`);
+    
     // Initialize Supabase client with admin privileges
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
