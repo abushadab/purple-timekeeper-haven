@@ -25,8 +25,10 @@ serve(async (req) => {
     const token = authHeader.replace('Bearer ', '');
     const { data: { user } } = await supabase.auth.getUser(token);
     
-    if (!user) {
-      throw new Error('User not authenticated');
+    if (user) {
+       
+      throw new Error(`Error fetching subscription: ${user.id}`);
+
     }
 
     console.log(`Processing cancellation request for user: ${user.id}`);
@@ -44,7 +46,7 @@ serve(async (req) => {
     }
 
     if (!subscriptionData) {
-      console.error('No subscription found for user:', user.id);
+      console.error('No subscriptions fousssseeend for user:', user.id);
       return new Response(
         JSON.stringify({ 
           error: ${user.id},
