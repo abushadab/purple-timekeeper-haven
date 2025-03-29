@@ -11,7 +11,12 @@ interface SubscriptionProtectedRouteProps {
 
 const SubscriptionProtectedRoute: React.FC<SubscriptionProtectedRouteProps> = ({ children }) => {
   const { user, loading: authLoading } = useAuth();
-  const { hasActiveSubscription, loading: subscriptionLoading, subscription } = useSubscription();
+  const { 
+    hasActiveSubscription, 
+    loading: subscriptionLoading, 
+    subscription, 
+    isSubscriptionExpired 
+  } = useSubscription();
   const { toast } = useToast();
   const toastShownRef = useRef<boolean>(false);
   const location = useLocation(); // Get current location
@@ -26,8 +31,9 @@ const SubscriptionProtectedRoute: React.FC<SubscriptionProtectedRouteProps> = ({
       console.log("Subscription period end:", subscription.currentPeriodEnd);
       console.log("Current date:", new Date().toISOString());
       console.log("Is end date in future:", subscription.currentPeriodEnd ? new Date(subscription.currentPeriodEnd) > new Date() : false);
+      console.log("Is subscription expired:", isSubscriptionExpired(subscription));
     }
-  }, [user, authLoading, subscription, hasActiveSubscription, subscriptionLoading, location]);
+  }, [user, authLoading, subscription, hasActiveSubscription, subscriptionLoading, location, isSubscriptionExpired]);
   
   // Handle toast notifications in an effect instead of in the render function
   useEffect(() => {
@@ -41,9 +47,7 @@ const SubscriptionProtectedRoute: React.FC<SubscriptionProtectedRouteProps> = ({
         toastShownRef.current = true;
       } else if (!hasActiveSubscription) {
         // Check if subscription exists but has expired
-        const hasExpiredSubscription = subscription && 
-          subscription.currentPeriodEnd && 
-          new Date(subscription.currentPeriodEnd) < new Date();
+        const hasExpiredSubscription = subscription && isSubscriptionExpired(subscription);
           
         if (hasExpiredSubscription) {
           toast({
@@ -60,7 +64,7 @@ const SubscriptionProtectedRoute: React.FC<SubscriptionProtectedRouteProps> = ({
         toastShownRef.current = true;
       }
     }
-  }, [user, authLoading, hasActiveSubscription, subscriptionLoading, toast, subscription]);
+  }, [user, authLoading, hasActiveSubscription, subscriptionLoading, toast, subscription, isSubscriptionExpired]);
   
   // Show loading state while checking authentication and subscription
   if (authLoading || subscriptionLoading) {
@@ -79,9 +83,7 @@ const SubscriptionProtectedRoute: React.FC<SubscriptionProtectedRouteProps> = ({
   // If subscription is inactive, redirect appropriately
   if (!hasActiveSubscription) {
     // Check if subscription exists but has expired
-    const hasExpiredSubscription = subscription && 
-      subscription.currentPeriodEnd && 
-      new Date(subscription.currentPeriodEnd) < new Date();
+    const hasExpiredSubscription = subscription && isSubscriptionExpired(subscription);
       
     // If subscription has expired, redirect to my-subscription page
     if (hasExpiredSubscription) {

@@ -93,9 +93,17 @@ serve(async (req) => {
         ? new Date(subscription.current_period_end * 1000).toISOString()
         : new Date(Date.now() + (subscriptionType === 'yearly' ? 365 : 30) * 24 * 60 * 60 * 1000).toISOString();
       
+      // Determine the correct status
+      // If end date is in the past, set status to 'expired'
+      let status = subscription.status;
+      if (new Date(currentPeriodEnd) < new Date()) {
+        status = 'expired';
+        console.log("Setting status to 'expired' because end date is in the past");
+      }
+      
       subscriptionData = {
         subscription: subscription.id,
-        status: subscription.status,
+        status: status,
         subscription_type: subscriptionType,
         price_id: subscription.items?.data[0]?.price?.id || '',
         current_period_start: currentPeriodStart,
@@ -104,17 +112,24 @@ serve(async (req) => {
       };
       
       console.log("Subscription period:", currentPeriodStart, "to", currentPeriodEnd);
+      console.log("Final subscription status:", status);
     }
     
     // Return the session and subscription data
+    const defaultPeriodEnd = new Date(Date.now() + (subscriptionType === 'yearly' ? 365 : 30) * 24 * 60 * 60 * 1000).toISOString();
+    const currentDate = new Date().toISOString();
+    
+    // If no subscription data, create a default response
+    const responseData = subscriptionData || { 
+      subscription: session.id,
+      status: 'active',
+      subscription_type: session.metadata?.type || subscriptionType,
+      current_period_start: currentDate,
+      current_period_end: defaultPeriodEnd
+    };
+    
     return new Response(
-      JSON.stringify(subscriptionData || { 
-        subscription: session.id,
-        status: 'active',
-        subscription_type: session.metadata?.type || subscriptionType,
-        current_period_start: new Date().toISOString(),
-        current_period_end: new Date(Date.now() + (subscriptionType === 'yearly' ? 365 : 30) * 24 * 60 * 60 * 1000).toISOString()
-      }),
+      JSON.stringify(responseData),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,

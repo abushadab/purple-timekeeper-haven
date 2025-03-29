@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from './use-toast';
 
-export type SubscriptionStatus = 'active' | 'trialing' | 'canceled' | 'incomplete' | 'incomplete_expired' | 'past_due' | 'unpaid' | 'none';
+export type SubscriptionStatus = 'active' | 'trialing' | 'canceled' | 'incomplete' | 'incomplete_expired' | 'past_due' | 'unpaid' | 'none' | 'expired';
 
 export interface Subscription {
   id: string;
@@ -31,6 +31,45 @@ export const useSubscription = () => {
     const notExpired = sub.currentPeriodEnd ? new Date(sub.currentPeriodEnd) > new Date() : false;
     
     return validStatus && notExpired;
+  };
+
+  // Helper function to check if a subscription is expired
+  const isSubscriptionExpired = (sub: Subscription | null): boolean => {
+    if (!sub) return false;
+    return sub.currentPeriodEnd ? new Date(sub.currentPeriodEnd) < new Date() : false;
+  };
+
+  // Function to update the status in the database if needed
+  const updateExpiredStatus = async (sub: Subscription) => {
+    // Only proceed if the subscription exists, has an end date, and is expired
+    if (!sub || !sub.currentPeriodEnd) return;
+    
+    const isExpired = new Date(sub.currentPeriodEnd) < new Date();
+    
+    // If expired but status isn't 'expired', update it in the database
+    if (isExpired && sub.status !== 'expired') {
+      console.log("Subscription expired, updating status in database...");
+      
+      try {
+        const { error } = await supabase
+          .from('user_subscriptions')
+          .update({ status: 'expired' })
+          .eq('id', sub.id);
+          
+        if (error) {
+          console.error("Error updating subscription status:", error);
+        } else {
+          console.log("Subscription status updated to 'expired'");
+          // Update the local state
+          setSubscription({
+            ...sub,
+            status: 'expired'
+          });
+        }
+      } catch (error) {
+        console.error("Unexpected error updating status:", error);
+      }
+    }
   };
 
   const fetchSubscription = async (skipCache = false) => {
@@ -66,7 +105,12 @@ export const useSubscription = () => {
           priceId: data.price_id,
         };
         
-        setSubscription(subscriptionData);
+        // Check if subscription is expired and update status if needed
+        if (isSubscriptionExpired(subscriptionData) && subscriptionData.status !== 'expired') {
+          updateExpiredStatus(subscriptionData);
+        } else {
+          setSubscription(subscriptionData);
+        }
         
         // Use the helper function to determine active status
         setHasActiveSubscription(isSubscriptionActive(subscriptionData));
@@ -97,10 +141,7 @@ export const useSubscription = () => {
         } else if (data) {
           console.log("Fresh subscription data:", data);
           
-          // Cache the subscription data
-          localStorage.setItem('subscription_data', JSON.stringify(data));
-          localStorage.setItem('subscription_data_time', now.toString());
-          
+          // Create the subscription data object
           const subscriptionData = {
             id: data.id,
             status: data.status as SubscriptionStatus,
@@ -110,7 +151,16 @@ export const useSubscription = () => {
             priceId: data.price_id,
           };
           
-          setSubscription(subscriptionData);
+          // Check if subscription is expired and update status if needed
+          if (isSubscriptionExpired(subscriptionData) && subscriptionData.status !== 'expired') {
+            updateExpiredStatus(subscriptionData);
+          } else {
+            // Cache the subscription data
+            localStorage.setItem('subscription_data', JSON.stringify(data));
+            localStorage.setItem('subscription_data_time', now.toString());
+            
+            setSubscription(subscriptionData);
+          }
           
           // Use the helper function to determine active status
           const isActive = isSubscriptionActive(subscriptionData);
@@ -177,6 +227,7 @@ export const useSubscription = () => {
       setLoading(true);
       fetchSubscription(true); // Skip cache when manually refreshing
     },
-    isSubscriptionActive  // Export the helper function for use in other components
+    isSubscriptionActive, // Export the helper function for use in other components
+    isSubscriptionExpired // Export helper to check if subscription is expired
   };
 };
