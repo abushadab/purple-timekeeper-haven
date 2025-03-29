@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -14,12 +14,19 @@ const SubscriptionProtectedRoute: React.FC<SubscriptionProtectedRouteProps> = ({
   const { hasActiveSubscription, loading: subscriptionLoading, subscription } = useSubscription();
   const { toast } = useToast();
   const toastShownRef = useRef<boolean>(false);
+  const location = useLocation(); // Get current location
   
   // Debug log
   useEffect(() => {
     console.log("SubscriptionProtectedRoute - Auth:", !!user, "Loading:", authLoading);
     console.log("SubscriptionProtectedRoute - Subscription:", subscription, "HasActive:", hasActiveSubscription, "Loading:", subscriptionLoading);
-  }, [user, authLoading, subscription, hasActiveSubscription, subscriptionLoading]);
+    console.log("SubscriptionProtectedRoute - Current path:", location.pathname);
+  }, [user, authLoading, subscription, hasActiveSubscription, subscriptionLoading, location]);
+  
+  // Check if subscription exists but is expired (specifically for trials)
+  const hasExpiredTrial = subscription?.status === 'trialing' && 
+    subscription?.currentPeriodEnd && 
+    new Date(subscription.currentPeriodEnd) < new Date();
   
   // Handle toast notifications in an effect instead of in the render function
   useEffect(() => {
@@ -32,11 +39,6 @@ const SubscriptionProtectedRoute: React.FC<SubscriptionProtectedRouteProps> = ({
         });
         toastShownRef.current = true;
       } else if (!hasActiveSubscription) {
-        // Check if trial has expired
-        const hasExpiredTrial = subscription?.status === 'trialing' && 
-          subscription?.currentPeriodEnd && 
-          new Date(subscription.currentPeriodEnd) < new Date();
-        
         if (hasExpiredTrial) {
           toast({
             title: "Trial Expired",
@@ -52,7 +54,7 @@ const SubscriptionProtectedRoute: React.FC<SubscriptionProtectedRouteProps> = ({
         toastShownRef.current = true;
       }
     }
-  }, [user, authLoading, hasActiveSubscription, subscriptionLoading, toast, subscription]);
+  }, [user, authLoading, hasActiveSubscription, subscriptionLoading, toast, subscription, hasExpiredTrial]);
   
   // Show loading state while checking authentication and subscription
   if (authLoading || subscriptionLoading) {
@@ -68,13 +70,21 @@ const SubscriptionProtectedRoute: React.FC<SubscriptionProtectedRouteProps> = ({
     return <Navigate to="/login" replace />;
   }
   
-  // Check if subscription exists but is expired (specifically for trials)
-  const hasExpiredTrial = subscription?.status === 'trialing' && 
-    subscription?.currentPeriodEnd && 
-    new Date(subscription.currentPeriodEnd) < new Date();
-  
-  // Redirect to pricing page if no active subscription or trial has expired
+  // If subscription is inactive or trial expired, redirect appropriately
   if (!hasActiveSubscription || hasExpiredTrial) {
+    // If trial has expired, redirect to my-subscription page
+    if (hasExpiredTrial) {
+      // Avoid infinite redirect if already on my-subscription
+      if (location.pathname === '/my-subscription') {
+        return <>{children}</>;
+      }
+      return <Navigate to="/my-subscription" replace />;
+    }
+    
+    // For other subscription issues, redirect to pricing (if not already there)
+    if (location.pathname === '/pricing') {
+      return <>{children}</>;
+    }
     return <Navigate to="/pricing" replace />;
   }
   
