@@ -20,11 +20,13 @@ export const useSubscription = () => {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
 
   useEffect(() => {
     const fetchSubscription = async () => {
       if (!user) {
         setSubscription(null);
+        setHasActiveSubscription(false);
         setLoading(false);
         return;
       }
@@ -46,23 +48,39 @@ export const useSubscription = () => {
             variant: 'destructive',
           });
           setSubscription(null);
+          setHasActiveSubscription(false);
         } else if (data) {
           console.log("Subscription data:", data);
-          setSubscription({
+          const subscriptionData = {
             id: data.id,
             status: data.status as SubscriptionStatus,
             subscriptionType: data.subscription_type,
             currentPeriodEnd: data.current_period_end,
             currentPeriodStart: data.current_period_start,
             priceId: data.price_id,
-          });
+          };
+          
+          setSubscription(subscriptionData);
+          
+          // Calculate active status
+          const isActive = 
+            subscriptionData.status === 'active' || 
+            subscriptionData.status === 'trialing' || 
+            (subscriptionData.status === 'canceled' && 
+             subscriptionData.currentPeriodEnd && 
+             new Date(subscriptionData.currentPeriodEnd) > new Date());
+          
+          setHasActiveSubscription(isActive);
+          console.log("Calculated hasActiveSubscription:", isActive);
         } else {
           console.log("No subscription found for user");
           setSubscription(null);
+          setHasActiveSubscription(false);
         }
       } catch (error) {
         console.error('Unexpected error:', error);
         setSubscription(null);
+        setHasActiveSubscription(false);
       } finally {
         setLoading(false);
       }
@@ -70,14 +88,6 @@ export const useSubscription = () => {
 
     fetchSubscription();
   }, [user, toast]);
-
-  // Check if user has an active subscription
-  const hasActiveSubscription = !!subscription && 
-    (subscription.status === 'active' || 
-     subscription.status === 'trialing' || 
-     (subscription.status === 'canceled' && subscription.currentPeriodEnd && new Date(subscription.currentPeriodEnd) > new Date()));
-
-  console.log("Calculated hasActiveSubscription:", hasActiveSubscription);
 
   return {
     subscription,
