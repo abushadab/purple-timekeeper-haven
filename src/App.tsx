@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,6 +17,8 @@ import SubscriptionProtectedRoute from "./components/auth/SubscriptionProtectedR
 import Team from "./pages/Team";
 import Pricing from "./pages/Pricing";
 import SubscriptionSuccess from "./pages/SubscriptionSuccess";
+import SubscriptionManagement from "./pages/SubscriptionManagement";
+import FloatingUserMenu from "./components/layout/FloatingUserMenu";
 
 const queryClient = new QueryClient();
 
@@ -29,10 +30,21 @@ const App = () => {
           <TooltipProvider delayDuration={0}>
             <Toaster />
             <Sonner />
+            <FloatingUserMenu />
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/subscription-success" element={<SubscriptionSuccess />} />
+              
+              {/* Subscription management doesn't require subscription check, just protection */}
+              <Route 
+                path="/subscription" 
+                element={
+                  <ProtectedRoute>
+                    <SubscriptionManagement />
+                  </ProtectedRoute>
+                } 
+              />
               
               {/* Apply subscription protection to feature routes */}
               <Route 
