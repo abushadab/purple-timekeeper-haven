@@ -11,7 +11,6 @@ export const useSubscriptionNavigation = () => {
   return { goToSubscriptionPage };
 };
 
-// Creating a Header component with a default export
 const Header = () => {
   return (
     <header className="bg-background border-b border-border/40 py-4">
@@ -24,4 +23,5 @@ const Header = () => {
   );
 };
 
+// Make sure the default export is explicitly defined at the end of the file
 export default Header;
