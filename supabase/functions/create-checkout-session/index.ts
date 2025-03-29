@@ -65,10 +65,12 @@ serve(async (req) => {
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       case "price_monthly":
-        stripePriceId = "price_1R9tqKPrcqwIuKqXxZEeKKBi"; // Replace with your actual monthly price ID
+        // Use your actual test mode price ID for monthly subscription
+        stripePriceId = "price_test_monthly"; // Replace this with your actual Stripe price ID
         break;
       case "price_yearly":
-        stripePriceId = "price_1R9trdPrcqwIuKqXoakGLFnS"; // Replace with your actual yearly price ID
+        // Use your actual test mode price ID for yearly subscription
+        stripePriceId = "price_test_yearly"; // Replace this with your actual Stripe price ID
         break;
       default:
         throw new Error("Invalid price ID");
