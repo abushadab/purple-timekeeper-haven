@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,8 +14,7 @@ const SubscriptionProtectedRoute: React.FC<SubscriptionProtectedRouteProps> = ({
   const { hasActiveSubscription, loading: subscriptionLoading, subscription } = useSubscription();
   const { toast } = useToast();
   const toastShownRef = useRef<boolean>(false);
-  const location = useLocation(); 
-  const [isRedirecting, setIsRedirecting] = useState(false);
+  const location = useLocation(); // Get current location
   
   // Debug log
   useEffect(() => {
@@ -31,8 +30,8 @@ const SubscriptionProtectedRoute: React.FC<SubscriptionProtectedRouteProps> = ({
   
   // Handle toast notifications in an effect instead of in the render function
   useEffect(() => {
-    // Only proceed if not loading, not redirecting and the toast hasn't been shown yet
-    if (!authLoading && !subscriptionLoading && !toastShownRef.current && !isRedirecting) {
+    // Only proceed if not loading and the toast hasn't been shown yet
+    if (!authLoading && !subscriptionLoading && !toastShownRef.current) {
       if (!user) {
         toast({
           title: "Login Required",
@@ -55,7 +54,7 @@ const SubscriptionProtectedRoute: React.FC<SubscriptionProtectedRouteProps> = ({
         toastShownRef.current = true;
       }
     }
-  }, [user, authLoading, hasActiveSubscription, subscriptionLoading, toast, subscription, hasExpiredTrial, isRedirecting]);
+  }, [user, authLoading, hasActiveSubscription, subscriptionLoading, toast, subscription, hasExpiredTrial]);
   
   // Show loading state while checking authentication and subscription
   if (authLoading || subscriptionLoading) {
@@ -66,40 +65,27 @@ const SubscriptionProtectedRoute: React.FC<SubscriptionProtectedRouteProps> = ({
     );
   }
   
-  // Handle redirects with improved flow control to prevent flashing pages
+  // Redirect to login if not authenticated
   if (!user) {
-    // Use state to avoid multiple renders and flashing
-    if (!isRedirecting) {
-      setIsRedirecting(true);
-    }
     return <Navigate to="/login" replace />;
   }
-
+  
   // If subscription is inactive or trial expired, redirect appropriately
   if (!hasActiveSubscription || hasExpiredTrial) {
-    // Already on allowed pages, don't redirect
-    if (location.pathname === '/my-subscription' || location.pathname === '/pricing') {
-      return <>{children}</>;
-    }
-    
-    // For trial expired, redirect to my-subscription
+    // If trial has expired, redirect to my-subscription page
     if (hasExpiredTrial) {
-      if (!isRedirecting) {
-        setIsRedirecting(true);
+      // Avoid infinite redirect if already on my-subscription
+      if (location.pathname === '/my-subscription') {
+        return <>{children}</>;
       }
       return <Navigate to="/my-subscription" replace />;
     }
     
-    // For other subscription issues, redirect to pricing
-    if (!isRedirecting) {
-      setIsRedirecting(true);
+    // For other subscription issues, redirect to pricing (if not already there)
+    if (location.pathname === '/pricing') {
+      return <>{children}</>;
     }
     return <Navigate to="/pricing" replace />;
-  }
-  
-  // Ensure we reset the redirecting state when rendering the children
-  if (isRedirecting) {
-    setIsRedirecting(false);
   }
   
   // User is authenticated and has an active subscription

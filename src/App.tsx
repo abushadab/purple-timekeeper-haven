@@ -19,16 +19,7 @@ import Pricing from "./pages/Pricing";
 import SubscriptionSuccess from "./pages/SubscriptionSuccess";
 import MySubscription from "./pages/MySubscription";
 
-// Create a new QueryClient with improved stale time to prevent unnecessary refetches
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 30000, // 30 seconds
-      refetchOnWindowFocus: false,
-      retry: 1,
-    },
-  },
-});
+const queryClient = new QueryClient();
 
 const App = () => {
   return (
@@ -39,7 +30,6 @@ const App = () => {
             <Toaster />
             <Sonner />
             <Routes>
-              {/* Public routes - no protection needed */}
               <Route path="/login" element={<Login />} />
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/subscription-success" element={<SubscriptionSuccess />} />
