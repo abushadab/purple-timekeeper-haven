@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSubscription } from "@/hooks/useSubscription";
 
 const HeaderLink = ({ href, icon: Icon, label, active = false }) => {
   return (
@@ -56,6 +57,10 @@ const Header = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+  const { subscription } = useSubscription();
+  
+  // Determine if user has or had a subscription to hide Pricing menu
+  const hasPricingAccess = !subscription;
   
   // Safely use the auth context with proper error handling
   let user = null;
@@ -136,12 +141,14 @@ const Header = () => {
             label="Team"
             active={path === "/team"}
           />
-          <HeaderLink
-            href="/pricing"
-            icon={CreditCard}
-            label="Pricing"
-            active={path === "/pricing"}
-          />
+          {hasPricingAccess && (
+            <HeaderLink
+              href="/pricing"
+              icon={CreditCard}
+              label="Pricing"
+              active={path === "/pricing"}
+            />
+          )}
         </nav>
         
         <div className="ml-auto flex items-center gap-2">

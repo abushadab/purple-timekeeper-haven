@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/layout/Header";
@@ -24,13 +23,11 @@ const MySubscription = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Debug log
   useEffect(() => {
     console.log("MySubscription - Subscription data:", subscription);
   }, [subscription]);
 
   useEffect(() => {
-    // Fetch billing history when subscription is loaded
     if (subscription?.id) {
       fetchBillingHistory();
     } else {
@@ -42,7 +39,6 @@ const MySubscription = () => {
     try {
       setBillingHistoryLoading(true);
       
-      // Call the Supabase Edge Function to get billing history
       const { data, error } = await supabase.functions.invoke("get-billing-history");
       
       if (error) {
@@ -68,7 +64,6 @@ const MySubscription = () => {
     try {
       setIsCancelling(true);
       
-      // Call the Supabase Edge Function to cancel subscription
       const { data, error } = await supabase.functions.invoke("cancel-subscription");
       
       if (error) {
@@ -80,7 +75,6 @@ const MySubscription = () => {
         description: "Your subscription has been cancelled. You will still have access until the end of your current billing period.",
       });
       
-      // Refresh subscription data
       window.location.reload();
     } catch (error) {
       console.error("Error cancelling subscription:", error);
@@ -99,7 +93,6 @@ const MySubscription = () => {
     try {
       setIsChangingPlan(true);
       
-      // Call the Supabase Edge Function to change plan
       const { data, error } = await supabase.functions.invoke("change-subscription-plan", {
         body: { newPriceId: newPlanId }
       });
@@ -108,7 +101,6 @@ const MySubscription = () => {
         throw new Error(error.message);
       }
       
-      // If we got a URL back, redirect to Stripe checkout for plan change
       if (data?.url) {
         window.location.href = data.url;
         return;
@@ -119,7 +111,6 @@ const MySubscription = () => {
         description: "Your subscription plan has been updated successfully.",
       });
       
-      // Refresh subscription data
       window.location.reload();
     } catch (error) {
       console.error("Error changing plan:", error);
@@ -133,7 +124,6 @@ const MySubscription = () => {
     }
   };
 
-  // Handle download invoice
   const handleDownloadInvoice = async (invoiceId) => {
     try {
       const { data, error } = await supabase.functions.invoke("get-invoice-pdf", {
@@ -145,7 +135,6 @@ const MySubscription = () => {
       }
       
       if (data?.pdfUrl) {
-        // Open the PDF in a new tab
         window.open(data.pdfUrl, '_blank');
       } else {
         throw new Error("No PDF URL returned");
@@ -160,7 +149,6 @@ const MySubscription = () => {
     }
   };
 
-  // Show loading state
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
@@ -172,8 +160,7 @@ const MySubscription = () => {
     );
   }
 
-  // Show message if no subscription
-  if (!hasActiveSubscription) {
+  if (!hasActiveSubscription && !subscription) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <Header />
@@ -211,13 +198,21 @@ const MySubscription = () => {
                     <CardTitle className="text-xl">
                       {subscription?.subscriptionType?.charAt(0).toUpperCase() + subscription?.subscriptionType?.slice(1)} Plan
                     </CardTitle>
-                    <Badge className={subscription?.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}>
-                      {subscription?.status?.charAt(0).toUpperCase() + subscription?.status?.slice(1)}
+                    <Badge className={
+                      subscription?.status === 'active' ? 'bg-green-100 text-green-800' : 
+                      (subscription?.status === 'trialing' && new Date(subscription.currentPeriodEnd) > new Date()) ? 'bg-amber-100 text-amber-800' :
+                      'bg-red-100 text-red-800'
+                    }>
+                      {subscription?.status === 'trialing' && new Date(subscription.currentPeriodEnd) < new Date() 
+                        ? "Expired" 
+                        : subscription?.status?.charAt(0).toUpperCase() + subscription?.status?.slice(1)}
                     </Badge>
                   </div>
                   <CardDescription>
                     {subscription?.status === 'canceled' 
                       ? "Your subscription has been cancelled but you still have access until the end of your current billing period."
+                      : subscription?.status === 'trialing' && new Date(subscription.currentPeriodEnd) < new Date()
+                      ? "Your free trial has expired. Please upgrade to a paid plan to continue using premium features."
                       : "Your subscription is currently active."}
                   </CardDescription>
                 </CardHeader>
@@ -226,7 +221,11 @@ const MySubscription = () => {
                     <div className="flex items-center gap-2">
                       <Calendar className="h-5 w-5 text-muted-foreground" />
                       <div>
-                        <p className="text-sm font-medium">Current period ends</p>
+                        <p className="text-sm font-medium">
+                          {new Date(subscription.currentPeriodEnd) < new Date() 
+                            ? "Trial ended on" 
+                            : "Current period ends"}
+                        </p>
                         <p className="text-sm text-muted-foreground">
                           {format(new Date(subscription.currentPeriodEnd), 'PPP')}
                         </p>
@@ -234,7 +233,7 @@ const MySubscription = () => {
                     </div>
                   )}
                   
-                  {subscription?.status !== 'canceled' && (
+                  {subscription?.status !== 'canceled' && new Date(subscription.currentPeriodEnd) > new Date() && (
                     <div className="space-y-4">
                       <div className="border-t pt-4">
                         <h3 className="font-medium mb-2">Change Plan</h3>
@@ -266,6 +265,18 @@ const MySubscription = () => {
                       </div>
                     </div>
                   )}
+                  
+                  {subscription?.status === 'trialing' && new Date(subscription.currentPeriodEnd) < new Date() && (
+                    <div className="mt-6">
+                      <Button 
+                        className="w-full" 
+                        onClick={() => navigate('/pricing')}
+                      >
+                        <CreditCard className="mr-2 h-4 w-4" />
+                        Upgrade Now
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
                 <CardFooter className="flex justify-between border-t pt-4">
                   <Button 
@@ -275,7 +286,7 @@ const MySubscription = () => {
                     View All Plans
                   </Button>
                   
-                  {subscription?.status !== 'canceled' && (
+                  {subscription?.status !== 'canceled' && new Date(subscription.currentPeriodEnd) > new Date() && (
                     <Button 
                       variant="destructive"
                       onClick={() => setConfirmDialogOpen(true)}
