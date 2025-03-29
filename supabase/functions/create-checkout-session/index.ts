@@ -65,12 +65,32 @@ serve(async (req) => {
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       case "price_monthly":
-        // Use your actual test mode price ID for monthly subscription
-        stripePriceId = "price_test_monthly"; // Replace this with your actual Stripe price ID
+        // First, we need to list all prices for the monthly product to find the active price
+        const monthlyPrices = await stripe.prices.list({
+          product: 'prod_S1uqDkwAwdTUij',
+          active: true,
+          limit: 1
+        });
+        
+        if (monthlyPrices.data.length === 0) {
+          throw new Error("No active price found for monthly product");
+        }
+        
+        stripePriceId = monthlyPrices.data[0].id;
         break;
       case "price_yearly":
-        // Use your actual test mode price ID for yearly subscription
-        stripePriceId = "price_test_yearly"; // Replace this with your actual Stripe price ID
+        // First, we need to list all prices for the yearly product to find the active price
+        const yearlyPrices = await stripe.prices.list({
+          product: 'prod_S1urWnWxmsyUxd',
+          active: true,
+          limit: 1
+        });
+        
+        if (yearlyPrices.data.length === 0) {
+          throw new Error("No active price found for yearly product");
+        }
+        
+        stripePriceId = yearlyPrices.data[0].id;
         break;
       default:
         throw new Error("Invalid price ID");
@@ -109,6 +129,8 @@ serve(async (req) => {
       success_url: `${req.headers.get("origin")}/subscription-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.get("origin")}/pricing`,
     });
+
+    console.log("Checkout session created:", session.id);
 
     // Return the checkout URL
     return new Response(
