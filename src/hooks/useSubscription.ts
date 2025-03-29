@@ -107,7 +107,7 @@ export const useSubscription = () => {
         };
         
         // Check if subscription is expired and update status if needed
-        if (isSubscriptionExpired(subscriptionData) && subscriptionData.status !== 'expired') {
+        if (isSubscriptionExpired(subscriptionData) && subscriptionData.status !== 'canceled') {
           updateExpiredStatus(subscriptionData);
         } else {
           setSubscription(subscriptionData);
@@ -153,7 +153,7 @@ export const useSubscription = () => {
           };
           
           // Check if subscription is expired and update status if needed
-          if (isSubscriptionExpired(subscriptionData) && subscriptionData.status !== 'expired') {
+          if (isSubscriptionExpired(subscriptionData) && subscriptionData.status !== 'canceled') {
             updateExpiredStatus(subscriptionData);
           } else {
             // Cache the subscription data
