@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getWordpressUserId } from "@/utils/authUtils";
 
 export interface Task {
   id: string;
@@ -40,8 +41,7 @@ export interface TaskFormData {
 
 // Get all tasks for a specific project
 export const getTasksByProject = async (projectId: string): Promise<Task[]> => {
-  const { data: sessionData } = await supabase.auth.getSession();
-  const userId = sessionData.session?.user?.id;
+  const userId = await getWordpressUserId();
   
   if (!userId) {
     throw new Error("User not authenticated");
@@ -78,8 +78,7 @@ export const getTasksByProject = async (projectId: string): Promise<Task[]> => {
 
 // Create a new task
 export const createTask = async (task: TaskFormData): Promise<Task> => {
-  const { data: sessionData } = await supabase.auth.getSession();
-  const userId = sessionData.session?.user?.id;
+  const userId = await getWordpressUserId();
   
   if (!userId) {
     throw new Error("User not authenticated");

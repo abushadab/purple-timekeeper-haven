@@ -1,9 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Portfolio, PortfolioFormData } from "@/types/portfolio";
+import { getWordpressUserId } from "@/utils/authUtils";
 
 export const getPortfolios = async (): Promise<Portfolio[]> => {
-  const { data: sessionData } = await supabase.auth.getSession();
-  const userId = sessionData.session?.user?.id;
+  const userId = await getWordpressUserId();
 
   const query = supabase
     .from("portfolios")
@@ -45,8 +45,11 @@ export const getPortfolios = async (): Promise<Portfolio[]> => {
 };
 
 export const createPortfolio = async (portfolio: PortfolioFormData): Promise<Portfolio> => {
-  const { data: sessionData } = await supabase.auth.getSession();
-  const userId = sessionData.session?.user?.id;
+  const userId = await getWordpressUserId();
+
+  if (!userId) {
+    throw new Error("User not authenticated");
+  }
 
   const { data, error } = await supabase
     .from("portfolios")
