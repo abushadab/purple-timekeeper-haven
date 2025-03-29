@@ -23,7 +23,7 @@ const PricingTier = ({
   loading = false
 }) => {
   return (
-    <Card className={`w-full max-w-sm border ${popularBadge ? "border-purple-400 shadow-lg" : "border-gray-200"}`}>
+    <Card className={`w-full max-w-sm border relative ${popularBadge ? "border-purple-400 shadow-lg" : "border-gray-200"}`}>
       <CardHeader className="space-y-1 text-center">
         {popularBadge && (
           <Badge variant="secondary" className="absolute top-2 right-2 bg-purple-100 text-purple-800">
@@ -220,3 +220,4 @@ const Pricing = () => {
 };
 
 export default Pricing;
+
