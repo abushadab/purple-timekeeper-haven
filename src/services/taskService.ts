@@ -10,7 +10,7 @@ export interface Task {
   hours_logged: number;
   estimated_hours: number;
   project_id: string;
-  user_id?: string;
+  auth_user_id?: string;
   created_at?: string;
   updated_at?: string;
   url_mapping?: string;
@@ -69,7 +69,7 @@ export const getTasksByProject = async (projectId: string): Promise<Task[]> => {
     hours_logged: Number(item.hours_logged) || 0,
     estimated_hours: Number(item.estimated_hours) || 0,
     project_id: item.project_id,
-    user_id: item.auth_user_id,
+    auth_user_id: item.auth_user_id,
     created_at: item.created_at,
     updated_at: item.updated_at,
     url_mapping: item.url_mapping
@@ -120,7 +120,7 @@ export const createTask = async (task: TaskFormData): Promise<Task> => {
     hours_logged: Number(data.hours_logged) || 0,
     estimated_hours: Number(data.estimated_hours) || 0,
     project_id: data.project_id,
-    user_id: data.auth_user_id,
+    auth_user_id: data.auth_user_id,
     created_at: data.created_at,
     updated_at: data.updated_at,
     url_mapping: data.url_mapping
@@ -205,7 +205,7 @@ export const updateTask = async (task: TaskFormData): Promise<Task> => {
     hours_logged: Number(data.hours_logged) || 0,
     estimated_hours: Number(data.estimated_hours) || 0,
     project_id: data.project_id,
-    user_id: data.auth_user_id,
+    auth_user_id: data.auth_user_id,
     created_at: data.created_at,
     updated_at: data.updated_at,
     url_mapping: data.url_mapping

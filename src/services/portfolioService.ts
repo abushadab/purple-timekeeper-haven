@@ -38,7 +38,7 @@ export const getPortfolios = async (): Promise<Portfolio[]> => {
       totalHours: totalHours,
       lastUpdated: formatLastUpdated(item.last_updated),
       archived: item.archived,
-      userId: item.auth_user_id,
+      auth_user_id: item.auth_user_id,
       createdAt: item.created_at,
     };
   });
@@ -76,7 +76,7 @@ export const createPortfolio = async (portfolio: PortfolioFormData): Promise<Por
     totalHours: data.total_hours,
     lastUpdated: formatLastUpdated(data.last_updated),
     archived: data.archived,
-    userId: data.auth_user_id,
+    auth_user_id: data.auth_user_id,
     createdAt: data.created_at,
   };
 };
@@ -113,7 +113,7 @@ export const updatePortfolio = async (portfolio: PortfolioFormData): Promise<Por
     totalHours: data.total_hours,
     lastUpdated: formatLastUpdated(data.last_updated),
     archived: data.archived,
-    userId: data.auth_user_id,
+    auth_user_id: data.auth_user_id,
     createdAt: data.created_at,
   };
 };

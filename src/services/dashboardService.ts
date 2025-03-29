@@ -33,6 +33,7 @@ export interface ActivityItem {
   status: 'in_progress' | 'completed' | 'not_started';
   time: string;
   timestamp: Date;
+  auth_user_id?: string;
 }
 
 // Fetch dashboard statistics

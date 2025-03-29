@@ -8,7 +8,7 @@ export interface Portfolio {
   totalHours: number;
   lastUpdated: string;
   archived: boolean;
-  userId?: string | null;
+  auth_user_id?: string | null;
   createdAt: string;
 }
 
