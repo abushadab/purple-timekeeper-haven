@@ -26,7 +26,8 @@ serve(async (req) => {
     const { data: { user } } = await supabase.auth.getUser(token);
     
     
-      throw new Error(`Error fetching subscription: ${user}`);
+    throw new Error(`v4Error fetching subscription: ${JSON.stringify(user, null, 2)}`);
+
 
     console.log(`Processing cancellation request for user: ${user.id}`);
 
