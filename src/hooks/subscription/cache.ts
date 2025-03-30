@@ -4,7 +4,7 @@ import { parseSubscriptionData } from "./utils";
 
 const CACHE_KEY = 'subscription_data';
 const CACHE_TIME_KEY = 'subscription_data_time';
-const CACHE_MAX_AGE = 30000; // 30 seconds
+const CACHE_MAX_AGE = 60000; // Increase to 60 seconds (from 30 seconds)
 
 export const saveSubscriptionToCache = (data: any): void => {
   localStorage.setItem(CACHE_KEY, JSON.stringify(data));
@@ -47,4 +47,3 @@ export const getSubscriptionFromCache = (): {
     return { subscription: null, isCacheValid: false };
   }
 };
-

@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -7,18 +7,26 @@ import { Subscription } from './types';
 import { isSubscriptionActive, parseSubscriptionData } from './utils';
 import { saveSubscriptionToCache, getSubscriptionFromCache, clearSubscriptionCache } from './cache';
 
+// Global in-memory cache to prevent duplicate requests across components
+let globalFetchPromise: Promise<any> | null = null;
+let lastFetchTime = 0;
+const FETCH_COOLDOWN = 2000; // 2 seconds cooldown between fetches
+
 export const useSubscriptionData = () => {
   const { user } = useAuth();
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
+  const mountedRef = useRef(true);
 
   const fetchSubscription = async (skipCache = false) => {
     if (!user) {
-      setSubscription(null);
-      setHasActiveSubscription(false);
-      setLoading(false);
+      if (mountedRef.current) {
+        setSubscription(null);
+        setHasActiveSubscription(false);
+        setLoading(false);
+      }
       return;
     }
 
@@ -28,62 +36,101 @@ export const useSubscriptionData = () => {
       // Check for cached subscription data first (only use if it's recent)
       const { subscription: cachedSubscription, isCacheValid } = getSubscriptionFromCache();
       
-      // If we have fresh cached data and we're not on the subscription page and we're not skipping cache
-      const isSubscriptionPage = window.location.pathname.includes('subscription');
-      if (cachedSubscription && isCacheValid && !isSubscriptionPage && !skipCache) {
+      // If we have fresh cached data and we're not skipping cache
+      if (cachedSubscription && isCacheValid && !skipCache) {
         console.log("Using cached subscription data");
         
-        setSubscription(cachedSubscription);
-        
-        // Use the helper function to determine active status
-        setHasActiveSubscription(isSubscriptionActive(cachedSubscription));
-        console.log("Calculated hasActiveSubscription from cache:", isSubscriptionActive(cachedSubscription));
-      }
-      
-      // Always fetch fresh data if we're skipping cache, on subscription pages, or cache is invalid
-      if (!cachedSubscription || !isCacheValid || isSubscriptionPage || skipCache) {
-        // Fetch data from the database
-        const { data, error } = await supabase
-          .from('user_subscriptions')
-          .select('*')
-          .eq('auth_user_id', user.id)
-          .maybeSingle();
-
-        if (error) {
-          console.error('Error fetching subscription:', error);
-          toast({
-            title: 'Error',
-            description: 'Failed to fetch subscription status.',
-            variant: 'destructive',
-          });
-          
-          if (!cachedSubscription || !isCacheValid) {
-            setSubscription(null);
-            setHasActiveSubscription(false);
-          }
-        } else if (data) {
-          console.log("Fresh subscription data:", data);
-          
-          // Create the subscription data object
-          const subscriptionData = parseSubscriptionData(data);
-          
-          // Cache the subscription data
-          saveSubscriptionToCache(data);
-          
-          setSubscription(subscriptionData);
+        if (mountedRef.current) {
+          setSubscription(cachedSubscription);
           
           // Use the helper function to determine active status
-          const isActive = isSubscriptionActive(subscriptionData);
-          setHasActiveSubscription(isActive);
-          console.log("Calculated hasActiveSubscription:", isActive, "Period end:", data.current_period_end, "Current date:", new Date().toISOString());
+          setHasActiveSubscription(isSubscriptionActive(cachedSubscription));
+          console.log("Calculated hasActiveSubscription from cache:", isSubscriptionActive(cachedSubscription));
+        }
+      }
+      
+      // Check if we should fetch from the server
+      const shouldFetch = !cachedSubscription || !isCacheValid || skipCache;
+      
+      // Check if we're within cooldown period
+      const now = Date.now();
+      const isWithinCooldown = now - lastFetchTime < FETCH_COOLDOWN;
+      
+      // Always fetch fresh data if we're skipping cache or cache is invalid
+      if (shouldFetch) {
+        // If there's already a fetch in progress, use that promise
+        if (globalFetchPromise && !skipCache && isWithinCooldown) {
+          console.log("Using existing fetch promise");
+          const data = await globalFetchPromise;
+          
+          if (data && mountedRef.current) {
+            // Create the subscription data object
+            const subscriptionData = parseSubscriptionData(data);
+            setSubscription(subscriptionData);
+            
+            // Use the helper function to determine active status
+            const isActive = isSubscriptionActive(subscriptionData);
+            setHasActiveSubscription(isActive);
+          }
         } else {
-          console.log("No subscription found for user");
+          // Start a new fetch
+          lastFetchTime = now;
           
-          // Clear cached data if no subscription found
-          clearSubscriptionCache();
+          // Create a new promise for this fetch
+          globalFetchPromise = supabase
+            .from('user_subscriptions')
+            .select('*')
+            .eq('auth_user_id', user.id)
+            .maybeSingle()
+            .then(({ data, error }) => {
+              if (error) {
+                console.error('Error fetching subscription:', error);
+                if (mountedRef.current) {
+                  toast({
+                    title: 'Error',
+                    description: 'Failed to fetch subscription status.',
+                    variant: 'destructive',
+                  });
+                }
+                return null;
+              }
+              
+              if (data) {
+                console.log("Fresh subscription data:", data);
+                // Cache the subscription data
+                saveSubscriptionToCache(data);
+                return data;
+              }
+              
+              console.log("No subscription found for user");
+              // Clear cached data if no subscription found
+              clearSubscriptionCache();
+              return null;
+            });
           
-          setSubscription(null);
-          setHasActiveSubscription(false);
+          // Wait for the promise to resolve
+          const data = await globalFetchPromise;
+          
+          // After a while, clear the global promise to allow new fetches
+          setTimeout(() => {
+            globalFetchPromise = null;
+          }, FETCH_COOLDOWN);
+          
+          if (mountedRef.current) {
+            if (data) {
+              // Create the subscription data object
+              const subscriptionData = parseSubscriptionData(data);
+              setSubscription(subscriptionData);
+              
+              // Use the helper function to determine active status
+              const isActive = isSubscriptionActive(subscriptionData);
+              setHasActiveSubscription(isActive);
+              console.log("Calculated hasActiveSubscription:", isActive, "Period end:", data.current_period_end, "Current date:", new Date().toISOString());
+            } else {
+              setSubscription(null);
+              setHasActiveSubscription(false);
+            }
+          }
         }
       }
     } catch (error) {
@@ -93,16 +140,19 @@ export const useSubscriptionData = () => {
       const { subscription: cachedSubscription, isCacheValid } = getSubscriptionFromCache();
       const longCacheValid = isCacheValid || (cachedSubscription && Date.now() - parseInt(localStorage.getItem('subscription_data_time') || '0') < 300000); // 5 minutes
       
-      if (!cachedSubscription || !longCacheValid || skipCache) {
+      if ((!cachedSubscription || !longCacheValid || skipCache) && mountedRef.current) {
         setSubscription(null);
         setHasActiveSubscription(false);
       }
     } finally {
-      setLoading(false);
+      if (mountedRef.current) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
+    mountedRef.current = true;
     fetchSubscription();
     
     // Set up a subscription listener to refresh data when the table changes
@@ -120,9 +170,10 @@ export const useSubscriptionData = () => {
       .subscribe();
     
     return () => {
+      mountedRef.current = false;
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user?.id]);
 
   return {
     subscription,
@@ -136,4 +187,3 @@ export const useSubscriptionData = () => {
     }
   };
 };
-
