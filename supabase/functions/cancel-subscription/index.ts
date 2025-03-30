@@ -47,7 +47,7 @@ serve(async (req) => {
       console.error('No subscription found for user:', user.id);
       return new Response(
         JSON.stringify({ 
-          error: 'Processing cancellation request for user: ${user.id}',
+          error: 'No subscription found for this user',
           code: 'subscription_not_found'
         }),
         { 
