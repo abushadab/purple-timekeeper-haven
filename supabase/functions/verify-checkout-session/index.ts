@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from 'https://esm.sh/stripe@14.21.0';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
@@ -28,9 +29,9 @@ serve(async (req) => {
       apiVersion: '2023-10-16',
     });
 
-    // Retrieve the checkout session from Stripe with expanded subscription data
+    // Retrieve the checkout session from Stripe with reduced expansion levels
     const session = await stripe.checkout.sessions.retrieve(sessionId, {
-      expand: ['subscription', 'subscription.items.data.price.product', 'line_items']
+      expand: ['subscription']
     });
     
     if (!session) {
@@ -49,9 +50,7 @@ serve(async (req) => {
     
     if (session.subscription) {
       const subscription = typeof session.subscription === 'string' 
-        ? await stripe.subscriptions.retrieve(session.subscription, {
-            expand: ['items.data.price.product']
-          })
+        ? await stripe.subscriptions.retrieve(session.subscription)
         : session.subscription;
       
       console.log(`Subscription retrieved: ${subscription.id}`);
@@ -60,18 +59,18 @@ serve(async (req) => {
       if (session.metadata?.type) {
         subscriptionType = session.metadata.type;
       } else if (subscription.items?.data[0]?.price) {
-        // Get product details to determine subscription type
+        // Get price details
         const priceId = subscription.items.data[0].price.id;
         console.log(`Price ID: ${priceId}`);
         
-        // Check if product name or ID contains monthly/yearly indicator
-        const product = typeof subscription.items.data[0].price.product === 'string'
-          ? await stripe.products.retrieve(subscription.items.data[0].price.product)
-          : subscription.items.data[0].price.product;
-          
-        if (product) {
-          const productName = product.name?.toLowerCase() || '';
-          const productId = product.id?.toLowerCase() || '';
+        // Retrieve price details separately instead of using deep expansion
+        const price = await stripe.prices.retrieve(priceId, {
+          expand: ['product']
+        });
+        
+        if (price.product && typeof price.product !== 'string') {
+          const productName = price.product.name?.toLowerCase() || '';
+          const productId = price.product.id?.toLowerCase() || '';
           
           if (productName.includes('monthly') || productId.includes('monthly') || priceId.includes('monthly')) {
             subscriptionType = 'monthly';
@@ -92,8 +91,7 @@ serve(async (req) => {
         ? new Date(subscription.current_period_end * 1000).toISOString()
         : new Date(Date.now() + (subscriptionType === 'yearly' ? 365 : 30) * 24 * 60 * 60 * 1000).toISOString();
       
-      // Determine the correct status - only use valid status values from Stripe
-      // Valid statuses according to Stripe: 'active', 'trialing', 'canceled', 'incomplete', 'incomplete_expired', 'past_due', 'unpaid'
+      // Determine the correct status
       let status = subscription.status;
       
       // Make sure we're using a valid status value
@@ -101,8 +99,7 @@ serve(async (req) => {
         status = 'active'; // Default to active if we get an unexpected status
       }
       
-      // If end date is in the past, set status to 'expired' only if we've validated this is allowed in our schema
-      // Otherwise mark as 'canceled' which is a valid Stripe status
+      // If end date is in the past, mark as 'canceled'
       if (new Date(currentPeriodEnd) < new Date()) {
         status = 'canceled';
         console.log("Setting status to 'canceled' because end date is in the past");
