@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from 'https://esm.sh/stripe@14.21.0';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
@@ -8,17 +9,18 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Initialize Supabase client
+    // Initialize Supabase client with admin privileges
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get the user with JWT
+    // Get the session or user object
     const authHeader = req.headers.get('Authorization')!;
     const token = authHeader.replace('Bearer ', '');
     const { data: { user } } = await supabase.auth.getUser(token);
@@ -29,10 +31,7 @@ serve(async (req) => {
 
     console.log(`Processing cancellation request for user: ${user.id}`);
 
-    // Set the session to apply JWT for RLS
-    await supabase.auth.setSession({ access_token: token });
-
-    // Get user's subscription
+    // Get user's subscription from the database
     const { data: subscriptionData, error: subscriptionError } = await supabase
       .from('user_subscriptions')
       .select('stripe_subscription_id, status, current_period_end, subscription_type')
@@ -72,6 +71,7 @@ serve(async (req) => {
       );
     }
 
+    // Check if the subscription is already canceled
     if (subscriptionData.status === 'canceled') {
       console.log('Subscription is already canceled');
       return new Response(
@@ -96,14 +96,18 @@ serve(async (req) => {
     });
 
     try {
+      // Cancel the subscription at period end in Stripe
       console.log(`Canceling Stripe subscription: ${subscriptionData.stripe_subscription_id}`);
       const canceledSubscription = await stripe.subscriptions.update(
         subscriptionData.stripe_subscription_id,
-        { cancel_at_period_end: true }
+        {
+          cancel_at_period_end: true,
+        }
       );
 
       console.log(`Stripe subscription updated. New status: ${canceledSubscription.status}`);
 
+      // Update the subscription status in the database
       const { error: updateError } = await supabase
         .from('user_subscriptions')
         .update({
@@ -133,8 +137,12 @@ serve(async (req) => {
       );
     } catch (stripeError) {
       console.error('Stripe API error:', stripeError);
+      
+      // Special handling for free trials which might not have a valid Stripe subscription
       if (subscriptionData.subscription_type === 'free_trial') {
         console.log('Handling free trial cancellation');
+        
+        // Directly update the database for free trials without calling Stripe
         const { error: updateError } = await supabase
           .from('user_subscriptions')
           .update({
@@ -163,6 +171,7 @@ serve(async (req) => {
           }
         );
       }
+      
       throw stripeError;
     }
   } catch (error) {
