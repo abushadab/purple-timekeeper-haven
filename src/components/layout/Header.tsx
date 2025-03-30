@@ -73,7 +73,7 @@ const Header = () => {
       <div className="container flex h-16 items-center px-4 sm:px-6">
         <div className="mr-4 flex items-center gap-2">
           <Clock className="h-6 w-6 text-purple-600" />
-          <span className="hidden sm:inline-block font-semibold text-lg">TimeTrack</span>
+          <span className="hidden sm:inline-block font-semibold text-lg">TabTracker</span>
         </div>
         
         <HeaderNavigation 
