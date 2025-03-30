@@ -94,6 +94,12 @@ const SubscriptionProtectedRoute: React.FC<SubscriptionProtectedRouteProps> = ({
       return <Navigate to="/my-subscription" replace />;
     }
     
+    // Special handling for my-subscription page - if the user has never had a subscription,
+    // redirect to pricing instead of showing an empty subscription page
+    if (location.pathname === '/my-subscription' && !subscription) {
+      return <Navigate to="/pricing" replace />;
+    }
+    
     // For users with no subscription, redirect to pricing
     if (location.pathname === '/pricing') {
       return <>{children}</>;
