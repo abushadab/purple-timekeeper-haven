@@ -2,6 +2,7 @@
 import React from "react";
 import HeaderLink from "./HeaderLink";
 import { LayoutDashboard, Folder, BarChart3, CreditCard } from "lucide-react";
+import { useSubscription } from "@/hooks/useSubscription";
 
 interface HeaderNavigationProps {
   currentPath: string;
@@ -9,6 +10,8 @@ interface HeaderNavigationProps {
 }
 
 const HeaderNavigation = ({ currentPath, isPricingPage }: HeaderNavigationProps) => {
+  const { subscription } = useSubscription();
+  
   if (isPricingPage) {
     return null;
   }
@@ -33,12 +36,15 @@ const HeaderNavigation = ({ currentPath, isPricingPage }: HeaderNavigationProps)
         label="Reports"
         active={currentPath === "/reports"}
       />
-      <HeaderLink
-        href="/my-subscription"
-        icon={CreditCard}
-        label="Subscription"
-        active={currentPath === "/my-subscription"}
-      />
+      {/* Only show subscription link if user has or had a subscription */}
+      {subscription && (
+        <HeaderLink
+          href="/my-subscription"
+          icon={CreditCard}
+          label="Subscription"
+          active={currentPath === "/my-subscription"}
+        />
+      )}
     </nav>
   );
 };

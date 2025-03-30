@@ -74,7 +74,7 @@ const PricingOptions = ({
                   <CardTitle className="text-lg">Yearly Plan</CardTitle>
                   <CardDescription>$63/year</CardDescription>
                 </div>
-                <Badge className="bg-green-100 text-green-800">Save 25%</Badge>
+                <Badge className="bg-green-100 text-green-800 hover:bg-green-100 hover:text-green-800">Save 25%</Badge>
               </div>
             </CardHeader>
             <CardContent className="pb-2">

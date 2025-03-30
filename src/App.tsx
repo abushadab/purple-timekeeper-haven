@@ -96,7 +96,7 @@ const App = () => {
                 } 
               />
               
-              {/* Profile and subscription management don't require subscription */}
+              {/* Profile doesn't require subscription */}
               <Route 
                 path="/edit-profile" 
                 element={
@@ -105,6 +105,8 @@ const App = () => {
                   </ProtectedRoute>
                 } 
               />
+              
+              {/* Redirect new users without subscription history to pricing */}
               <Route 
                 path="/my-subscription" 
                 element={

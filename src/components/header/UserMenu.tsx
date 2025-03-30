@@ -67,17 +67,20 @@ const UserMenu = ({
             </Button>
           )}
           
-          <Button 
-            variant="ghost" 
-            className="w-full justify-start text-sm px-2 py-1.5 h-auto"
-            onClick={() => navigate('/my-subscription')}
-          >
-            <CreditCard className="h-4 w-4 mr-2" />
-            My Subscription
-            {showSubscriptionExpired && (
-              <Badge className="ml-2 bg-red-100 text-red-800 text-xs px-1">Expired</Badge>
-            )}
-          </Button>
+          {/* Only show My Subscription menu item if user has or had a subscription */}
+          {subscription && (
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start text-sm px-2 py-1.5 h-auto"
+              onClick={() => navigate('/my-subscription')}
+            >
+              <CreditCard className="h-4 w-4 mr-2" />
+              My Subscription
+              {showSubscriptionExpired && (
+                <Badge className="ml-2 bg-red-100 text-red-800 text-xs px-1">Expired</Badge>
+              )}
+            </Button>
+          )}
           
           {!hasActiveSubscription && !isPricingPage && !isSubscriptionPage && (
             <Button 
