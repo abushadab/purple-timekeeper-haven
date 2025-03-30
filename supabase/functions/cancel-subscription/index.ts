@@ -15,7 +15,7 @@ serve(async (req) => {
   }
 
   try {
-    // Initialize Supabase client with admin privileges
+    // Initialize regular Supabase client for authentication
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -23,19 +23,24 @@ serve(async (req) => {
     // Get the session or user object
     const authHeader = req.headers.get('Authorization')!;
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user } } = await supabase.auth.getUser(token);
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     
-    if (!user) {
+    if (userError || !user) {
+      console.error('Authentication error:', userError);
       throw new Error('User not authenticated');
     }
 
     console.log(`Processing cancellation request for user: ${user.id}`);
 
-    // Get user's subscription from the database
-    const { data: subscriptionData, error: subscriptionError } = await supabase
+    // Create a second client with service role key to bypass RLS
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+    const adminSupabase = createClient(supabaseUrl, serviceRoleKey);
+
+    // Get user's subscription from the database using service role client
+    const { data: subscriptionData, error: subscriptionError } = await adminSupabase
       .from('user_subscriptions')
       .select('stripe_subscription_id, status, current_period_end, subscription_type')
-      .eq('auth_user_id', user.id)
+      .eq('auth_user_id', user.id)  // Still only allow access to the user's own data
       .maybeSingle();
 
     if (subscriptionError) {
@@ -107,14 +112,14 @@ serve(async (req) => {
 
       console.log(`Stripe subscription updated. New status: ${canceledSubscription.status}`);
 
-      // Update the subscription status in the database
-      const { error: updateError } = await supabase
+      // Update the subscription status in the database using service role client
+      const { error: updateError } = await adminSupabase
         .from('user_subscriptions')
         .update({
           status: 'canceled',
           updated_at: new Date().toISOString(),
         })
-        .eq('auth_user_id', user.id);
+        .eq('auth_user_id', user.id);  // Still only allow update to the user's own data
 
       if (updateError) {
         console.error('Error updating subscription status:', updateError);
@@ -143,13 +148,13 @@ serve(async (req) => {
         console.log('Handling free trial cancellation');
         
         // Directly update the database for free trials without calling Stripe
-        const { error: updateError } = await supabase
+        const { error: updateError } = await adminSupabase
           .from('user_subscriptions')
           .update({
             status: 'canceled',
             updated_at: new Date().toISOString(),
           })
-          .eq('auth_user_id', user.id);
+          .eq('auth_user_id', user.id);  // Still only allow update to the user's own data
 
         if (updateError) {
           console.error('Error updating trial subscription status:', updateError);
