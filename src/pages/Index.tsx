@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/layout/Header";
@@ -105,6 +104,8 @@ const Dashboard = () => {
     }
   };
 
+  const hasPortfolios = stats.portfolios !== "0";
+
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
@@ -187,15 +188,31 @@ const Dashboard = () => {
                     ))
                   ) : (
                     <div className="text-center py-4 text-muted-foreground">
-                      No projects found. Create your first project to get started.
-                      <div className="mt-4">
-                        <Button 
-                          onClick={() => navigate('/projects')}
-                          className="bg-purple-600 hover:bg-purple-700"
-                        >
-                          Create Project
-                        </Button>
-                      </div>
+                      {hasPortfolios ? (
+                        <>
+                          No projects found. Create your first project to get started.
+                          <div className="mt-4">
+                            <Button 
+                              onClick={() => navigate('/projects')}
+                              className="bg-purple-600 hover:bg-purple-700"
+                            >
+                              Create Project
+                            </Button>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          No projects found. Create your first portfolio to get started.
+                          <div className="mt-4">
+                            <Button 
+                              onClick={() => navigate('/portfolios')}
+                              className="bg-purple-600 hover:bg-purple-700"
+                            >
+                              Create Portfolio
+                            </Button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   )}
                 </CardContent>
