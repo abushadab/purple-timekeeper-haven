@@ -207,7 +207,7 @@ const Pricing = () => {
       <div className="flex-1 container py-8 px-4">
         <div className="max-w-5xl mx-auto space-y-10">
           <div className="text-center space-y-4">
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Choose Your TimeTrack Plan</h1>
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Choose Your TabTracker Plan</h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               Select the perfect plan to boost your productivity and track your time more efficiently.
             </p>
@@ -218,7 +218,7 @@ const Pricing = () => {
               name="Free Trial"
               price="0"
               billingPeriod="7 days"
-              description="Try TimeTrack for free for 7 days"
+              description="Try TabTracker for free for 7 days"
               features={[
                 "Unlimited time tracking",
                 "Basic reporting",

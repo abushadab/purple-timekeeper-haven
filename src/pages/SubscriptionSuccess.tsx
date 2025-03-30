@@ -182,7 +182,7 @@ const SubscriptionSuccess = () => {
               ) : (
                 <>
                   <p className="mb-2">
-                    Thank you for subscribing to TimeTrack {subscriptionType === 'monthly' ? 'Monthly' : 'Yearly'} Plan.
+                    Thank you for subscribing to TabTracker {subscriptionType === 'monthly' ? 'Monthly' : 'Yearly'} Plan.
                   </p>
                   <p>
                     Your subscription is now active and you have full access to all features.

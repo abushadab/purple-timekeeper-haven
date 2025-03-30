@@ -65,7 +65,7 @@ const Login = () => {
         } else {
           toast({
             title: "Logged in successfully",
-            description: "Welcome to TimeTrack!",
+            description: "Welcome to TabTracker!",
           });
           // The redirect will be handled by the AuthContext
         }
@@ -88,7 +88,7 @@ const Login = () => {
           <div className="flex justify-center mb-2">
             <Clock className="h-10 w-10 text-purple-600" />
           </div>
-          <CardTitle className="text-2xl font-bold">TimeTrack</CardTitle>
+          <CardTitle className="text-2xl font-bold">TabTracker</CardTitle>
           <CardDescription>
             {isSignUp 
               ? "Create a new account to start tracking your time" 
