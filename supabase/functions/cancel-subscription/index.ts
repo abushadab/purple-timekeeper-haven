@@ -25,8 +25,8 @@ serve(async (req) => {
     const token = authHeader.replace('Bearer ', '');
     const { data: { user } } = await supabase.auth.getUser(token);
     
-   
-    return user   
+    
+      throw new Error(`Error fetching subscription: ${user}`);
 
     console.log(`Processing cancellation request for user: ${user.id}`);
 
