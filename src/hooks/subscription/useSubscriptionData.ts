@@ -77,36 +77,38 @@ export const useSubscriptionData = () => {
           lastFetchTime = now;
           
           // Create a new promise for this fetch
-          globalFetchPromise = supabase
-            .from('user_subscriptions')
-            .select('*')
-            .eq('auth_user_id', user.id)
-            .maybeSingle()
-            .then(({ data, error }) => {
-              if (error) {
-                console.error('Error fetching subscription:', error);
-                if (mountedRef.current) {
-                  toast({
-                    title: 'Error',
-                    description: 'Failed to fetch subscription status.',
-                    variant: 'destructive',
-                  });
+          globalFetchPromise = Promise.resolve(
+            supabase
+              .from('user_subscriptions')
+              .select('*')
+              .eq('auth_user_id', user.id)
+              .maybeSingle()
+              .then(({ data, error }) => {
+                if (error) {
+                  console.error('Error fetching subscription:', error);
+                  if (mountedRef.current) {
+                    toast({
+                      title: 'Error',
+                      description: 'Failed to fetch subscription status.',
+                      variant: 'destructive',
+                    });
+                  }
+                  return null;
                 }
+                
+                if (data) {
+                  console.log("Fresh subscription data:", data);
+                  // Cache the subscription data
+                  saveSubscriptionToCache(data);
+                  return data;
+                }
+                
+                console.log("No subscription found for user");
+                // Clear cached data if no subscription found
+                clearSubscriptionCache();
                 return null;
-              }
-              
-              if (data) {
-                console.log("Fresh subscription data:", data);
-                // Cache the subscription data
-                saveSubscriptionToCache(data);
-                return data;
-              }
-              
-              console.log("No subscription found for user");
-              // Clear cached data if no subscription found
-              clearSubscriptionCache();
-              return null;
-            });
+              })
+          );
           
           // Wait for the promise to resolve
           const data = await globalFetchPromise;
