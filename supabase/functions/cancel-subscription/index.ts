@@ -25,9 +25,9 @@ serve(async (req) => {
     const token = authHeader.replace('Bearer ', '');
     const { data: { user } } = await supabase.auth.getUser(token);
     
-    
-      throw new Error(`Processing cancellation request for user: ${user.id}`);
-   
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
 
     console.log(`Processing cancellation request for user: ${user.id}`);
 
@@ -47,7 +47,7 @@ serve(async (req) => {
       console.error('No subscription found for user:', user.id);
       return new Response(
         JSON.stringify({ 
-          error: 'No subscription found for this user',
+          error: 'Processing cancellation request for user: ${user.id}',
           code: 'subscription_not_found'
         }),
         { 
