@@ -25,9 +25,8 @@ serve(async (req) => {
     const token = authHeader.replace('Bearer ', '');
     const { data: { user } } = await supabase.auth.getUser(token);
     
-    if (!user) {
-      throw new Error('User not authenticated');
-    }
+   
+    return user   
 
     console.log(`Processing cancellation request for user: ${user.id}`);
 
