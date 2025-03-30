@@ -19,17 +19,21 @@ const SubscriptionSuccess = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const processedRef = useRef(false);
+  const processingRef = useRef(false);
 
   useEffect(() => {
+    // This function is declared outside of the effect's main body
+    // to ensure it's not recreated on each render
     const updateSubscriptionRecord = async () => {
-      // Skip if we've already processed this session or if user/sessionId is missing
-      if (processedRef.current || !user || !sessionId) {
+      // Skip if we've already processed this session, if it's currently processing,
+      // or if user/sessionId is missing
+      if (processedRef.current || processingRef.current || !user || !sessionId) {
         setIsLoading(false);
         return;
       }
       
-      // Mark as processed immediately to prevent duplicate processing
-      processedRef.current = true;
+      // Mark as processing immediately to prevent concurrent processing attempts
+      processingRef.current = true;
 
       try {
         console.log("Processing subscription update with session ID:", sessionId);
@@ -117,6 +121,9 @@ const SubscriptionSuccess = () => {
           title: "Subscription activated",
           description: "Your subscription has been successfully activated.",
         });
+        
+        // Mark as fully processed only after everything succeeds
+        processedRef.current = true;
       } catch (error: any) {
         console.error("Error processing subscription:", error);
         setError(error.message);
@@ -126,11 +133,23 @@ const SubscriptionSuccess = () => {
           variant: "destructive",
         });
       } finally {
+        // Clear the processing flag to allow retries if there was an error
+        processingRef.current = false;
         setIsLoading(false);
       }
     };
 
-    updateSubscriptionRecord();
+    // Only attempt to update if not already processed
+    if (!processedRef.current) {
+      updateSubscriptionRecord();
+    } else {
+      setIsLoading(false);
+    }
+    
+    // Cleanup function
+    return () => {
+      // No cleanup needed
+    };
   }, [user, sessionId, subscriptionType, toast]); // Dependencies that should trigger the effect
 
   return (
