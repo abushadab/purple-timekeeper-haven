@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,13 +18,18 @@ const SubscriptionSuccess = () => {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const processedRef = useRef(false);
 
   useEffect(() => {
     const updateSubscriptionRecord = async () => {
-      if (!user || !sessionId) {
+      // Skip if we've already processed this session or if user/sessionId is missing
+      if (processedRef.current || !user || !sessionId) {
         setIsLoading(false);
         return;
       }
+      
+      // Mark as processed immediately to prevent duplicate processing
+      processedRef.current = true;
 
       try {
         console.log("Processing subscription update with session ID:", sessionId);
@@ -126,7 +131,7 @@ const SubscriptionSuccess = () => {
     };
 
     updateSubscriptionRecord();
-  }, [user, sessionId, subscriptionType, toast]);
+  }, [user, sessionId, subscriptionType, toast]); // Dependencies that should trigger the effect
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
