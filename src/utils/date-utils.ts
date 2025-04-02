@@ -22,3 +22,19 @@ export const formatDateForInput = (dateString: string): string => {
     return new Date().toISOString().split('T')[0];
   }
 };
+
+/**
+ * Formats a date string for display.
+ * Returns a formatted date string (e.g., "Jan 1, 2023").
+ */
+export const formatDateForDisplay = (dateString: string): string => {
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+    
+    const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
+    return date.toLocaleDateString('en-US', options);
+  } catch (e) {
+    return dateString;
+  }
+};
