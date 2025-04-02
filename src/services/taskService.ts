@@ -26,6 +26,16 @@ export interface Screenshot {
   created_at?: string;
 }
 
+export interface UrlMapping {
+  id?: string;
+  task_id: string;
+  title: string;
+  url: string;
+  auth_user_id?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface TaskFormData {
   id?: string;
   title: string;
@@ -36,6 +46,7 @@ export interface TaskFormData {
   estimated_hours: number;
   url_mapping?: string;
   project_id: string;
+  url_mappings?: UrlMapping[];
 }
 
 // Get all tasks for a specific project
@@ -76,6 +87,64 @@ export const getTasksByProject = async (projectId: string): Promise<Task[]> => {
   }));
 };
 
+// Get URL mappings for a task
+export const getUrlMappingsByTask = async (taskId: string): Promise<UrlMapping[]> => {
+  const { data, error } = await supabase
+    .from("url_mappings")
+    .select("*")
+    .eq("task_id", taskId)
+    .order("created_at", { ascending: true });
+  
+  if (error) {
+    console.error("Error fetching URL mappings:", error);
+    throw error;
+  }
+
+  return data;
+};
+
+// Save URL mappings for a task
+export const saveUrlMappings = async (taskId: string, urlMappings: UrlMapping[]): Promise<void> => {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData.session?.user?.id;
+  
+  if (!userId) {
+    throw new Error("User not authenticated");
+  }
+
+  // First, delete existing mappings
+  const { error: deleteError } = await supabase
+    .from("url_mappings")
+    .delete()
+    .eq("task_id", taskId);
+
+  if (deleteError) {
+    console.error("Error deleting existing URL mappings:", deleteError);
+    throw deleteError;
+  }
+
+  // Then insert new mappings if there are any
+  if (urlMappings && urlMappings.length > 0) {
+    const mappingsToInsert = urlMappings.filter(m => m.title && m.url).map(mapping => ({
+      task_id: taskId,
+      title: mapping.title,
+      url: mapping.url,
+      auth_user_id: userId
+    }));
+
+    if (mappingsToInsert.length > 0) {
+      const { error: insertError } = await supabase
+        .from("url_mappings")
+        .insert(mappingsToInsert);
+      
+      if (insertError) {
+        console.error("Error inserting URL mappings:", insertError);
+        throw insertError;
+      }
+    }
+  }
+};
+
 // Create a new task
 export const createTask = async (task: TaskFormData): Promise<Task> => {
   const { data: sessionData } = await supabase.auth.getSession();
@@ -105,6 +174,14 @@ export const createTask = async (task: TaskFormData): Promise<Task> => {
   if (error) {
     console.error("Error creating task:", error);
     throw error;
+  }
+
+  // Save URL mappings if they exist
+  if (task.url_mappings && task.url_mappings.length > 0) {
+    await saveUrlMappings(data.id, task.url_mappings.map(mapping => ({
+      ...mapping,
+      task_id: data.id
+    })));
   }
 
   // Update project task stats
@@ -188,6 +265,14 @@ export const updateTask = async (task: TaskFormData): Promise<Task> => {
   if (error) {
     console.error("Error updating task:", error);
     throw error;
+  }
+
+  // Save URL mappings if they exist
+  if (task.url_mappings) {
+    await saveUrlMappings(task.id, task.url_mappings.map(mapping => ({
+      ...mapping,
+      task_id: task.id
+    })));
   }
 
   // If status changed, estimated hours changed, or hours logged changed, update project stats

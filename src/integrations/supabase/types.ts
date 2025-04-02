@@ -198,6 +198,44 @@ export type Database = {
           },
         ]
       }
+      url_mappings: {
+        Row: {
+          auth_user_id: string | null
+          created_at: string | null
+          id: string
+          task_id: string
+          title: string
+          updated_at: string | null
+          url: string
+        }
+        Insert: {
+          auth_user_id?: string | null
+          created_at?: string | null
+          id?: string
+          task_id: string
+          title: string
+          updated_at?: string | null
+          url: string
+        }
+        Update: {
+          auth_user_id?: string | null
+          created_at?: string | null
+          id?: string
+          task_id?: string
+          title?: string
+          updated_at?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "url_mappings_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_subscriptions: {
         Row: {
           auth_user_id: string

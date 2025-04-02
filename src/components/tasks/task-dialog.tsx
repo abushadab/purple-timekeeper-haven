@@ -7,7 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { Task } from "@/services/taskService";
+import { Task, UrlMapping, getUrlMappingsByTask } from "@/services/taskService";
+import { Plus, Trash2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 const formatDateForInput = (dateString: string): string => {
   if (!dateString) {
@@ -39,6 +41,7 @@ interface TaskFormData {
   estimated_hours: number;
   url_mapping?: string;
   project_id?: string;
+  url_mappings: UrlMapping[];
 }
 
 interface TaskDialogProps {
@@ -66,10 +69,24 @@ export function TaskDialog({
     due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     estimated_hours: 0,
     url_mapping: "",
-    project_id: projectId
+    project_id: projectId,
+    url_mappings: [{
+      task_id: "",
+      title: "",
+      url: ""
+    }]
   };
   
-  const [formData, setFormData] = useState<TaskFormData>(task || defaultTask);
+  const [formData, setFormData] = useState<TaskFormData>(task ? { ...task, url_mappings: [] } : defaultTask);
+
+  const { 
+    data: urlMappings = [], 
+    isLoading: urlMappingsLoading 
+  } = useQuery({
+    queryKey: ['urlMappings', task?.id],
+    queryFn: () => task?.id ? getUrlMappingsByTask(task.id) : Promise.resolve([]),
+    enabled: !!task?.id && open,
+  });
 
   useEffect(() => {
     if (task) {
@@ -77,15 +94,17 @@ export function TaskDialog({
         ...task,
         due_date: formatDateForInput(task.due_date),
         url_mapping: task.url_mapping || "",
-        project_id: projectId || task.project_id
+        project_id: projectId || task.project_id,
+        url_mappings: urlMappings.length > 0 ? urlMappings : [{ task_id: task.id, title: "", url: "" }]
       });
     } else if (!open) {
       setFormData({
         ...defaultTask,
-        project_id: projectId
+        project_id: projectId,
+        url_mappings: [{ task_id: "", title: "", url: "" }]
       });
     }
-  }, [task, open, projectId]);
+  }, [task, open, projectId, urlMappings]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -113,11 +132,58 @@ export function TaskDialog({
       formData.project_id = projectId;
     }
     
-    onSave(formData);
+    // Filter out empty URL mappings
+    const filteredUrlMappings = formData.url_mappings.filter(
+      mapping => mapping.title.trim() !== "" && mapping.url.trim() !== ""
+    );
+    
+    onSave({
+      ...formData,
+      url_mappings: filteredUrlMappings
+    });
   };
 
   const handleDialogClose = () => {
     onOpenChange(false);
+  };
+
+  const handleUrlMappingChange = (index: number, field: keyof UrlMapping, value: string) => {
+    setFormData(prev => {
+      const updatedMappings = [...prev.url_mappings];
+      updatedMappings[index] = {
+        ...updatedMappings[index],
+        [field]: value
+      };
+      return {
+        ...prev,
+        url_mappings: updatedMappings
+      };
+    });
+  };
+
+  const addUrlMapping = () => {
+    setFormData(prev => ({
+      ...prev,
+      url_mappings: [
+        ...prev.url_mappings,
+        { task_id: task?.id || "", title: "", url: "" }
+      ]
+    }));
+  };
+
+  const removeUrlMapping = (index: number) => {
+    if (formData.url_mappings.length <= 1) {
+      return;
+    }
+    
+    setFormData(prev => {
+      const updatedMappings = [...prev.url_mappings];
+      updatedMappings.splice(index, 1);
+      return {
+        ...prev,
+        url_mappings: updatedMappings
+      };
+    });
   };
 
   return (
@@ -212,16 +278,50 @@ export function TaskDialog({
               />
             </div>
           </div>
+          
           <div className="space-y-2">
-            <Label htmlFor="url_mapping">URL Mapping</Label>
-            <Input
-              id="url_mapping"
-              name="url_mapping"
-              value={formData.url_mapping}
-              onChange={handleChange}
-              placeholder="Enter URL path mapping (e.g., /dashboard/users)"
-            />
+            <div className="flex items-center justify-between">
+              <Label>URL Mappings</Label>
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm" 
+                onClick={addUrlMapping}
+                className="h-8 px-2"
+              >
+                <Plus className="w-4 h-4 mr-1" /> Add URL
+              </Button>
+            </div>
+            <div className="space-y-3">
+              {formData.url_mappings.map((mapping, index) => (
+                <div key={index} className="flex items-start gap-2">
+                  <div className="grid grid-cols-2 gap-2 flex-1">
+                    <Input
+                      placeholder="Title (e.g., Login Page)"
+                      value={mapping.title}
+                      onChange={(e) => handleUrlMappingChange(index, 'title', e.target.value)}
+                    />
+                    <Input
+                      placeholder="URL (e.g., /login)"
+                      value={mapping.url}
+                      onChange={(e) => handleUrlMappingChange(index, 'url', e.target.value)}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeUrlMapping(index)}
+                    disabled={formData.url_mappings.length <= 1}
+                    className="px-2"
+                  >
+                    <Trash2 className="w-4 h-4 text-destructive" />
+                  </Button>
+                </div>
+              ))}
+            </div>
           </div>
+          
           <DialogFooter className="pt-4">
             <Button type="button" variant="outline" onClick={handleDialogClose}>
               Cancel
