@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface Task {
@@ -50,7 +49,6 @@ export interface TaskFormData {
   url_mappings?: UrlMapping[];
 }
 
-// Get all tasks for a specific project
 export const getTasksByProject = async (projectId: string): Promise<Task[]> => {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData.session?.user?.id;
@@ -88,7 +86,6 @@ export const getTasksByProject = async (projectId: string): Promise<Task[]> => {
   }));
 };
 
-// Get URL mappings for a task
 export const getUrlMappingsByTask = async (taskId: string): Promise<UrlMapping[]> => {
   const { data, error } = await supabase
     .from("url_mappings")
@@ -101,10 +98,9 @@ export const getUrlMappingsByTask = async (taskId: string): Promise<UrlMapping[]
     throw error;
   }
 
-  return data;
+  return data as UrlMapping[];
 };
 
-// Save URL mappings for a task
 export const saveUrlMappings = async (taskId: string, urlMappings: UrlMapping[]): Promise<void> => {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData.session?.user?.id;
@@ -113,7 +109,6 @@ export const saveUrlMappings = async (taskId: string, urlMappings: UrlMapping[])
     throw new Error("User not authenticated");
   }
 
-  // First, delete existing mappings
   const { error: deleteError } = await supabase
     .from("url_mappings")
     .delete()
@@ -124,7 +119,6 @@ export const saveUrlMappings = async (taskId: string, urlMappings: UrlMapping[])
     throw deleteError;
   }
 
-  // Then insert new mappings if there are any
   if (urlMappings && urlMappings.length > 0) {
     const mappingsToInsert = urlMappings.filter(m => m.title && m.url).map(mapping => ({
       task_id: taskId,
@@ -146,13 +140,16 @@ export const saveUrlMappings = async (taskId: string, urlMappings: UrlMapping[])
   }
 };
 
-// Create a new task
 export const createTask = async (task: TaskFormData): Promise<Task> => {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData.session?.user?.id;
   
   if (!userId) {
     throw new Error("User not authenticated");
+  }
+
+  if (!task.project_id) {
+    throw new Error("Project ID is required");
   }
 
   const { data, error } = await supabase
@@ -177,7 +174,6 @@ export const createTask = async (task: TaskFormData): Promise<Task> => {
     throw error;
   }
 
-  // Save URL mappings if they exist
   if (task.url_mappings && task.url_mappings.length > 0) {
     await saveUrlMappings(data.id, task.url_mappings.map(mapping => ({
       ...mapping,
@@ -185,7 +181,6 @@ export const createTask = async (task: TaskFormData): Promise<Task> => {
     })));
   }
 
-  // Update project task stats
   await updateProjectTaskStats(task.project_id);
 
   return {
@@ -205,13 +200,11 @@ export const createTask = async (task: TaskFormData): Promise<Task> => {
   };
 };
 
-// Update an existing task
 export const updateTask = async (task: TaskFormData): Promise<Task> => {
   if (!task.id) {
     throw new Error("Task ID is required for updates");
   }
 
-  // Check if we're updating the status or estimated hours
   let statusChanged = false;
   let estimatedHoursChanged = false;
   let oldTask = null;
@@ -226,27 +219,21 @@ export const updateTask = async (task: TaskFormData): Promise<Task> => {
   statusChanged = existingTask && existingTask.status !== task.status;
   estimatedHoursChanged = existingTask && existingTask.estimated_hours !== task.estimated_hours;
   
-  // Check if we need to auto-update status based on hours
   let finalStatus = task.status;
-  
-  // If estimated hours changed, we need to update status based on hours
+
   if (estimatedHoursChanged && existingTask) {
     const currentProgress = (existingTask.hours_logged / existingTask.estimated_hours) * 100;
     const newProgress = (existingTask.hours_logged / task.estimated_hours) * 100;
     
-    // If task was completed but now progress is less than 100%
     if (existingTask.status === 'completed' && newProgress < 100) {
       finalStatus = 'in_progress';
       statusChanged = true;
-    }
-    // If task was in progress but now progress is 100% or more
-    else if (existingTask.status !== 'completed' && newProgress >= 100) {
+    } else if (existingTask.status !== 'completed' && newProgress >= 100) {
       finalStatus = 'completed';
       statusChanged = true;
     }
   }
 
-  // Update the task
   const { data, error } = await supabase
     .from("tasks")
     .update({
@@ -268,7 +255,6 @@ export const updateTask = async (task: TaskFormData): Promise<Task> => {
     throw error;
   }
 
-  // Save URL mappings if they exist
   if (task.url_mappings) {
     await saveUrlMappings(task.id, task.url_mappings.map(mapping => ({
       ...mapping,
@@ -276,7 +262,6 @@ export const updateTask = async (task: TaskFormData): Promise<Task> => {
     })));
   }
 
-  // If status changed, estimated hours changed, or hours logged changed, update project stats
   if (statusChanged || estimatedHoursChanged || (oldTask && oldTask.hours_logged !== data.hours_logged)) {
     await updateProjectTaskStats(data.project_id);
   }
@@ -298,9 +283,7 @@ export const updateTask = async (task: TaskFormData): Promise<Task> => {
   };
 };
 
-// Delete a task
 export const deleteTask = async (id: string): Promise<void> => {
-  // Get the project_id before deleting
   const { data: taskData } = await supabase
     .from("tasks")
     .select("project_id")
@@ -319,15 +302,12 @@ export const deleteTask = async (id: string): Promise<void> => {
     throw error;
   }
 
-  // Update project task stats
   if (projectId) {
     await updateProjectTaskStats(projectId);
   }
 };
 
-// Update hours logged for a task
 export const updateTaskHours = async (id: string, hoursLogged: number): Promise<void> => {
-  // Get current task data
   const { data: taskData } = await supabase
     .from("tasks")
     .select("status, estimated_hours, project_id")
@@ -338,16 +318,12 @@ export const updateTaskHours = async (id: string, hoursLogged: number): Promise<
     throw new Error("Task not found");
   }
   
-  // Determine if status should change based on hours
   let newStatus = taskData.status;
   const progress = (hoursLogged / taskData.estimated_hours) * 100;
   
-  // If hours logged reaches or exceeds estimated hours, mark as completed
   if (progress >= 100 && taskData.status !== 'completed') {
     newStatus = 'completed';
-  }
-  // If task was completed but hours are now below 100%, change to in_progress
-  else if (progress < 100 && taskData.status === 'completed') {
+  } else if (progress < 100 && taskData.status === 'completed') {
     newStatus = 'in_progress';
   }
   
@@ -367,11 +343,9 @@ export const updateTaskHours = async (id: string, hoursLogged: number): Promise<
     throw error;
   }
 
-  // Update project task stats
   await updateProjectTaskStats(data.project_id);
 };
 
-// Get screenshots for a task
 export const getTaskScreenshots = async (taskId: string): Promise<Screenshot[]> => {
   const { data, error } = await supabase
     .from("task_screenshots")
@@ -387,7 +361,6 @@ export const getTaskScreenshots = async (taskId: string): Promise<Screenshot[]> 
   return data as Screenshot[];
 };
 
-// Add a screenshot for a task
 export const addTaskScreenshot = async (
   taskId: string, 
   url: string, 
@@ -420,7 +393,6 @@ export const addTaskScreenshot = async (
   return data as Screenshot;
 };
 
-// Delete a screenshot
 export const deleteTaskScreenshot = async (id: string): Promise<void> => {
   const { error } = await supabase
     .from("task_screenshots")
@@ -433,10 +405,8 @@ export const deleteTaskScreenshot = async (id: string): Promise<void> => {
   }
 };
 
-// Update project stats (task count, completed tasks, progress, total hours)
 const updateProjectTaskStats = async (projectId: string): Promise<void> => {
   try {
-    // Get all tasks for the project
     const { data: tasks, error } = await supabase
       .from("tasks")
       .select("status, hours_logged, estimated_hours")
@@ -446,22 +416,18 @@ const updateProjectTaskStats = async (projectId: string): Promise<void> => {
       throw error;
     }
 
-    // Calculate stats
     const totalTasks = tasks.length;
     const completedTasks = tasks.filter(task => task.status === 'completed').length;
     const totalHours = tasks.reduce((sum, task) => sum + (Number(task.hours_logged) || 0), 0);
     const totalEstimatedHours = tasks.reduce((sum, task) => sum + (Number(task.estimated_hours) || 0), 0);
     
-    // Calculate progress based on hours tracked vs estimated
     let progress = 0;
     if (totalEstimatedHours > 0) {
-      progress = Math.min(Math.round((totalHours / totalEstimatedHours) * 100), 100); // Cap at 100%
+      progress = Math.min(Math.round((totalHours / totalEstimatedHours) * 100), 100);
     } else if (totalTasks > 0) {
-      // Fallback to task completion if no estimated hours
       progress = Math.round((completedTasks / totalTasks) * 100);
     }
 
-    // Update project
     const { error: updateError } = await supabase
       .from("projects")
       .update({

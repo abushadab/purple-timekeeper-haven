@@ -40,7 +40,7 @@ interface TaskFormData {
   due_date: string;
   estimated_hours: number;
   url_mapping?: string;
-  project_id?: string;
+  project_id: string;
   url_mappings: UrlMapping[];
 }
 
@@ -69,7 +69,7 @@ export function TaskDialog({
     due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     estimated_hours: 0,
     url_mapping: "",
-    project_id: projectId,
+    project_id: projectId || "",
     url_mappings: [{
       task_id: "",
       title: "",
@@ -77,7 +77,11 @@ export function TaskDialog({
     }]
   };
   
-  const [formData, setFormData] = useState<TaskFormData>(task ? { ...task, url_mappings: [] } : defaultTask);
+  const [formData, setFormData] = useState<TaskFormData>(task ? { 
+    ...task, 
+    project_id: projectId || task.project_id,
+    url_mappings: [] 
+  } : defaultTask);
 
   const { 
     data: urlMappings = [], 
@@ -88,7 +92,20 @@ export function TaskDialog({
     enabled: !!task?.id && open,
   });
 
+  // Fix the infinite loop by adding proper dependency array and condition
   useEffect(() => {
+    if (!open) {
+      // Reset form when dialog closes
+      setFormData(task ? { 
+        ...task, 
+        due_date: formatDateForInput(task.due_date),
+        url_mapping: task.url_mapping || "",
+        project_id: projectId || task.project_id,
+        url_mappings: [] 
+      } : defaultTask);
+      return;
+    }
+
     if (task) {
       setFormData({
         ...task,
@@ -97,14 +114,14 @@ export function TaskDialog({
         project_id: projectId || task.project_id,
         url_mappings: urlMappings.length > 0 ? urlMappings : [{ task_id: task.id, title: "", url: "" }]
       });
-    } else if (!open) {
+    } else {
       setFormData({
         ...defaultTask,
-        project_id: projectId,
+        project_id: projectId || "",
         url_mappings: [{ task_id: "", title: "", url: "" }]
       });
     }
-  }, [task, open, projectId, urlMappings]);
+  }, [task, open, projectId, urlMappings.length]); // Only depend on length, not the entire array
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -128,9 +145,8 @@ export function TaskDialog({
       return;
     }
     
-    if (!formData.project_id && projectId) {
-      formData.project_id = projectId;
-    }
+    // Ensure project_id is set correctly
+    const finalProjectId = formData.project_id || projectId || "";
     
     // Filter out empty URL mappings
     const filteredUrlMappings = formData.url_mappings.filter(
@@ -139,6 +155,7 @@ export function TaskDialog({
     
     onSave({
       ...formData,
+      project_id: finalProjectId,
       url_mappings: filteredUrlMappings
     });
   };
