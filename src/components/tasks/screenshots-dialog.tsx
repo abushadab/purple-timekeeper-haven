@@ -10,7 +10,7 @@ import { X, Plus, Upload, Trash2, Image, FileImage } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { addTaskScreenshot, deleteTaskScreenshot, Screenshot } from "@/services/taskService";
+import { addTaskScreenshot, deleteTaskScreenshot, Screenshot } from "@/services/tasks";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { supabase } from "@/integrations/supabase/client";
 

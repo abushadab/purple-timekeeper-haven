@@ -37,7 +37,7 @@ import {
   getTaskScreenshots,
   TaskFormData, 
   Task
-} from "@/services/taskService";
+} from "@/services/tasks";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
