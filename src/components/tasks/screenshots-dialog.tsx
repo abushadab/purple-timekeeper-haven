@@ -277,7 +277,7 @@ const ScreenshotsDialog: React.FC<ScreenshotsDialogProps> = ({
                 <X size={20} />
               </button>
               <img
-                src={selectedImage.url}
+                src={selectedImage.thumbnail_url}
                 alt="Full screenshot"
                 className="w-full h-auto rounded-md"
               />
