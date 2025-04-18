@@ -50,7 +50,7 @@ export const TaskHeader = ({
                       type="radio"
                       name="priority"
                       checked={filterOptions.priority === "all"}
-                      onChange={() => setFilterOptions(prev => ({ ...prev, priority: "all" }))}
+                      onChange={() => setFilterOptions({ priority: "all" })}
                     />
                     All
                   </label>
@@ -59,7 +59,7 @@ export const TaskHeader = ({
                       type="radio"
                       name="priority"
                       checked={filterOptions.priority === "high"}
-                      onChange={() => setFilterOptions(prev => ({ ...prev, priority: "high" }))}
+                      onChange={() => setFilterOptions({ priority: "high" })}
                     />
                     High
                   </label>
@@ -68,7 +68,7 @@ export const TaskHeader = ({
                       type="radio"
                       name="priority"
                       checked={filterOptions.priority === "medium"}
-                      onChange={() => setFilterOptions(prev => ({ ...prev, priority: "medium" }))}
+                      onChange={() => setFilterOptions({ priority: "medium" })}
                     />
                     Medium
                   </label>
@@ -77,7 +77,7 @@ export const TaskHeader = ({
                       type="radio"
                       name="priority"
                       checked={filterOptions.priority === "low"}
-                      onChange={() => setFilterOptions(prev => ({ ...prev, priority: "low" }))}
+                      onChange={() => setFilterOptions({ priority: "low" })}
                     />
                     Low
                   </label>
