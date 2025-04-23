@@ -1,5 +1,6 @@
 [phases.setup]
-  nixPkgs = ['nodejs-20_20.12']
+  nixPkgs = ['nodejs_20']
+  nixpkgsArchive = '9684b531'
   providers = ['node']
 
 [phases.install]
