@@ -1,0 +1,15 @@
+# Specify Node.js and npm as dependencies
+[phases.setup]
+  nixPkgs = ['nodejs_20', 'npm']
+
+# Install dependencies
+[phases.install]
+  cmds = ['npm install']
+
+# Build the project
+[phases.build]
+  cmds = ['npm run build']
+
+# Start the application
+[start]
+  cmd = 'npm run preview'
